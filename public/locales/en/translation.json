@@ -1,0 +1,151 @@
+{
+  "common": {
+    "search": "Search...",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "catalog": "Catalog",
+    "artworks": "Artworks",
+    "editions": "Editions",
+    "copies": "Copies",
+    "qrcodes": "QR Codes",
+    "people": "People",
+    "artists": "Artists",
+    "users": "Users",
+    "cashiers": "Cashiers",
+    "operations": "Operations",
+    "events": "Events",
+    "tickets": "Tickets",
+    "orders": "Orders",
+    "reservations": "Reservations",
+    "pavilions": "Pavilions",
+    "techniques": "Techniques",
+    "openCalls": "Open Calls",
+    "myAccount": "My Account",
+    "library": "LIBRARY",
+    "account": "ACCOUNT"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot your password?",
+    "rememberMe": "Remember me",
+    "loginError": "Login error",
+    "invalidCredentials": "Invalid credentials"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "recentActivity": "Recent Activity",
+    "year": "Year",
+    "total": "Total"
+  },
+  "catalog": {
+    "title": "Catalog",
+    "subtitle": "Manage artworks, editions, copies and QR codes",
+    "noItems": "No records yet"
+  },
+  "people": {
+    "title": "People",
+    "artists": "Artists",
+    "users": "Users",
+    "cashiers": "Cashiers"
+  },
+  "operations": {
+    "title": "Operations",
+    "events": "Events",
+    "tickets": "Tickets",
+    "orders": "Orders",
+    "reservations": "Reservations"
+  },
+  "orders": {
+    "title": "Orders",
+    "new": "New Order",
+    "number": "Order #",
+    "status": "Status",
+    "total": "Total",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at",
+    "customer": "Customer",
+    "pending": "Pending",
+    "completed": "Completed",
+    "canceled": "Canceled",
+    "noItems": "No orders yet"
+  },
+  "reservations": {
+    "title": "Reservations",
+    "new": "New Reservation",
+    "code": "Reservation Code",
+    "status": "Status",
+    "reserved": "Reserved",
+    "sold": "Sold",
+    "void": "Void",
+    "available": "Available",
+    "artwork": "Artwork",
+    "copy": "Copy",
+    "customer": "Customer",
+    "createdAt": "Created at",
+    "expiresAt": "Expires at",
+    "noItems": "No reservations yet"
+  },
+  "pavilions": {
+    "title": "Pavilions",
+    "name": "Name",
+    "slug": "Slug",
+    "curator": "Curator",
+    "event": "Event",
+    "noItems": "No pavilions yet"
+  },
+  "techniques": {
+    "title": "Techniques",
+    "name": "Technique",
+    "slug": "Slug",
+    "noItems": "No techniques yet"
+  },
+  "openCalls": {
+    "title": "Open Calls",
+    "apply": "Apply",
+    "submissions": "Submissions",
+    "validFrom": "Valid from",
+    "validTo": "Valid to",
+    "noItems": "No open calls at the moment"
+  },
+  "account": {
+    "title": "My Account",
+    "profile": "Profile",
+    "settings": "Settings",
+    "preferences": "Preferences",
+    "language": "Language",
+    "notifications": "Notifications",
+    "security": "Security"
+  },
+  "loading": {
+    "session": "Loading your session…",
+    "data": "Loading data…",
+    "please_wait": "Please wait..."
+  },
+  "errors": {
+    "general": "An error occurred",
+    "network": "Connection error",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Access denied",
+    "notFound": "Not found",
+    "serverError": "Server error"
+  }
+}

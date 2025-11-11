@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  /* Escala de grises */
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd;
+  --gray-500: #9e9e9e;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+
+  /* Fondo y texto */
+  --background: var(--gray-50);
+  --foreground: var(--gray-900);
+
+  /* Tonos principales neutros */
+  --primary-dark: var(--gray-900);
+  --primary: var(--gray-700);
+  --primary-light: var(--gray-500);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--gray-900);
+    --foreground: var(--gray-100);
+  }
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Sidebar estilo sobrio */
+.sidebar {
+  background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+}
+
+/* Gradiente principal en tonos grises */
+.primary-gradient {
+  background: linear-gradient(135deg, var(--gray-700) 0%, var(--gray-900) 100%);
+}
+
+/* Botones y acentos */
+button,
+.btn {
+  background-color: var(--gray-800);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+button:hover,
+.btn:hover {
+  background-color: var(--gray-900);
+}
+
+/* Cards, paneles o contenedores */
+.card {
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+  

@@ -1,0 +1,151 @@
+{
+  "common": {
+    "search": "Buscar...",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "navigation": {
+    "dashboard": "Tablero",
+    "catalog": "Catálogo",
+    "artworks": "Obras",
+    "editions": "Ediciones",
+    "copies": "Copias",
+    "qrcodes": "Códigos QR",
+    "people": "Personas",
+    "artists": "Artistas",
+    "users": "Usuarios",
+    "cashiers": "Cajeros",
+    "operations": "Operaciones",
+    "events": "Eventos",
+    "tickets": "Boletos",
+    "orders": "Pedidos",
+    "reservations": "Reservaciones",
+    "pavilions": "Pabellones",
+    "techniques": "Técnicas",
+    "openCalls": "Convocatorias",
+    "myAccount": "Mi Cuenta",
+    "library": "BIBLIOTECA",
+    "account": "CUENTA"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "rememberMe": "Recuérdame",
+    "loginError": "Error de inicio de sesión",
+    "invalidCredentials": "Credenciales inválidas"
+  },
+  "dashboard": {
+    "title": "Tablero",
+    "welcome": "Bienvenido",
+    "overview": "Resumen",
+    "statistics": "Estadísticas",
+    "recentActivity": "Actividad reciente",
+    "year": "Año",
+    "total": "Total"
+  },
+  "catalog": {
+    "title": "Catálogo",
+    "subtitle": "Gestiona obras, ediciones, copias y códigos QR",
+    "noItems": "Aún no hay registros"
+  },
+  "people": {
+    "title": "Personas",
+    "artists": "Artistas",
+    "users": "Usuarios",
+    "cashiers": "Cajeros"
+  },
+  "operations": {
+    "title": "Operaciones",
+    "events": "Eventos",
+    "tickets": "Boletos",
+    "orders": "Pedidos",
+    "reservations": "Reservaciones"
+  },
+  "orders": {
+    "title": "Pedidos",
+    "new": "Nuevo Pedido",
+    "number": "Pedido #",
+    "status": "Estado",
+    "total": "Total",
+    "createdAt": "Creado el",
+    "updatedAt": "Actualizado el",
+    "customer": "Cliente",
+    "pending": "Pendiente",
+    "completed": "Completado",
+    "canceled": "Cancelado",
+    "noItems": "Aún no hay pedidos"
+  },
+  "reservations": {
+    "title": "Reservaciones",
+    "new": "Nueva Reservación",
+    "code": "Código de Reservación",
+    "status": "Estado",
+    "reserved": "Reservado",
+    "sold": "Vendido",
+    "void": "Anulado",
+    "available": "Disponible",
+    "artwork": "Obra",
+    "copy": "Copia",
+    "customer": "Cliente",
+    "createdAt": "Creado el",
+    "expiresAt": "Expira el",
+    "noItems": "Aún no hay reservaciones"
+  },
+  "pavilions": {
+    "title": "Pabellones",
+    "name": "Nombre",
+    "slug": "Slug",
+    "curator": "Curador",
+    "event": "Evento",
+    "noItems": "Aún no hay pabellones"
+  },
+  "techniques": {
+    "title": "Técnicas",
+    "name": "Técnica",
+    "slug": "Slug",
+    "noItems": "Aún no hay técnicas"
+  },
+  "openCalls": {
+    "title": "Convocatorias",
+    "apply": "Postular",
+    "submissions": "Postulaciones",
+    "validFrom": "Válida desde",
+    "validTo": "Válida hasta",
+    "noItems": "No hay convocatorias por ahora"
+  },
+  "account": {
+    "title": "Mi Cuenta",
+    "profile": "Perfil",
+    "settings": "Configuración",
+    "preferences": "Preferencias",
+    "language": "Idioma",
+    "notifications": "Notificaciones",
+    "security": "Seguridad"
+  },
+  "loading": {
+    "session": "Cargando tu sesión…",
+    "data": "Cargando datos…",
+    "please_wait": "Por favor espera..."
+  },
+  "errors": {
+    "general": "Ocurrió un error",
+    "network": "Error de conexión",
+    "unauthorized": "No autorizado",
+    "forbidden": "Acceso denegado",
+    "notFound": "No encontrado",
+    "serverError": "Error del servidor"
+  }
+}
