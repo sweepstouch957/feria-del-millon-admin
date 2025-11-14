@@ -372,7 +372,7 @@ export default function ArtworksCursorPage() {
                         <IconButton
                           size="small"
                           onClick={() =>
-                            window.open(`/obra/${art.slug ?? art.id}`, "_blank")
+                            window.open(`/inventory/artworks/${art.id}`, "_blank")
                           }
                         >
                           <EyeIcon size={18} />
