@@ -8,6 +8,10 @@ import {
     Chip,
     TextField,
     Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,12 +22,14 @@ import {
     type UpdatePavilionArtistsPayload,
 } from "@services/pavilions.service";
 import { searchArtists } from "@services/users.service";
-import { UserDTO } from "@/services/user.service";
+import type { UserDTO } from "@services/user.service";
 
 type ArtistOption = {
     id: string;
     label: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
     disabled?: boolean;
 };
 
@@ -42,10 +48,14 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
     // Artistas asignados al pabellón (estado local editable)
     const [assignedArtists, setAssignedArtists] = useState<ArtistOption[]>([]);
 
+    // Estado para el modal de detalle
+    const [detailArtist, setDetailArtist] = useState<ArtistOption | null>(null);
+
     // Inicializar desde pavilion.artistInfo cuando cambie el pabellón
     useEffect(() => {
         if (!pavilion) {
             setAssignedArtists([]);
+            setDetailArtist(null);
             return;
         }
 
@@ -53,11 +63,13 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
             pavilion.artistInfo?.map((a) => ({
                 id: a.id,
                 email: a.email,
-                label:
-                    `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || a.email,
+                firstName: a.firstName,
+                lastName: a.lastName,
+                label: `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || a.email,
             })) ?? [];
 
         setAssignedArtists(mapped);
+        setDetailArtist(null);
     }, [pavilion]);
 
     // Mapa para saber qué emails ya están asignados
@@ -93,11 +105,11 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                 const nextOptions: ArtistOption[] = users.map((u) => ({
                     id: u.id,
                     email: u.email,
+                    firstName: u.firstName,
+                    lastName: u.lastName,
                     label:
                         `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email,
-                    disabled: assignedEmailsSet.has(
-                        (u.email || "").toLowerCase()
-                    ),
+                    disabled: assignedEmailsSet.has((u.email || "").toLowerCase()),
                 }));
 
                 setOptions(nextOptions);
@@ -142,8 +154,7 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
         _any: any,
         newValue: ArtistOption[]
     ) => {
-        // newValue ya es la lista completa seleccionada en el Autocomplete
-        // pero queremos fusionarla con assignedArtists y evitar duplicados
+        // newValue ya es la lista que devuelve el Autocomplete
         const merged = [
             ...assignedArtists,
             ...newValue.filter(
@@ -165,6 +176,14 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                 (a) => a.email.toLowerCase() !== email.toLowerCase()
             )
         );
+    };
+
+    const handleOpenDetail = (artist: ArtistOption) => {
+        setDetailArtist(artist);
+    };
+
+    const handleCloseDetail = () => {
+        setDetailArtist(null);
     };
 
     if (!pavilion) {
@@ -201,7 +220,7 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                 sx={{ display: "block", mb: 1.5 }}
             >
                 Agrega o quita artistas de este pabellón. Los cambios se guardan para
-                todo el evento.
+                todo el evento. Haz clic en un artista para ver sus datos.
             </Typography>
 
             {/* Chips de artistas asignados */}
@@ -217,9 +236,11 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                                 key={artist.email}
                                 label={`${artist.label} (${artist.email})`}
                                 size="small"
+                                onClick={() => handleOpenDetail(artist)}
                                 onDelete={() => handleRemoveArtist(artist.email)}
                                 sx={{
                                     fontSize: "0.7rem",
+                                    cursor: "pointer",
                                 }}
                             />
                         ))}
@@ -264,6 +285,31 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                     {isSaving ? "Guardando..." : "Guardar cambios de artistas"}
                 </Button>
             </Box>
+
+            {/* Modal de detalle del artista */}
+            <Dialog open={!!detailArtist} onClose={handleCloseDetail} fullWidth>
+                <DialogTitle>Información del artista</DialogTitle>
+                <DialogContent dividers>
+                    {detailArtist && (
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                            <Typography variant="subtitle1" fontWeight={600}>
+                                {detailArtist.firstName || detailArtist.lastName
+                                    ? `${detailArtist.firstName ?? ""} ${detailArtist.lastName ?? ""}`.trim()
+                                    : detailArtist.label}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Email:</strong> {detailArtist.email}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>ID:</strong> {detailArtist.id}
+                            </Typography>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDetail}>Cerrar</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

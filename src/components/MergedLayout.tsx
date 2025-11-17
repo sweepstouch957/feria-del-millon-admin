@@ -224,7 +224,7 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname() || "";
   const { t } = useTranslation();
-  const { isAuthenticated, isAuthLoading } = useAuth();
+  const { isAuthenticated, isAuthLoading, user } = useAuth();
 
   // títulos dinámicos
   const title = useMemo(() => {

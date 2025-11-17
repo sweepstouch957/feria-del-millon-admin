@@ -31,7 +31,7 @@ export type ArtworksCursorFilters = {
   limit?: number;
 };
 
-export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
+export function useArtworksCursor(filters: ArtworksCursorFilters = {}):any {
   const params = useMemo(
     () => ({
       q: filters.q || undefined,
@@ -58,7 +58,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
   >({
     queryKey: ["artworks", params] as const,
     queryFn: ({ pageParam }) => listArtworks({ ...params, cursor: pageParam }),
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined, 
     initialPageParam: undefined,
     staleTime: 10_000,
   });
