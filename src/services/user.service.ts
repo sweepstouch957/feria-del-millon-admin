@@ -204,3 +204,18 @@ export async function deleteUser(id: string): Promise<{ ok: boolean }> {
   });
   return data;
 }
+
+
+export async function searchArtists(opts: { q?: string; limit?: number } = {}): Promise<UserDTO[]> {
+  const { q, limit = 30 } = opts;
+
+  const res = await listUsers({
+    q,
+    roles: ["artista"],
+    limit,
+    sortBy: "firstName",
+    sortDir: "asc",
+  });
+
+  return res.users;
+}
