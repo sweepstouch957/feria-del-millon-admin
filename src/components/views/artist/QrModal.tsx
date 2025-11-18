@@ -2,7 +2,16 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
-import { Button } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Typography,
+} from "@mui/material";
 import { Download, ExternalLink, X, QrCode } from "lucide-react";
 import { useArtworkDetail } from "@hooks/useArtworkDetail";
 
@@ -30,8 +39,6 @@ export default function QRModal({
     };
   }, [data]);
 
-  if (!open) return null;
-
   const downloadQr = async () => {
     if (!qrImg) return;
     const resp = await fetch(qrImg);
@@ -44,64 +51,102 @@ export default function QRModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[55] bg-black/50 p-4 flex items-center justify-center"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-full max-w-md overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          pr: 5,
+        }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div className="flex items-center gap-2">
-            <QrCode className="w-4 h-4" />
-            <h3 className="font-semibold">Código QR</h3>
-          </div>
-          <button className="p-1 rounded hover:bg-gray-100" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="p-5">
-          {isFetching ? (
-            <div className="text-center text-gray-500 py-10">
+        <QrCode className="w-4 h-4" />
+        Código QR
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ ml: "auto" }}
+          aria-label="Cerrar"
+        >
+          <X className="w-4 h-4" />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {isFetching ? (
+          <Box
+            sx={{
+              py: 6,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
               Cargando QR…
-            </div>
-          ) : qrImg ? (
-            <div className="space-y-4">
-              <div className="relative w-full aspect-square bg-gray-50 rounded-xl overflow-hidden ring-1 ring-gray-200">
-                <Image
-                  src={qrImg}
-                  alt="QR"
-                  fill
-                  className="object-contain p-4"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outlined" size="small" onClick={downloadQr}>
-                  <Download className="w-4 h-4 mr-1" />
-                  Descargar QR
-                </Button>
-                {qrTarget && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => window.open(qrTarget, "_blank")}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    Abrir destino
-                  </Button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-gray-500 py-10">
+            </Typography>
+          </Box>
+        ) : qrImg ? (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box
+              sx={{
+                width: "100%",
+                position: "relative",
+                borderRadius: 3,
+                bgcolor: "grey.50",
+                border: "1px solid",
+                borderColor: "grey.200",
+                overflow: "hidden",
+                aspectRatio: "1 / 1",
+              }}
+            >
+              <Image
+                src={qrImg}
+                alt="QR"
+                fill
+                sizes="320px"
+                style={{
+                  objectFit: "contain",
+                  padding: 16,
+                }}
+              />
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              {title}
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              py: 6,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
               No se encontró un QR para esta obra.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            </Typography>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        {qrImg && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={downloadQr}
+            startIcon={<Download className="w-4 h-4" />}
+          >
+            Descargar QR
+          </Button>
+        )}
+        {qrImg && qrTarget && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => window.open(qrTarget, "_blank")}
+            startIcon={<ExternalLink className="w-4 h-4" />}
+          >
+            Abrir destino
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 }

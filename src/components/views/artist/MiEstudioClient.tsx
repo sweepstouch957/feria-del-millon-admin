@@ -4,13 +4,12 @@ import { useMemo, useState } from "react";
 import {
   Box,
   Button,
-  Tabs,
-  Tab,
   TextField,
   Typography,
   Paper,
+  Chip,
 } from "@mui/material";
-import { Loader2, Plus, Brush, Receipt, Filter } from "lucide-react";
+import { Loader2, Plus, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTechniques } from "@hooks/useTechniques";
@@ -23,12 +22,10 @@ import { useArtworkDetail } from "@hooks/useArtworkDetail";
 
 import ArtworksTable from "./ArtworksTable";
 import ArtworkDetailModal from "./ArtworkDetailModal";
-import OrdersPlaceholder from "./OrdersPlaceholder";
 import CreateEditArtworkModal from "./CreateEditArtworkModal";
 import QRModal from "./QrModal";
 import { useAuth } from "@/provider/authProvider";
-
-const DEFAULT_EVENT_ID = "6909aef219f26eec22af4220";
+import { DEFAULT_EVENT_ID, FIXED_PAVILION_ID } from "@/core/constants";
 
 export default function MiEstudioClient() {
   const { user, isAuthLoading, isAuthenticated } = useAuth();
@@ -36,14 +33,13 @@ export default function MiEstudioClient() {
 
   const [q, setQ] = useState("");
   const [tech, setTech] = useState<string | "all">("all");
-  const [pavilion, setPavilion] = useState<string | "all">("all");
+  const [pavilion, setPavilion] = useState<string | "all">(FIXED_PAVILION_ID);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [qrForId, setQrForId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"artworks" | "orders">("artworks");
 
   const { data: techniques = [] } = useTechniques();
   const { data: pavsByUser } = usePavilionsByUser(
@@ -135,12 +131,14 @@ export default function MiEstudioClient() {
           mx: "auto",
           px: { xs: 2, sm: 3, lg: 4 },
           py: 4,
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
         }}
       >
         {/* Header */}
         <Box
           sx={{
-            mb: 4,
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
             alignItems: { xs: "flex-start", md: "center" },
@@ -172,190 +170,117 @@ export default function MiEstudioClient() {
           </Button>
         </Box>
 
-        {/* Tabs */}
-        <Box sx={{ mb: 3 }}>
-          <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
+        {/* Filtros */}
+        <Box
+          sx={{
+            position: "sticky",
+            top: 16,
+            zIndex: 10,
+          }}
+        >
+          <Paper
+            elevation={1}
             sx={{
-              borderRadius: 2,
+              borderRadius: 3,
               border: "1px solid",
-              borderColor: "divider",
-              backgroundColor: "white",
-              p: 0.5,
-              display: "inline-flex",
-              boxShadow: 1,
+              borderColor: "grey.100",
+              p: 2.5,
+              backdropFilter: "blur(8px)",
             }}
           >
-            <Tab
-              value="artworks"
-              icon={<Brush className="w-4 h-4" />}
-              iconPosition="start"
-              label="Obras"
-              sx={{
-                textTransform: "none",
-                borderRadius: 1.5,
-                "&.Mui-selected": {
-                  bgcolor: "grey.900",
-                  color: "common.white",
-                },
-              }}
-            />
-            <Tab
-              value="orders"
-              icon={<Receipt className="w-4 h-4" />}
-              iconPosition="start"
-              label="Órdenes"
-              sx={{
-                textTransform: "none",
-                borderRadius: 1.5,
-                "&.Mui-selected": {
-                  bgcolor: "grey.900",
-                  color: "common.white",
-                },
-              }}
-            />
-          </Tabs>
-        </Box>
-
-        {/* TAB OBRAS */}
-        {tab === "artworks" && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            {/* Filtros */}
             <Box
               sx={{
-                position: "sticky",
-                top: 16,
-                zIndex: 10,
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "1.8fr 1.2fr",
+                  md: "2fr 1fr 1fr auto",
+                },
+                gap: 2,
+                alignItems: "center",
               }}
             >
-              <Paper
-                elevation={1}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Filter className="w-4 h-4" />
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Buscar por título o descripción…"
+                />
+              </Box>
+
+              <TextField
+                select
+                SelectProps={{ native: true }}
+                size="small"
+                label="Pabellón"
+                value={pavilion}
+                onChange={(e) =>
+                  setPavilion(e.target.value as "all" | string)
+                }
+              >
+                <option value="all">Todos los pabellones</option>
+                {pavilionOptions.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </TextField>
+
+              <TextField
+                select
+                SelectProps={{ native: true }}
+                size="small"
+                label="Técnica"
+                value={tech}
+                onChange={(e) => setTech(e.target.value as "all" | string)}
+              >
+                <option value="all">Todas las técnicas</option>
+                {techniqueOptions.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </TextField>
+
+              <Box
                 sx={{
-                  borderRadius: 3,
-                  border: "1px solid",
-                  borderColor: "grey.100",
-                  p: 2,
-                  backdropFilter: "blur(8px)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  justifyContent: "flex-end",
                 }}
               >
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "1fr 1fr",
-                      lg: "2fr 1fr 1fr 1fr",
-                    },
-                    gap: 2,
-                    alignItems: "center",
-                  }}
-                >
-                  <Box sx={{ position: "relative" }}>
-                    <TextField
-                      size="small"
-                      fullWidth
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="Buscar por título o descripción…"
-                      InputProps={{
-                        startAdornment: (
-                          <Filter className="w-4 h-4 text-gray-400 mr-2" />
-                        ),
-                      }}
-                    />
-                  </Box>
-
-                  <TextField
-                    select
-                    SelectProps={{ native: true }}
-                    size="small"
-                    label="Pabellón"
-                    value={pavilion}
-                    onChange={(e) =>
-                      setPavilion(e.target.value as "all" | string)
-                    }
-                  >
-                    <option value="all">Todos los pabellones</option>
-                    {pavilionOptions.map((p) => (
-                      <option key={p.value} value={p.value}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </TextField>
-
-                  <TextField
-                    select
-                    SelectProps={{ native: true }}
-                    size="small"
-                    label="Técnica"
-                    value={tech}
-                    onChange={(e) =>
-                      setTech(e.target.value as "all" | string)
-                    }
-                  >
-                    <option value="all">Todas las técnicas</option>
-                    {techniqueOptions.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </TextField>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      justifyContent: {
-                        xs: "space-between",
-                        sm: "flex-start",
-                      },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                        bgcolor: "grey.100",
-                        fontSize: 12,
-                      }}
-                    >
-                      {artworksQuery.totalLabel} obras
-                    </Box>
-                    {artworksQuery.isFetching && (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    )}
-                  </Box>
-                </Box>
-              </Paper>
+                <Chip
+                  size="small"
+                  label={artworksQuery.totalLabel || "0 obras"}
+                  sx={{ bgcolor: "grey.100" }}
+                />
+                {artworksQuery.isFetching && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
+              </Box>
             </Box>
+          </Paper>
+        </Box>
 
-            {/* Tabla */}
-            <ArtworksTable
-              rows={rows}
-              loading={artworksQuery.isLoading}
-              onView={(id) => setDetailId(id)}
-              onEdit={(id) => {
-                setEditingId(id);
-                setModalOpen(true);
-              }}
-              onOpenQr={(id) => setQrForId(id)}
-              onShare={(msg) => toast.success(msg)}
-              onLoadMore={() => artworksQuery.loadMore()}
-              hasMore={!!artworksQuery.hasNextPage}
-              loadingMore={!!artworksQuery.isFetchingNextPage}
-            />
-          </Box>
-        )}
-
-        {/* TAB ÓRDENES */}
-        {tab === "orders" && (
-          <Box sx={{ mt: 2 }}>
-            <OrdersPlaceholder />
-          </Box>
-        )}
+        {/* Tabla */}
+        <ArtworksTable
+          rows={rows}
+          loading={artworksQuery.isLoading}
+          onView={(id) => setDetailId(id)}
+          onEdit={(id) => {
+            setEditingId(id);
+            setModalOpen(true);
+          }}
+          onOpenQr={(id) => setQrForId(id)}
+          onShare={(msg) => toast.success(msg)}
+          onLoadMore={() => artworksQuery.loadMore()}
+          hasMore={!!artworksQuery.hasNextPage}
+          loadingMore={!!artworksQuery.isFetchingNextPage}
+        />
       </Box>
 
       {/* Modal detalle */}

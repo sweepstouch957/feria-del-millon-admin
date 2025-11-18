@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Button } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+  Typography,
+  Stack,
+  Chip,
+} from "@mui/material";
 import { X, Share2, QrCode, Plus, Minus, RefreshCw } from "lucide-react";
 import type { ArtworkDetailResponse } from "@services/artworks.service";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -33,15 +43,13 @@ export default function ArtworkDetailModal({
     };
   }, [open]);
 
-  if (!open) return null;
-
   const formatMoney = (n?: number, currency: string = "COP") =>
     typeof n === "number"
       ? new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency,
-          minimumFractionDigits: 0,
-        }).format(n)
+        style: "currency",
+        currency,
+        minimumFractionDigits: 0,
+      }).format(n)
       : "—";
 
   const share = async () => {
@@ -56,7 +64,7 @@ export default function ArtworkDetailModal({
     }
   };
 
-  const openQr = () => {
+  const handleOpenQr = () => {
     if (!id) return;
     if (onOpenQr) onOpenQr(id);
     else {
@@ -67,153 +75,251 @@ export default function ArtworkDetailModal({
     }
   };
 
+  if (!open) return null;
+
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-        onClick={onClose}
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: "hidden",
+          },
+        }}
       >
-        <div
-          className="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-          role="dialog"
-          aria-modal="true"
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b">
-            <h3 className="font-semibold">Detalle de la obra</h3>
-            <button
-              className="p-1 rounded hover:bg-gray-100"
-              onClick={onClose}
-              aria-label="Cerrar"
+          <Typography variant="subtitle1" fontWeight={600}>
+            Detalle de la obra
+          </Typography>
+          <IconButton onClick={onClose} size="small" aria-label="Cerrar">
+            <X className="w-4 h-4" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3 }}>
+          {loading ? (
+            <Box
+              sx={{
+                py: 6,
+                textAlign: "center",
+              }}
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="p-5">
-            {loading ? (
-              <div className="py-12 text-center text-gray-500">Cargando…</div>
-            ) : data ? (
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Imagen */}
-                <button
-                  type="button"
-                  className="relative w-full bg-gray-50 rounded-xl overflow-hidden ring-1 ring-gray-200 group"
-                  style={{ aspectRatio: "4 / 3" }}
-                  onClick={() => setPreviewOpen(true)}
-                  title="Ver imagen en grande"
-                >
-                  {data.doc.image ? (
-                    <Image
-                      src={data.doc.image}
-                      alt={data.doc.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      quality={90}
-                      className="object-contain"
-                      priority={false}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 grid place-items-center text-gray-400 text-sm">
-                      Sin imagen
-                    </div>
-                  )}
-
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition">
-                    <div className="inline-flex items-center gap-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        className="opacity-90"
-                      >
-                        <path
-                          d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="3"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      Click para ampliar
-                    </div>
-                  </div>
-                </button>
-
-                {/* Info */}
-                <div className="min-w-0">
-                  <h4 className="text-xl font-bold break-words">
-                    {data.doc.title}
-                  </h4>
-                  <p className="text-gray-600 mt-2 whitespace-pre-line break-words">
-                    {data.doc.description || "—"}
-                  </p>
-
-                  <dl className="mt-4 text-sm text-gray-700 space-y-1">
-                    <div className="flex gap-2">
-                      <dt className="font-semibold shrink-0">Técnica:</dt>
-                      <dd className="truncate">
-                        {data.doc.techniqueInfo?.name ||
-                          data.doc.technique ||
-                          "—"}
-                      </dd>
-                    </div>
-                    <div className="flex gap-2">
-                      <dt className="font-semibold shrink-0">Pabellón:</dt>
-                      <dd className="truncate">
-                        {data.doc.pavilionInfo?.name || "—"}
-                      </dd>
-                    </div>
-                    <div className="flex gap-2">
-                      <dt className="font-semibold shrink-0">Precio:</dt>
-                      <dd>{formatMoney(data.doc.price, data.doc.currency)}</dd>
-                    </div>
-                    <div className="flex gap-2">
-                      <dt className="font-semibold shrink-0">Año:</dt>
-                      <dd>{data.doc.year || "—"}</dd>
-                    </div>
-                    <div className="flex gap-2">
-                      <dt className="font-semibold shrink-0">Stock:</dt>
-                      <dd>
-                        {typeof data.doc.stock === "number"
-                          ? data.doc.stock
-                          : "—"}
-                      </dd>
-                    </div>
-                    <div className="flex gap-2">
-                      <dt className="font-semibold shrink-0">TagId:</dt>
-                      <dd>{(data as any)?.doc?.tagId || "—"}</dd>
-                    </div>
-                  </dl>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <Button variant="outlined" size="small" onClick={share}>
-                      <Share2 className="w-4 h-4 mr-1" />
-                      Compartir
-                    </Button>
-                    <Button variant="outlined" size="small" onClick={openQr}>
-                      <QrCode className="w-4 h-4 mr-1" />
-                      Ver QR
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="py-12 text-center text-gray-500">
+              <Typography variant="body2" color="text.secondary">
+                Cargando…
+              </Typography>
+            </Box>
+          ) : !data ? (
+            <Box
+              sx={{
+                py: 6,
+                textAlign: "center",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
                 No se encontró la obra.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+              </Typography>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1.1fr 1fr" },
+                gap: 3,
+              }}
+            >
+              {/* Imagen */}
+              <Box
+                onClick={() => setPreviewOpen(true)}
+                sx={{
+                  position: "relative",
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: "grey.200",
+                  bgcolor: "grey.50",
+                  overflow: "hidden",
+                  cursor: data.doc.image ? "zoom-in" : "default",
+                  minHeight: 260,
+                }}
+              >
+                {data.doc.image ? (
+                  <>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        width: "100%",
+                        pt: "75%", // 4:3
+                      }}
+                    >
+                      <Image
+                        src={data.doc.image}
+                        alt={data.doc.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        p: 1.5,
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,0.55), transparent)",
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Chip
+                        label="Click para ampliar"
+                        size="small"
+                        sx={{
+                          bgcolor: "rgba(0,0,0,0.6)",
+                          color: "common.white",
+                          fontSize: 11,
+                        }}
+                      />
+                    </Box>
+                  </>
+                ) : (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Sin imagen
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Info */}
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, wordBreak: "break-word" }}
+                >
+                  {data.doc.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1, whiteSpace: "pre-line", wordBreak: "break-word" }}
+                >
+                  {data.doc.description || "—"}
+                </Typography>
+
+                <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {data.doc.year && (
+                    <Chip
+                      label={data.doc.year}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                  {typeof data.doc.stock === "number" && (
+                    <Chip
+                      label={`Stock: ${data.doc.stock}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                </Box>
+
+                <Box
+                  component="dl"
+                  sx={{
+                    mt: 3,
+                    display: "grid",
+                    gridTemplateColumns: "auto 1fr",
+                    rowGap: 1,
+                    columnGap: 2,
+                    fontSize: 14,
+                  }}
+                >
+                  <Typography component="dt" fontWeight={600}>
+                    Técnica:
+                  </Typography>
+                  <Typography component="dd" color="text.secondary">
+                    {data.doc.techniqueInfo?.name ||
+                      data.doc.technique ||
+                      "—"}
+                  </Typography>
+
+                  <Typography component="dt" fontWeight={600}>
+                    Pabellón:
+                  </Typography>
+                  <Typography component="dd" color="text.secondary">
+                    {data.doc.pavilionInfo?.name || "—"}
+                  </Typography>
+
+                  <Typography component="dt" fontWeight={600}>
+                    Precio:
+                  </Typography>
+                  <Typography component="dd" color="text.secondary">
+                    {formatMoney(data.doc.price, data.doc.currency)}
+                  </Typography>
+
+                  <Typography component="dt" fontWeight={600}>
+                    Año:
+                  </Typography>
+                  <Typography component="dd" color="text.secondary">
+                    {data.doc.year || "—"}
+                  </Typography>
+
+                  <Typography component="dt" fontWeight={600}>
+                    TagId:
+                  </Typography>
+                  <Typography component="dd" color="text.secondary">
+                    {(data as any)?.doc?.tagId || "—"}
+                  </Typography>
+                </Box>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ mt: 3, flexWrap: "wrap" }}
+                >
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={share}
+                    startIcon={<Share2 className="w-4 h-4" />}
+                  >
+                    Compartir
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleOpenQr}
+                    startIcon={<QrCode className="w-4 h-4" />}
+                  >
+                    Ver QR
+                  </Button>
+                </Stack>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {previewOpen && data?.doc.image && (
         <ImagePreviewModal
@@ -246,13 +352,26 @@ function ImagePreviewModal({
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] bg-black/80 p-4 flex items-center justify-center"
-      onClick={onClose}
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth={false}
+      fullScreen
+      PaperProps={{
+        sx: {
+          bgcolor: "rgba(0,0,0,0.9)",
+        },
+      }}
     >
-      <div
-        className="relative w-full max-w-6xl max-h-[88vh] bg-black rounded-2xl overflow-hidden shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 2,
+        }}
       >
         <TransformWrapper
           initialScale={1}
@@ -271,7 +390,22 @@ function ImagePreviewModal({
         >
           {({ zoomIn, zoomOut, resetTransform }) => (
             <>
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-white/95 rounded-full shadow flex items-center">
+              {/* Controles */}
+              <Box
+                sx={{
+                  position: "fixed",
+                  top: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  bgcolor: "rgba(255,255,255,0.95)",
+                  borderRadius: 99,
+                  boxShadow: 3,
+                  px: 1,
+                  zIndex: 10,
+                }}
+              >
                 <Button
                   size="small"
                   variant="text"
@@ -280,9 +414,12 @@ function ImagePreviewModal({
                 >
                   <Minus className="w-4 h-4" />
                 </Button>
-                <span className="text-xs w-12 text-center select-none">
+                <Typography
+                  variant="caption"
+                  sx={{ width: 50, textAlign: "center" }}
+                >
                   {Math.round((previewScale || 1) * 100)}%
-                </span>
+                </Typography>
                 <Button
                   size="small"
                   variant="text"
@@ -302,14 +439,52 @@ function ImagePreviewModal({
                 >
                   <RefreshCw className="w-4 h-4" />
                 </Button>
-              </div>
+              </Box>
 
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 text-[11px] text-white/90 bg-white/10 backdrop-blur px-3 py-1 rounded-full">
+              {/* Tip */}
+              <Box
+                sx={{
+                  position: "fixed",
+                  bottom: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  px: 2,
+                  py: 0.5,
+                  borderRadius: 99,
+                  bgcolor: "rgba(255,255,255,0.1)",
+                  color: "white",
+                  fontSize: 11,
+                  backdropFilter: "blur(6px)",
+                }}
+              >
                 Rueda para hacer zoom • Arrastra para mover • Doble clic para
                 ampliar
-              </div>
+              </Box>
 
-              <div className="w-full h-[88vh] max-h-[88vh] overflow-auto cursor-grab active:cursor-grabbing">
+              {/* Cerrar */}
+              <IconButton
+                onClick={onClose}
+                sx={{
+                  position: "fixed",
+                  top: 16,
+                  right: 16,
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  "&:hover": { bgcolor: "white" },
+                }}
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </IconButton>
+
+              {/* Lienzo */}
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  cursor: "grab",
+                  "&:active": { cursor: "grabbing" },
+                }}
+              >
                 <TransformComponent
                   wrapperStyle={{ width: "100%", height: "100%" }}
                   contentStyle={{
@@ -320,37 +495,31 @@ function ImagePreviewModal({
                     height: "100%",
                   }}
                 >
-                  <div className="relative w-full h-full">
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
                     <Image
                       src={src}
                       alt={alt ?? "preview"}
                       fill
                       sizes="100vw"
-                      quality={95}
-                      className="object-contain select-none"
                       style={{
+                        objectFit: "contain",
                         imageRendering: "auto",
-                        backfaceVisibility: "hidden",
-                        transform: "translateZ(0)",
-                        willChange: "transform",
                       }}
                       priority
                     />
-                  </div>
+                  </Box>
                 </TransformComponent>
-              </div>
+              </Box>
             </>
           )}
         </TransformWrapper>
-
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 bg-white/90 hover:bg-white rounded-full p-2 z-20"
-          aria-label="Cerrar"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+      </Box>
+    </Dialog>
   );
 }
