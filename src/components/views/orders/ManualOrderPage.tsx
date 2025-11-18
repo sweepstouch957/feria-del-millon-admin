@@ -101,7 +101,7 @@ const ManualOrderPage = () => {
             zipCode: "",
         },
     });
-
+    
     const qty = watch("qty");
 
     const formatMoney = (amount?: number, currency: string = "COP") => {
@@ -184,13 +184,15 @@ const ManualOrderPage = () => {
                     (c as any)._id === values.cityId
             );
 
+            console.log(selectedCity);
+            
             const buyer: BuyerInput = {
                 name: buyerName,
                 email: buyerEmail,
                 phone: undefined,
                 address: {
                     line1: values.addressLine1,
-                    city: selectedCity?.name ?? "Bogotá",
+                    city: selectedCity?._id ?? "0",
                     state: values.state || (selectedCity as any)?.state,
                     zip: values.zipCode || (selectedCity as any)?.zipCode,
                     country: "CO",

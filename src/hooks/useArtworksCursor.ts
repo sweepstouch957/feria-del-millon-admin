@@ -29,9 +29,10 @@ export type ArtworksCursorFilters = {
   pavilion?: string | "null";
   technique?: string;
   limit?: number;
+  artist?: string;
 };
 
-export function useArtworksCursor(filters: ArtworksCursorFilters = {}):any {
+export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
   const params = useMemo(
     () => ({
       q: filters.q || undefined,
@@ -39,6 +40,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}):any {
       pavilion: filters.pavilion || undefined,
       technique: filters.technique || undefined,
       limit: filters.limit ?? 24,
+      artist: filters.artist || undefined,
     }),
     [
       filters.q,
@@ -46,6 +48,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}):any {
       filters.pavilion,
       filters.technique,
       filters.limit,
+      filters.artist,
     ]
   );
 
@@ -58,16 +61,16 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}):any {
   >({
     queryKey: ["artworks", params] as const,
     queryFn: ({ pageParam }) => listArtworks({ ...params, cursor: pageParam }),
-    getNextPageParam: (last) => last.nextCursor ?? undefined, 
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     initialPageParam: undefined,
     staleTime: 10_000,
   });
 
   const pages =
-    (query.data as InfiniteData<CursorListResponse<ArtworkRow>> | undefined)
+    (query.data as any)
       ?.pages ?? [];
 
-  const rows: ArtworkRow[] = pages.flatMap((p) => p.docs) ?? [];
+  const rows: ArtworkRow[] = pages.flatMap((p:any) => p.docs) ?? [];
   const totalFromApi = pages[0]?.pageInfo?.total as number | undefined;
   const totalLabel =
     typeof totalFromApi === "number"
