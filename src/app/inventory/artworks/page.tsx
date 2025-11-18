@@ -81,7 +81,7 @@ export default function ArtworksCursorPage() {
 
   const totalArtworks = totalLabel;
   const totalArtists = new Set(
-    rows.map((r) => r.artistInfo?._id).filter(Boolean)
+    rows.map((r:any) => r.artistInfo?._id).filter(Boolean)
   ).size;
   const totalEvents = eventsQuery.data?.length ?? 0;
   const totalPavilions = pavilionsQuery.data?.length ?? 0;
@@ -312,7 +312,7 @@ export default function ArtworksCursorPage() {
               )}
 
               {!isLoading &&
-                rows.map((art) => (
+                rows.map((art:any) => (
                   <TableRow key={art.id} hover>
                     <TableCell>
                       <Avatar
