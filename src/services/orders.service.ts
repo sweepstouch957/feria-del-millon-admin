@@ -375,6 +375,7 @@ export const sendMercadoPagoWebhookManual = async (payload: {
         { withCredentials: true }
     );
     return data;
+    
 };
 
 export const chargeMercadoPagoCard = async (payload: {
