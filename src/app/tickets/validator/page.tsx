@@ -35,7 +35,7 @@ export default function QrValidatorPage() {
 
         <Button
           component={Link}
-          href="/admin/tickets"
+          href="/tickets"
           variant="outlined"
           startIcon={<ArrowBack />}
           sx={{ whiteSpace: "nowrap" }}
