@@ -20,7 +20,7 @@ import {
   ConfirmationNumberOutlined as TicketsIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
-import { NotebookIcon, Paintbrush2, ShoppingBag } from "lucide-react";
+import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag } from "lucide-react";
 import { LAYOUT_COLORS as C } from "../layoutConfig";
 import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
@@ -46,6 +46,9 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
   );
   const [ordersOpen, setOrdersOpen] = useState(
     pathname.startsWith("/orders")
+  );
+  const [ticketsOpen, setTicketsOpen] = useState(
+    pathname.startsWith("/tickets")
   );
 
   const inventoryItems = [
@@ -139,7 +142,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
             />
           </List>
 
-          {/* OPERATIONS - AHORA EVENTOS Y BOLETOS EN PRIMER NIVEL */}
+          {/* OPERATIONS - EVENTOS, BOLETOS, PEDIDOS */}
           <SectionTitle label={t("navigation.operations")} />
           <List sx={{ py: 0 }}>
             {/* Eventos en un solo nivel */}
@@ -153,18 +156,31 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
               />
             </ListItem>
 
-            {/* Boletos en un solo nivel */}
-            <ListItem disablePadding sx={{ display: "block" }}>
+            {/* Boletos como grupo: Ver boletos + Validador */}
+            <CollapsibleGroup
+              open={ticketsOpen}
+              setOpen={setTicketsOpen}
+              icon={<TicketsIcon sx={{ fontSize: 18 }} />}
+              text={t("navigation.tickets")}
+              active={pathname.startsWith("/tickets")}
+            >
               <NavItem
-                inset={false}
+                inset
                 active={pathname === "/tickets"}
                 onClick={() => router.push("/tickets")}
                 icon={<TicketsIcon sx={{ fontSize: 18 }} />}
-                text={t("navigation.tickets")}
+                text="Ver boletos"
               />
-            </ListItem>
+              <NavItem
+                inset
+                active={pathname === "/tickets/validator"}
+                onClick={() => router.push("/tickets/validator")}
+                icon={<QrCodeIcon />}
+                text="Validador QR"
+              />
+            </CollapsibleGroup>
 
-            {/* Pedidos con sub-items (se queda colapsable) */}
+            {/* Pedidos con sub-items */}
             <CollapsibleGroup
               open={ordersOpen}
               setOpen={setOrdersOpen}

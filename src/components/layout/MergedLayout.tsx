@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
-import { useRouter, usePathname } from "next/navigation";
+import {  usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
 
 
@@ -27,7 +27,6 @@ interface MergedLayoutProps {
 }
 
 const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
-  const router = useRouter();
   const pathname = usePathname() || "";
   const { t } = useTranslation();
   const { isAuthenticated, isAuthLoading } = useAuth();
@@ -46,6 +45,7 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
       "/cashiers": t("navigation.cashiers"),
       "/events": t("navigation.events"),
       "/tickets": t("navigation.tickets"),
+      "/tickets/validator": t("navigation.qrValidator"),
       "/orders": "Pedidos",
       "/orders/new": "Crear pedido",
       "/my/artworks": "Mis obras",

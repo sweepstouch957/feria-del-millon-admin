@@ -1,10 +1,9 @@
 "use client";
 
-import { Box, Grid, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { DEFAULT_EVENT_ID, DEFAULT_EVENT_NAME } from "@core/constants";
 import { DaysGrid } from "@components/admin/tickets/DaysGrid";
 import { TicketsTable } from "@/components/admin/tickets/TicketsTable";
-import { QrValidationPanel } from "@/components/admin/tickets/QrValidationPanel";
 
 export default function TicketsAdminPage() {
   const eventId = DEFAULT_EVENT_ID;
@@ -15,34 +14,16 @@ export default function TicketsAdminPage() {
         Gestión de boletos
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        {DEFAULT_EVENT_NAME} · Control de días, capacidad, compras y acceso por QR.
+        {DEFAULT_EVENT_NAME} · Control de días, capacidad y compras.
       </Typography>
 
-      <Grid container spacing={3}>
-        {/* Izquierda: días + tickets */}
-        <Grid 
-        size={{
-            xs: 12,
-            md: 7,
-            lg: 8
-        }}
-        >
-          <DaysGrid eventId={eventId} />
+      {/* Días del evento + capacidad */}
+      <DaysGrid eventId={eventId} />
 
-          <Box mt={3}>
-            <TicketsTable eventId={eventId} />
-          </Box>
-        </Grid>
-
-        {/* Derecha: panel QR */}
-        <Grid size={{
-            xs: 12,
-            md: 5,
-            lg: 4
-        }}>
-          <QrValidationPanel />
-        </Grid>
-      </Grid>
+      {/* Tabla de tickets */}
+      <Box mt={3}>
+        <TicketsTable eventId={eventId} />
+      </Box>
     </Box>
   );
 }

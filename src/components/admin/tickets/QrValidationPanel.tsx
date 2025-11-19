@@ -26,7 +26,6 @@ import { useMutation } from "@tanstack/react-query";
 import { validateQr } from "@services/ticket.service";
 import { CameraOffIcon } from "lucide-react";
 
-// 👇 import dinámico para evitar problemas de SSR
 const QrBarcodeScanner = dynamic(
   () => import("react-qr-barcode-scanner").then((m) => m.default),
   { ssr: false }

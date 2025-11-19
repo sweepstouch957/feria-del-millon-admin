@@ -19,10 +19,12 @@ import {
   TextField,
   Typography,
   Button,
+  MenuItem,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Refresh as RefreshIcon,
+  Add as AddIcon,
 } from "@mui/icons-material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -35,17 +37,20 @@ import {
 type EditDayState = {
   open: boolean;
   day: TicketDaySummary | null;
-  cap: string;   // lo guardamos como string para controlar mejor el input
-  price: string; // igual
+  cap: string;
+  price: string;
   isActive: boolean;
 };
 
 export function DaysGrid({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient();
 
+  /** 🔹 FUTURO: selección de evento */
+  const [selectedEvent, setSelectedEvent] = useState(eventId);
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["ticketDays", eventId],
-    queryFn: () => getTicketDays(eventId),
+    queryKey: ["ticketDays", selectedEvent],
+    queryFn: () => getTicketDays(selectedEvent),
   });
 
   const [editState, setEditState] = useState<EditDayState>({
@@ -69,7 +74,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
         isActive: payload.isActive,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ticketDays", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["ticketDays", selectedEvent] });
       setEditState((prev) => ({ ...prev, open: false }));
     },
   });
@@ -91,7 +96,6 @@ export function DaysGrid({ eventId }: { eventId: string }) {
   };
 
   const handleCapChange = (value: string) => {
-    // solo dejamos dígitos
     const numeric = value.replace(/\D/g, "");
     setEditState((prev) => ({ ...prev, cap: numeric }));
   };
@@ -148,43 +152,74 @@ export function DaysGrid({ eventId }: { eventId: string }) {
           borderRadius: 4,
           border: "1px solid",
           borderColor: "divider",
+          mb: 3,
         }}
       >
         <CardHeader
           title="Días del evento"
-          subheader="Configura capacidad, precio y estado de cada día."
+          subheader="Configura capacidad, precio y estado por día."
           action={
-            <IconButton onClick={() => refetch()} size="small">
-              <RefreshIcon fontSize="small" />
-            </IconButton>
+            <Stack direction="row" spacing={1}>
+              {/* 🔹 Botón “Agregar día” deshabilitado (futuro feature) */}
+              <Button
+                size="small"
+                startIcon={<AddIcon />}
+                disabled
+                sx={{ textTransform: "none", opacity: 0.5 }}
+                title="Próximamente"
+              >
+                Nuevo día
+              </Button>
+
+              <IconButton onClick={() => refetch()} size="small">
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Stack>
           }
         />
         <CardContent>
+          {/* 🔹 Selector de Evento (para futuro multi-evento) */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
+            <TextField
+              select
+              label="Evento"
+              value={selectedEvent}
+              onChange={(e) => setSelectedEvent(e.target.value)}
+              sx={{ width: { xs: "100%", sm: "50%" } }}
+            >
+              <MenuItem value={eventId}>Feria del Millón 2025</MenuItem>
+              {/* Aquí en el futuro se agregan más eventos */}
+            </TextField>
+          </Stack>
+
           {isLoading && <Typography>Cargando días…</Typography>}
           {isError && (
             <Alert severity="error">
-              No se pudieron cargar los días de tickets. Revisa la configuración
-              del evento.
+              No se pudieron cargar los días de tickets.
             </Alert>
           )}
 
           {!isLoading && !isError && days.length === 0 && (
             <Typography variant="body2" color="text.secondary">
-              No hay días configurados para este evento.
+              No hay días configurados.
             </Typography>
           )}
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
             {days.map((day) => {
               const used = day.sold + day.checked_in;
-              const percent = day.cap > 0 ? Math.round((used / day.cap) * 100) : 0;
+              const percent =
+                day.cap > 0 ? Math.round((used / day.cap) * 100) : 0;
 
               return (
-                <Grid size={{
+                <Grid
+                  key={day.id}
+                  size={{
                     xs: 12,
                     sm: 6,
-                    md: 6
-                }} key={day.id}>
+                    md: 4,
+                  }}
+                >
                   <Card
                     variant="outlined"
                     sx={{
@@ -199,9 +234,8 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                     <CardContent sx={{ pb: 1.5 }}>
                       <Stack
                         direction="row"
-                        alignItems="center"
                         justifyContent="space-between"
-                        spacing={1}
+                        alignItems="center"
                         mb={1}
                       >
                         <Typography fontWeight={700} fontSize={15}>
@@ -211,63 +245,46 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                           size="small"
                           label={kindLabel(day.kind)}
                           color={kindColor(day.kind)}
-                          variant="filled"
                         />
                       </Stack>
 
-                      <Typography
-                        variant="h6"
-                        fontWeight={800}
-                        sx={{ mb: 0.5 }}
-                      >
+                      <Typography variant="h6" fontWeight={800} sx={{ mb: 0.5 }}>
                         {Intl.NumberFormat("es-CO", {
                           style: "currency",
                           currency: "COP",
                           maximumFractionDigits: 0,
                         }).format(day.price)}
                       </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mb: 1 }}
-                      >
-                        por boleto · Capacidad: {day.cap.toLocaleString("es-CO")}
+
+                      <Typography variant="caption" color="text.secondary">
+                        Capacidad: {day.cap.toLocaleString("es-CO")}
                       </Typography>
 
                       <Stack
                         direction="row"
                         justifyContent="space-between"
-                        alignItems="center"
-                        mb={0.5}
+                        mt={1}
                       >
-                        <Typography variant="caption" color="text.secondary">
-                          Vendidos / check-in: {used.toLocaleString("es-CO")} /{" "}
-                          {day.cap.toLocaleString("es-CO")}
+                        <Typography variant="caption">
+                          Vendidos/check-in: {used}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {percent}%
-                        </Typography>
+                        <Typography variant="caption">{percent}%</Typography>
                       </Stack>
+
                       <LinearProgress
                         variant="determinate"
                         value={percent}
-                        sx={{
-                          borderRadius: 10,
-                          height: 8,
-                          mb: 1.2,
-                        }}
+                        sx={{ borderRadius: 10, height: 8, mt: 0.4 }}
                       />
 
                       <Stack
                         direction="row"
                         justifyContent="space-between"
                         alignItems="center"
-                        spacing={1}
+                        mt={1.2}
                       >
                         <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="caption" color="text.secondary">
-                            Activo
-                          </Typography>
+                          <Typography variant="caption">Activo</Typography>
                           <Switch
                             size="small"
                             checked={day.isActive}
@@ -279,6 +296,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                             }
                           />
                         </Stack>
+
                         <IconButton
                           size="small"
                           onClick={() => handleOpenEdit(day)}
@@ -295,7 +313,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
         </CardContent>
       </Card>
 
-      {/* Diálogo de edición */}
+      {/* EDIT DIALOG */}
       <Dialog open={editState.open} onClose={handleCloseEdit} maxWidth="xs" fullWidth>
         <DialogTitle>Editar día del evento</DialogTitle>
         <DialogContent dividers>
@@ -307,18 +325,18 @@ export function DaysGrid({ eventId }: { eventId: string }) {
 
               <TextField
                 label="Capacidad (boletos)"
-                fullWidth
                 value={editState.cap}
                 inputProps={{ inputMode: "numeric" }}
                 onChange={(e) => handleCapChange(e.target.value)}
               />
+
               <TextField
-                label="Precio por boleto (COP)"
-                fullWidth
+                label="Precio (COP)"
                 value={editState.price}
                 inputProps={{ inputMode: "numeric" }}
                 onChange={(e) => handlePriceChange(e.target.value)}
               />
+
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Switch
                   checked={editState.isActive}
@@ -336,6 +354,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
             </Stack>
           )}
         </DialogContent>
+
         <DialogActions>
           <Button onClick={handleCloseEdit}>Cancelar</Button>
           <Button
