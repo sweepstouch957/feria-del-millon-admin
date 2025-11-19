@@ -16,6 +16,26 @@ type BetterQrScannerProps = {
     className?: string;
 };
 
+// 👉 Helper para escoger la “mejor” cámara (preferir trasera)
+function pickBestVideoDevice(devices: MediaDeviceInfo[]): string {
+    const videoDevices = devices.filter((d) => d.kind === "videoinput");
+    if (!videoDevices.length) {
+        throw new Error("No se encontraron cámaras");
+    }
+
+    // Preferimos labels que parezcan cámara trasera
+    const backLike = videoDevices.find((d) =>
+        /back|rear|environment|atr[aá]s|tr[aá]s|principal/i.test(d.label || "")
+    );
+
+    if (backLike) {
+        return backLike.deviceId;
+    }
+
+    // Fallback: última cámara (en muchos móviles suele ser la trasera)
+    return videoDevices[videoDevices.length - 1].deviceId;
+}
+
 export function BetterQrScanner({
     onResult,
     onError,
@@ -51,7 +71,7 @@ export function BetterQrScanner({
                 }
 
                 const selectedDeviceId =
-                    deviceId || videoInputDevices[0].deviceId;
+                    deviceId || pickBestVideoDevice(videoInputDevices as MediaDeviceInfo[]);
 
                 // Esperamos a que el <video> exista en el DOM
                 const el = videoRef.current;
@@ -61,7 +81,7 @@ export function BetterQrScanner({
                     return;
                 }
 
-                const controls : any= await codeReader.decodeFromVideoDevice(
+                const controls: any = await codeReader.decodeFromVideoDevice(
                     selectedDeviceId,
                     el,
                     (result, err) => {
