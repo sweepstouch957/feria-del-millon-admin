@@ -227,8 +227,8 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                       height: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      borderColor: day.isToday ? "primary.main" : "divider",
-                      boxShadow: day.isToday ? 3 : 0,
+                      borderColor:  "divider",
+                      boxShadow: 0,
                     }}
                   >
                     <CardContent sx={{ pb: 1.5 }}>
