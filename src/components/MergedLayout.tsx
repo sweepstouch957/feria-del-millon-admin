@@ -34,19 +34,19 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./ui/LanguageSwitcher";
 import ProfileMenu from "./ui/ProfileMenu";
 import { useAuth } from "@/provider/authProvider";
-import { NotebookIcon, Paintbrush2, ShoppingBag } from "lucide-react";
+import { NotebookIcon, Paintbrush2, ShoppingBag, FileText as SolicitudesIcon } from "lucide-react";
 
-/** Paleta gris sobria */
+/** Paleta negro profundo y verde neón */
 const C = {
-  bgStart: "#0E0E0E",
-  bgEnd: "#151515",
-  text: "#EDEDED",
-  text2: "#AFAFAF",
-  textMuted: "#787878",
-  line: "rgba(255,255,255,0.06)",
-  hover: "rgba(255,255,255,0.06)",
-  selected: "rgba(255,255,255,0.08)",
-  accentLine: "#9E9E9E",
+  bgStart: "#0a0a0a",
+  bgEnd: "#000000",
+  text: "#fafafa",
+  text2: "#a1a1aa",
+  textMuted: "#71717a",
+  line: "rgba(255,255,255,0.08)",
+  hover: "rgba(255,255,255,0.05)",
+  selected: "rgba(74, 222, 128, 0.12)",
+  accentLine: "#4ade80",
 };
 
 const drawerWidth = 280;
@@ -232,12 +232,14 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
       "/": t("navigation.dashboard"),
       "/inventory": "Inventario",
       "/inventory/artworks": "Artes",
+      "/inventory/techniques": "Técnicas artísticas",
       "/artists": t("navigation.artists"),
       "/users": t("navigation.users"),
       "/cashiers": t("navigation.cashiers"),
       "/events": t("navigation.events"),
       "/tickets": t("navigation.tickets"),
       "/account": t("navigation.myAccount"),
+      "/solicitudes": "Solicitudes de artistas",
     };
     return map[pathname] ?? "Feria del Millón";
   }, [pathname, t]);
@@ -260,6 +262,11 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
       label: "Artes",
       icon: <Paintbrush2 />,
       href: "/inventory/artworks",
+    },
+    {
+      label: "Técnicas",
+      icon: <NotebookIcon />,
+      href: "/inventory/techniques",
     },
   ];
 
@@ -339,6 +346,12 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
           onClick={() => router.push("/users")}
           icon={<UsersIcon sx={{ fontSize: 18 }} />}
           text={t("navigation.users")}
+        />
+        <NavItem
+          active={pathname === "/solicitudes"}
+          onClick={() => router.push("/solicitudes")}
+          icon={<SolicitudesIcon size={18} />}
+          text="Solicitudes"
         />
       </List>
 

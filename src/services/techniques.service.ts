@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// services/catalog/techniques.service.ts
+// services/techniques.service.ts
 import apiClient from "@/axios";
-
 
 export interface TechniqueDoc {
   id: string;
@@ -18,8 +17,10 @@ export interface CreateTechniqueInput {
   name: string;
   slug?: string;
   order?: number;
-  active?: boolean; // default true en tu modelo
+  active?: boolean;
 }
+
+export type UpdateTechniqueInput = Partial<CreateTechniqueInput>;
 
 const normalizeId = <T extends { id?: string; _id?: string }>(obj: T) => ({
   ...obj,
@@ -38,11 +39,39 @@ export const createTechnique = async (
   return normalizeId(data);
 };
 
-/** GET /catalogs/techniques  (active=true, sort by order asc) */
-export const listTechniques = async (): Promise<TechniqueDoc[]> => {
+/** GET /catalogs/techniques?all=true (for admin, includes inactive) */
+export const listTechniques = async (all = true): Promise<TechniqueDoc[]> => {
   const { data } = await apiClient.get<TechniqueDoc[]>(
     "/catalogs/techniques",
-    { withCredentials: true }
+    { params: all ? { all: "true" } : {}, withCredentials: true }
   );
   return (data || []).map(normalizeId);
+};
+
+/** PATCH /catalogs/techniques/:id */
+export const updateTechnique = async (
+  id: string,
+  payload: UpdateTechniqueInput
+): Promise<TechniqueDoc> => {
+  const { data } = await apiClient.patch<TechniqueDoc>(
+    `/catalogs/techniques/${id}`,
+    payload,
+    { withCredentials: true }
+  );
+  return normalizeId(data);
+};
+
+/** DELETE /catalogs/techniques/:id */
+export const deleteTechnique = async (id: string): Promise<void> => {
+  await apiClient.delete(`/catalogs/techniques/${id}`, { withCredentials: true });
+};
+
+/** PATCH /catalogs/techniques/:id/toggle */
+export const toggleTechnique = async (id: string): Promise<TechniqueDoc> => {
+  const { data } = await apiClient.patch<TechniqueDoc>(
+    `/catalogs/techniques/${id}/toggle`,
+    {},
+    { withCredentials: true }
+  );
+  return normalizeId(data);
 };
