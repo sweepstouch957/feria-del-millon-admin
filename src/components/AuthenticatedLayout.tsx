@@ -2,10 +2,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import MergedLayout from "./MergedLayout";
 import { useAuth } from "@/provider/authProvider";
 import LoadingScreen from "@/components/common/LoadingScreen";
 import { useTranslation } from "react-i18next";
+import MergedLayout from "./layout/MergedLayout";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;

@@ -7,7 +7,7 @@ import type {
   ArtworkDetailResponse,
 } from "@services/artworks.service";
 
-export function useArtworkDetail(id?: string) {
+export function useArtworkDetail(id?: string):any {
   return useQuery<ArtworkDetailResponse, Error>({
     queryKey: ["artwork-detail", id],
     queryFn: () => getArtworkById(id as string),
