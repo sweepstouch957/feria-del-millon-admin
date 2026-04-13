@@ -7,7 +7,7 @@ import { listTechniques, type TechniqueDoc } from "@services/techniques.service"
 export function useTechniques() {
   return useQuery<TechniqueDoc[]>({
     queryKey: ["techniques"],
-    queryFn: listTechniques,
+    queryFn: () => listTechniques(),
     staleTime: 5 * 60 * 1000,
   });
 }
