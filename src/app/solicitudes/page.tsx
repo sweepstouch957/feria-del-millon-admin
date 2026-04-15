@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import * as React from "react";
+import { useTheme } from "@mui/material/styles";
 import {
   Box, Card, CardHeader, CardContent, Stack, TextField, InputAdornment,
   IconButton, Select, MenuItem, FormControl, InputLabel, Chip, Button,
@@ -40,20 +41,62 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
   onClose: () => void;
 }) {
   const [idx, setIdx] = React.useState(startIdx);
-  React.useEffect(() => { setIdx(startIdx); }, [startIdx]);
+  const [zoom, setZoom] = React.useState(1);
+  const [pan, setPan] = React.useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = React.useState(false);
+  const lastMouse = React.useRef({ x: 0, y: 0 });
+  React.useEffect(() => { setIdx(startIdx); setZoom(1); setPan({ x: 0, y: 0 }); }, [startIdx]);
+  React.useEffect(() => { setZoom(1); setPan({ x: 0, y: 0 }); }, [idx]);
+
+  // Keyboard nav
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') setIdx((i) => Math.min(images.length - 1, i + 1));
+      if (e.key === 'ArrowLeft') setIdx((i) => Math.max(0, i - 1));
+      if (e.key === 'Escape') onClose();
+      if (e.key === '+' || e.key === '=') setZoom((z) => Math.min(5, z + 0.3));
+      if (e.key === '-') setZoom((z) => Math.max(0.5, z - 0.3));
+      if (e.key === '0') { setZoom(1); setPan({ x: 0, y: 0 }); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, images.length, onClose]);
 
   if (!open || images.length === 0) return null;
   const img = images[idx];
 
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoom((z) => Math.max(0.5, Math.min(5, z + (e.deltaY > 0 ? -0.2 : 0.2))));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoom <= 1) return;
+    setDragging(true);
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    setPan((p) => ({ x: p.x + e.clientX - lastMouse.current.x, y: p.y + e.clientY - lastMouse.current.y }));
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleMouseUp = () => setDragging(false);
   return (
     <Dialog open={open} onClose={onClose} maxWidth={false} PaperProps={{
       sx: { background: "rgba(0,0,0,0.97)", borderRadius: 3, maxWidth: "95vw", maxHeight: "95vh", m: 1 },
     }}>
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
         <Box sx={{ display: "flex", alignItems: "center", p: 2, gap: 2 }}>
-          <Typography variant="h6" sx={{ color: "#fff", flex: 1, fontSize: 16 }}>
+          <Typography variant="h6" sx={{ color: "#fff", flex: 1, fontSize: 16, fontWeight: 800 }}>
             {img.title || `Imagen ${idx + 1}`}
           </Typography>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <IconButton onClick={() => setZoom((z) => Math.max(0.5, z - 0.3))} size="small" sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }} title="Zoom out">−</IconButton>
+            <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</Typography>
+            <IconButton onClick={() => setZoom((z) => Math.min(5, z + 0.3))} size="small" sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }} title="Zoom in">+</IconButton>
+            <IconButton onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} size="small" sx={{ color: "rgba(255,255,255,0.6)", ml: 0.5, "&:hover": { color: "#fff" } }} title="Reset zoom">⟲</IconButton>
+          </Stack>
           <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
             {idx + 1} / {images.length}
           </Typography>
@@ -67,9 +110,24 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
             sx={{ color: "#fff", background: "rgba(255,255,255,0.1)", flexShrink: 0, "&:hover": { background: "rgba(255,255,255,0.2)" } }}
           ><ChevronLeft size={24} /></IconButton>
 
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 0 }}>
+          <Box
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 0, overflow: "hidden", cursor: zoom > 1 ? (dragging ? 'grabbing' : 'grab') : 'zoom-in', userSelect: 'none' }}
+          >
             {img.url ? (
-              <img src={img.url} alt={img.title} style={{ maxHeight: "65vh", maxWidth: "100%", objectFit: "contain", borderRadius: 8 }} />
+              <img
+                src={img.url} alt={img.title}
+                draggable={false}
+                style={{
+                  maxHeight: "65vh", maxWidth: "100%", objectFit: "contain", borderRadius: 8,
+                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                  transition: dragging ? 'none' : 'transform 0.2s ease',
+                }}
+              />
             ) : (
               <Box sx={{ width: 400, height: 300, background: "#222", borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ImageIcon size={64} color="rgba(255,255,255,0.2)" />
@@ -98,7 +156,7 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
             <Box
               key={i} onClick={() => setIdx(i)}
               sx={{ width: 64, height: 64, flexShrink: 0, cursor: "pointer", borderRadius: 1, overflow: "hidden",
-                border: i === idx ? "2px solid #7c3aed" : "2px solid transparent", opacity: i === idx ? 1 : 0.5, transition: "all .2s",
+                border: i === idx ? "2px solid #4ade80" : "2px solid transparent", opacity: i === idx ? 1 : 0.5, transition: "all .2s",
                 "&:hover": { opacity: 1 }, background: "#111",
               }}
             >
@@ -114,12 +172,14 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
 
 // ─── Meta card helper ────────────────────────────────────────────────────────
 function MetaCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color?: string }) {
+  const t = useTheme();
+  const dk = t.palette.mode === "dark";
   return (
-    <Box sx={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2, p: 2, minWidth: 140, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-      <Box sx={{ color: "#94a3b8", mt: 0.3 }}>{icon}</Box>
+    <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#f8fafc", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`, borderRadius: 2, p: 2, minWidth: 140, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+      <Box sx={{ color: dk ? "#71717a" : "#94a3b8", mt: 0.3 }}>{icon}</Box>
       <Box>
-        <Typography variant="caption" sx={{ color: "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 700, letterSpacing: .5 }}>{label}</Typography>
-        <Typography fontWeight={700} fontSize={14} sx={{ color: color || "#1e293b" }}>{value}</Typography>
+        <Typography variant="caption" sx={{ color: dk ? "#71717a" : "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 700, letterSpacing: .5 }}>{label}</Typography>
+        <Typography fontWeight={700} fontSize={14} sx={{ color: color || (dk ? "#fafafa" : "#1e293b") }}>{value}</Typography>
       </Box>
     </Box>
   );
@@ -129,6 +189,8 @@ function MetaCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 function ApplicationDetailDialog({
   app, open, onClose, onRefresh,
 }: { app: ArtistApplication | null; open: boolean; onClose: () => void; onRefresh: () => void }) {
+  const muiTheme = useTheme();
+  const dk = muiTheme.palette.mode === "dark";
   const [tab, setTab] = React.useState(0);
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [lightboxIdx, setLightboxIdx] = React.useState(0);
@@ -247,8 +309,8 @@ function ApplicationDetailDialog({
                   <Typography variant="subtitle2" fontWeight={800} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <UserIcon size={16} /> Biografía del artista
                   </Typography>
-                  <Box sx={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2, p: 2.5 }}>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "#475569" }}>{app.bio}</Typography>
+                  <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#f8fafc", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`, borderRadius: 2, p: 2.5 }}>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: dk ? "#d4d4d8" : "#475569" }}>{app.bio}</Typography>
                   </Box>
                 </Box>
               )}
@@ -259,8 +321,8 @@ function ApplicationDetailDialog({
                   <Typography variant="subtitle2" fontWeight={800} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PaletteIcon size={16} /> Reseña del proyecto
                   </Typography>
-                  <Box sx={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 2, p: 2.5 }}>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "#166534" }}>{app.projectReview}</Typography>
+                  <Box sx={{ background: dk ? "rgba(74,222,128,0.05)" : "#f0fdf4", border: `1px solid ${dk ? 'rgba(74,222,128,0.15)' : '#bbf7d0'}`, borderRadius: 2, p: 2.5 }}>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: dk ? "#86efac" : "#166534" }}>{app.projectReview}</Typography>
                   </Box>
                 </Box>
               )}
@@ -275,66 +337,177 @@ function ApplicationDetailDialog({
 
               {/* Admin notes */}
               {app.adminNotes && (
-                <Box sx={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 2, p: 2 }}>
-                  <Typography variant="caption" fontWeight={700} color="#0369a1" sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                <Box sx={{ background: dk ? "rgba(14,165,233,0.08)" : "#f0f9ff", border: `1px solid ${dk ? 'rgba(14,165,233,0.2)' : '#bae6fd'}`, borderRadius: 2, p: 2 }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#38bdf8' : '#0369a1', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     📝 NOTA DEL CURADOR
                   </Typography>
-                  <Typography variant="body2">{app.adminNotes}</Typography>
+                  <Typography variant="body2" color="text.primary">{app.adminNotes}</Typography>
                 </Box>
               )}
               {app.rejectionReason && (
-                <Box sx={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 2, p: 2 }}>
-                  <Typography variant="caption" fontWeight={700} color="#dc2626" sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                <Box sx={{ background: dk ? "rgba(239,68,68,0.08)" : "#fef2f2", border: `1px solid ${dk ? 'rgba(239,68,68,0.2)' : '#fca5a5'}`, borderRadius: 2, p: 2 }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#f87171' : '#dc2626', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     ❌ RAZÓN DE RECHAZO
                   </Typography>
-                  <Typography variant="body2">{app.rejectionReason}</Typography>
+                  <Typography variant="body2" color="text.primary">{app.rejectionReason}</Typography>
                 </Box>
               )}
             </Stack>
           )}
 
-          {/* Tab: Obras */}
+          {/* Tab: Obras — organized by section */}
           {tab === 1 && (
-            <Box>
-              {allImages.length === 0 ? (
-                <Box sx={{ textAlign: "center", py: 8 }}>
-                  <ImageIcon size={48} color="#d1d5db" />
-                  <Typography color="text.secondary" mt={2}>Sin imágenes cargadas</Typography>
-                </Box>
-              ) : (
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 2 }}>
-                  {allImages.map((img, i) => (
+            <Stack spacing={4}>
+              {/* ─── Section 1: Obras del proyecto ─── */}
+              <Box>
+                <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+                  <PaletteIcon size={18} />
+                  <Typography variant="subtitle1" fontWeight={800}>Obras del proyecto</Typography>
+                  <Chip label={`${app.artworkImages?.length || 0} obras`} size="small" sx={{ fontWeight: 700, fontSize: 11, bgcolor: dk ? 'rgba(74,222,128,0.12)' : '#f0fdf4', color: dk ? '#4ade80' : '#16a34a' }} />
+                </Stack>
+
+                {(!app.artworkImages || app.artworkImages.length === 0) ? (
+                  <Box sx={{ textAlign: "center", py: 6, borderRadius: 3, border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
+                    <ImageIcon size={40} color={dk ? '#52525b' : '#d1d5db'} />
+                    <Typography color="text.secondary" mt={1.5} fontWeight={600}>Sin obras cargadas</Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 2 }}>
+                    {app.artworkImages.map((img, i) => (
+                      <Box
+                        key={i} onClick={() => openLightbox(i)}
+                        sx={{
+                          cursor: "pointer", borderRadius: 3, overflow: "hidden",
+                          border: dk ? '1.5px solid rgba(255,255,255,0.08)' : '1.5px solid #e5e7eb',
+                          transition: "all .25s cubic-bezier(.4,0,.2,1)",
+                          "&:hover": { borderColor: "#4ade80", transform: "translateY(-3px)", boxShadow: "0 16px 40px rgba(74,222,128,0.15)" },
+                          background: dk ? '#111113' : '#fff',
+                        }}
+                      >
+                        <Box sx={{ height: 180, background: dk ? "rgba(255,255,255,0.03)" : "#f8f9fa", position: "relative", overflow: "hidden" }}>
+                          {img.url ? (
+                            <img src={img.url} alt={img.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .3s" }} />
+                          ) : (
+                            <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <ImageIcon size={32} color={dk ? '#52525b' : '#9ca3af'} />
+                            </Box>
+                          )}
+                          {/* Hover overlay */}
+                          <Box sx={{
+                            position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
+                            opacity: 0, transition: "opacity .2s", "&:hover": { opacity: 1 },
+                          }}>
+                            <EyeIcon size={28} color="#fff" />
+                          </Box>
+                        </Box>
+                        <Box sx={{ p: 1.5 }}>
+                          <Typography variant="subtitle2" noWrap fontWeight={700} fontSize={13} color="text.primary">{img.title || `Obra ${i + 1}`}</Typography>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+                            {img.technique && <Chip label={img.technique} size="small" variant="outlined" sx={{ fontSize: 10, height: 20, fontWeight: 600 }} />}
+                            {img.dimensions && <Typography variant="caption" color="text.secondary">{img.dimensions}</Typography>}
+                            {img.year && <Typography variant="caption" color="text.secondary">· {img.year}</Typography>}
+                          </Stack>
+                          {img.price && (
+                            <Typography variant="body2" fontWeight={800} sx={{ color: '#22c55e', mt: 0.5 }}>
+                              ${img.price?.toLocaleString()} {img.currency || "COP"}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              <Divider sx={{ borderColor: dk ? 'rgba(255,255,255,0.06)' : '#f0f0f0' }} />
+
+              {/* ─── Section 2: Imagen de detalle & Plano de montaje ─── */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 3 }}>
+                {/* Imagen de detalle */}
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
+                    <EyeIcon size={16} />
+                    <Typography variant="subtitle2" fontWeight={800}>Imagen de detalle</Typography>
+                  </Stack>
+                  {app.detailImageUrl ? (
                     <Box
-                      key={i} onClick={() => openLightbox(i)}
-                      sx={{ cursor: "pointer", borderRadius: 2.5, overflow: "hidden", border: "1.5px solid #e5e7eb",
-                        transition: "all .2s", "&:hover": { borderColor: "#7c3aed", transform: "translateY(-2px)", boxShadow: "0 12px 32px rgba(124,58,237,0.15)" },
+                      onClick={() => {
+                        const detailIdx = (app.artworkImages?.length || 0);
+                        openLightbox(detailIdx);
+                      }}
+                      sx={{
+                        cursor: "pointer", borderRadius: 3, overflow: "hidden",
+                        border: dk ? '2px solid rgba(255,255,255,0.08)' : '2px solid #e5e7eb',
+                        transition: "all .25s", position: "relative",
+                        "&:hover": { borderColor: "#4ade80", boxShadow: `0 12px 36px ${dk ? 'rgba(74,222,128,0.12)' : 'rgba(74,222,128,0.1)'}` },
+                        "&:hover .zoom-overlay": { opacity: 1 },
                       }}
                     >
-                      <Box sx={{ height: 160, background: "#f3f4f6", position: "relative" }}>
-                        {img.url ? (
-                          <img src={img.url} alt={img.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <ImageIcon size={32} color="#9ca3af" />
-                          </Box>
-                        )}
-                        {img.role && (
-                          <Chip label={img.role === "detail" ? "Detalle" : img.role === "montage" ? "Montaje" : img.role} size="small" sx={{ position: "absolute", top: 8, left: 8, fontSize: 10, fontWeight: 700, bgcolor: "rgba(0,0,0,0.7)", color: "#fff" }} />
-                        )}
-                      </Box>
-                      <Box sx={{ p: 1.5 }}>
-                        <Typography variant="subtitle2" noWrap fontWeight={700} fontSize={13}>{img.title || `Imagen ${i + 1}`}</Typography>
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                          {img.technique && <Typography variant="caption" color="text.secondary" noWrap>{img.technique}</Typography>}
-                          {img.year && <Typography variant="caption" color="text.secondary">· {img.year}</Typography>}
+                      <img src={app.detailImageUrl} alt="Imagen de detalle" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+                      <Box className="zoom-overlay" sx={{
+                        position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center",
+                        opacity: 0, transition: "opacity .2s",
+                      }}>
+                        <Stack alignItems="center" spacing={0.5}>
+                          <EyeIcon size={24} color="#fff" />
+                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Ver detalle</Typography>
                         </Stack>
-                        {img.price && <Typography variant="caption" fontWeight={700} color="primary">${img.price?.toLocaleString()} {img.currency || "COP"}</Typography>}
                       </Box>
                     </Box>
-                  ))}
+                  ) : (
+                    <Box sx={{
+                      height: 220, borderRadius: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#fafafa',
+                    }}>
+                      <ImageIcon size={32} color={dk ? '#52525b' : '#d1d5db'} />
+                      <Typography variant="caption" color="text.secondary" mt={1} fontWeight={600}>No cargada</Typography>
+                    </Box>
+                  )}
                 </Box>
-              )}
-            </Box>
+
+                {/* Plano de montaje */}
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
+                    <FileIcon size={16} />
+                    <Typography variant="subtitle2" fontWeight={800}>Plano de montaje</Typography>
+                  </Stack>
+                  {app.montageImageUrl ? (
+                    <Box
+                      onClick={() => {
+                        const montageIdx = (app.artworkImages?.length || 0) + (app.detailImageUrl ? 1 : 0);
+                        openLightbox(montageIdx);
+                      }}
+                      sx={{
+                        cursor: "pointer", borderRadius: 3, overflow: "hidden",
+                        border: dk ? '2px solid rgba(255,255,255,0.08)' : '2px solid #e5e7eb',
+                        transition: "all .25s", position: "relative",
+                        "&:hover": { borderColor: "#4ade80", boxShadow: `0 12px 36px ${dk ? 'rgba(74,222,128,0.12)' : 'rgba(74,222,128,0.1)'}` },
+                        "&:hover .zoom-overlay": { opacity: 1 },
+                      }}
+                    >
+                      <img src={app.montageImageUrl} alt="Plano de montaje" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+                      <Box className="zoom-overlay" sx={{
+                        position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center",
+                        opacity: 0, transition: "opacity .2s",
+                      }}>
+                        <Stack alignItems="center" spacing={0.5}>
+                          <EyeIcon size={24} color="#fff" />
+                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Ver plano</Typography>
+                        </Stack>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box sx={{
+                      height: 220, borderRadius: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#fafafa',
+                    }}>
+                      <FileIcon size={32} color={dk ? '#52525b' : '#d1d5db'} />
+                      <Typography variant="caption" color="text.secondary" mt={1} fontWeight={600}>No cargado</Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </Stack>
           )}
 
           {/* Tab: Documentos */}
@@ -349,7 +522,7 @@ function ApplicationDetailDialog({
 
           {/* Review panel */}
           {reviewing && (
-            <Box sx={{ mt: 3, p: 2.5, background: "#fafafa", border: "2px solid #e5e7eb", borderRadius: 2.5 }}>
+            <Box sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#fafafa", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, borderRadius: 2.5 }}>
               <Typography variant="subtitle2" fontWeight={800} mb={2} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 ⚖️ Emitir resolución
               </Typography>
@@ -421,19 +594,21 @@ function ApplicationDetailDialog({
 }
 
 function DocLink({ label, url, icon, type }: { label: string; url?: string; icon: string; type?: string }) {
+  const t = useTheme();
+  const dk = t.palette.mode === "dark";
   return (
     <Box sx={{
       display: "flex", alignItems: "center", gap: 2, p: 2,
-      border: "1.5px solid", borderColor: url ? "#e2e8f0" : "#f1f5f9",
-      borderRadius: 2.5, background: url ? "#fff" : "#f8fafc",
-      transition: "all .2s", "&:hover": url ? { borderColor: "#7c3aed", background: "#faf5ff" } : {},
+      border: "1.5px solid", borderColor: url ? (dk ? 'rgba(255,255,255,0.1)' : '#e2e8f0') : (dk ? 'rgba(255,255,255,0.05)' : '#f1f5f9'),
+      borderRadius: 2.5, background: url ? (dk ? 'rgba(255,255,255,0.03)' : '#fff') : (dk ? 'rgba(255,255,255,0.02)' : '#f8fafc'),
+      transition: "all .2s", "&:hover": url ? { borderColor: '#4ade80', background: dk ? 'rgba(74,222,128,0.05)' : '#f0fdf4' } : {},
     }}>
       <Typography fontSize={28}>{icon}</Typography>
       <Box flex={1}>
-        <Typography variant="subtitle2" fontWeight={700}>{label}</Typography>
+        <Typography variant="subtitle2" fontWeight={700} color="text.primary">{label}</Typography>
         {url ? (
           <Typography variant="caption">
-            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "#7c3aed", textDecoration: "none", fontWeight: 600 }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', textDecoration: "none", fontWeight: 600 }}>
               Ver {type || "documento"} ↗
             </a>
           </Typography>
@@ -448,6 +623,8 @@ function DocLink({ label, url, icon, type }: { label: string; url?: string; icon
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function SolicitudesPage() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = React.useState("");
   const [filterPaid, setFilterPaid] = React.useState("");
@@ -556,9 +733,9 @@ export default function SolicitudesPage() {
       {/* Stats bar */}
       <Stack direction="row" spacing={2} mb={3} flexWrap="wrap" useFlexGap>
         {[
-          { label: "Total solicitudes", val: total, bg: "#f0f9ff", border: "#bae6fd", color: "#0369a1" },
-          { label: "Pagadas", val: paid, bg: "#f0fdf4", border: "#bbf7d0", color: "#16a34a" },
-          { label: "Pendientes de revisión", val: submitted, bg: "#fef3c7", border: "#fde68a", color: "#92400e" },
+          { label: "Total solicitudes", val: total, bg: isDark ? 'rgba(14,165,233,0.08)' : '#f0f9ff', border: isDark ? 'rgba(14,165,233,0.2)' : '#bae6fd', color: isDark ? '#38bdf8' : '#0369a1' },
+          { label: "Pagadas", val: paid, bg: isDark ? 'rgba(34,197,94,0.08)' : '#f0fdf4', border: isDark ? 'rgba(34,197,94,0.2)' : '#bbf7d0', color: isDark ? '#4ade80' : '#16a34a' },
+          { label: "Pendientes de revisión", val: submitted, bg: isDark ? 'rgba(245,158,11,0.08)' : '#fef3c7', border: isDark ? 'rgba(245,158,11,0.2)' : '#fde68a', color: isDark ? '#fbbf24' : '#92400e' },
         ].map((s) => (
           <Box key={s.label} sx={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 2, px: 3, py: 2, minWidth: 160 }}>
             <Typography variant="caption" fontWeight={700} sx={{ color: s.color, textTransform: "uppercase", fontSize: 10, letterSpacing: .5 }}>{s.label}</Typography>
@@ -631,31 +808,31 @@ export default function SolicitudesPage() {
                 columnHeaderHeight={48}
                 sx={{
                   borderRadius: 2.5,
-                  border: "1px solid #e2e8f0",
+                  border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
                   fontSize: 13,
                   "& .MuiDataGrid-columnHeaders": {
-                    background: "#f8fafc",
-                    borderBottom: "2px solid #e2e8f0",
+                    background: isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
+                    borderBottom: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #e2e8f0',
                   },
                   "& .MuiDataGrid-columnHeaderTitle": {
                     fontWeight: 700,
                     fontSize: 12,
                     textTransform: "uppercase",
                     letterSpacing: ".3px",
-                    color: "#64748b",
+                    color: isDark ? '#71717a' : '#64748b',
                   },
                   "& .MuiDataGrid-row": {
                     transition: "background .15s",
-                    "&:nth-of-type(even)": { background: "#fafbfc" },
-                    "&:hover": { background: "#f0f4ff !important" },
+                    "&:nth-of-type(even)": { background: isDark ? 'rgba(255,255,255,0.02)' : '#fafbfc' },
+                    "&:hover": { background: isDark ? 'rgba(74,222,128,0.05) !important' : '#f0f4ff !important' },
                   },
                   "& .MuiDataGrid-cell": {
-                    borderBottom: "1px solid #f1f5f9",
+                    borderBottom: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid #f1f5f9',
                     display: "flex",
                     alignItems: "center",
                   },
                   "& .MuiDataGrid-footerContainer": {
-                    borderTop: "2px solid #e2e8f0",
+                    borderTop: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #e2e8f0',
                   },
                 }}
               />

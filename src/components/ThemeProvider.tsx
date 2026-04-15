@@ -1,20 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { theme } from '@/app/theme';
+import { lightTheme, darkTheme } from '@/app/theme';
+import { useThemeMode } from '@/provider/ThemeModeProvider';
 
 interface ClientThemeProviderProps {
   children: React.ReactNode;
 }
 
 export default function ClientThemeProvider({ children }: ClientThemeProviderProps) {
+  const { mode } = useThemeMode();
+
+  const activeTheme = useMemo(
+    () => (mode === 'dark' ? darkTheme : lightTheme),
+    [mode]
+  );
+
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={activeTheme}>
       <CssBaseline />
       {children}
     </ThemeProvider>
   );
 }
-

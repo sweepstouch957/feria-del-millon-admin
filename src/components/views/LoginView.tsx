@@ -9,9 +9,8 @@ import {
   TextField,
   Button,
   Typography,
-  Link,
+  Link as MuiLink,
   Container,
-  Alert,
   InputAdornment,
   IconButton,
   Stack,
@@ -22,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/provider/authProvider";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 const FullScreenBlocking = ({ text = "Cargando…" }: { text?: string }) => (
   <Box
@@ -30,14 +30,13 @@ const FullScreenBlocking = ({ text = "Cargando…" }: { text?: string }) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: (t) =>
-        t.palette.mode === "dark" ? "#0b0b0b" : "#f5f5f5",
+      backgroundColor: "#000",
       px: 2,
     }}
   >
-    <Stack alignItems="center" spacing={2}>
-      <CircularProgress />
-      <Typography variant="body2" color="text.secondary">
+    <Stack alignItems="center" spacing={3}>
+      <CircularProgress sx={{ color: "#22c55e" }} />
+      <Typography variant="body2" sx={{ color: "#a1a1aa", fontWeight: 600 }}>
         {text}
       </Typography>
     </Stack>
@@ -69,18 +68,17 @@ const LoginClient: React.FC = () => {
       setSubmitting(true);
 
       if (!emailOrPhone.trim() || !password) {
-        setErrorMsg("Ingresa tus credenciales.");
+        setErrorMsg("Por favor, ingresa tus credenciales completas.");
         return;
       }
       await loginCtx(emailOrPhone.trim(), password);
       // El AuthProvider hace router.replace("/")
     } catch (err: any) {
-      // Si el AuthProvider ya maneja onError, esto es por si acaso
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        "No se pudo iniciar sesión. Verifica tus datos.";
+        "Credenciales incorrectas. Verifica tus datos de acceso.";
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -91,7 +89,7 @@ const LoginClient: React.FC = () => {
   if (isAuthLoading || submitting || isAuthenticated) {
     return (
       <FullScreenBlocking
-        text={submitting ? "Iniciando sesión…" : "Cargando…"}
+        text={submitting ? "Autenticando administración…" : "Cargando entorno seguro…"}
       />
     );
   }
@@ -99,66 +97,160 @@ const LoginClient: React.FC = () => {
   return (
     <Box
       sx={{
+        position: "relative",
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: (t) =>
-          t.palette.mode === "dark" ? "#0b0b0b" : "#f5f5f5",
+        backgroundColor: "#000",
+        overflow: "hidden",
         px: 2,
       }}
     >
-      <Container maxWidth="sm">
+      {/* Glow Effects */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "10%",
+          left: "20%",
+          width: "40vw",
+          height: "40vw",
+          background: "rgba(34, 197, 94, 0.08)",
+          filter: "blur(120px)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "10%",
+          right: "20%",
+          width: "30vw",
+          height: "30vw",
+          background: "rgba(255, 255, 255, 0.03)",
+          filter: "blur(100px)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+        }}
+      />
+
+      <Container maxWidth="xs" sx={{ position: "relative", zIndex: 10 }}>
         <Card
           sx={{
-            maxWidth: 420,
-            mx: "auto",
-            p: 2,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-            borderRadius: 3,
-            border: (t) =>
-              t.palette.mode === "dark"
-                ? "1px solid rgba(255,255,255,0.08)"
-                : "1px solid rgba(0,0,0,0.06)",
+            background: "rgba(18, 18, 18, 0.6)",
+            backdropFilter: "blur(20px)",
+            borderRadius: "24px",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)",
+            overflow: "hidden",
+            transition: "transform 0.3s ease",
+            "&:hover": {
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              transform: "translateY(-4px)",
+              boxShadow: "0 25px 50px rgba(0,0,0,0.9), 0 0 40px rgba(34, 197, 94, 0.05)",
+            },
           }}
         >
-          <CardContent>
+          <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
             <Box
               sx={{
                 textAlign: "center",
-                mb: 1,
+                mb: 4,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Image
-                src="/logo.png"
-                alt="SweepsTouch"
-                width={200}
-                height={64}
-                style={{ objectFit: "contain" }}
-                priority
-              />
+              <Box
+                sx={{
+                  background: "rgba(255,255,255,1)",
+                  p: 2,
+                  borderRadius: "16px",
+                  mb: 3,
+                  boxShadow: "0 10px 20px rgba(0,0,0,0.5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Feria del Millón"
+                  width={140}
+                  height={50}
+                  style={{ objectFit: "contain", filter: "invert(0)" }}
+                  priority
+                />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 900, color: "#fff", letterSpacing: "-0.5px" }}>
+                Panel Administrativo
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#a1a1aa", mt: 1, fontWeight: 500 }}>
+                Control y gestión centralizada
+              </Typography>
             </Box>
 
             {errorMsg && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {errorMsg}
-              </Alert>
+              <Box
+                sx={{
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "12px",
+                  p: 2,
+                  mb: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#f87171",
+                    boxShadow: "0 0 10px #f87171",
+                  }}
+                />
+                <Typography variant="body2" sx={{ color: "#fca5a5", fontWeight: 600 }}>
+                  {errorMsg}
+                </Typography>
+              </Box>
             )}
 
             <form onSubmit={handleSubmit} noValidate>
               <TextField
                 fullWidth
                 margin="normal"
-                label="Email o teléfono"
+                label="Usuario o Correo"
                 value={emailOrPhone}
                 onChange={(e) => setEmailOrPhone(e.target.value)}
-                placeholder="ej. usuario@correo.com o 3471234567"
+                placeholder="admin@correo.com"
                 autoComplete="username"
                 required
+                variant="outlined"
+                InputLabelProps={{
+                  sx: { color: "#71717a", fontWeight: 600, "&.Mui-focused": { color: "#22c55e" } },
+                }}
+                inputProps={{
+                  sx: { color: "#fff", fontWeight: 500 },
+                }}
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
+                    background: "#0a0a0a",
+                    borderRadius: "16px",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)", transition: "all 0.3s" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "rgba(34,197,94,0.5)", borderWidth: "1px" },
+                    "&.Mui-focused": {
+                      background: "rgba(34, 197, 94, 0.05)",
+                      boxShadow: "0 0 0 4px rgba(34,197,94,0.1)",
+                    },
+                  },
+                }}
               />
 
               <TextField
@@ -171,33 +263,61 @@ const LoginClient: React.FC = () => {
                 placeholder="********"
                 autoComplete="current-password"
                 required
+                InputLabelProps={{
+                  sx: { color: "#71717a", fontWeight: 600, "&.Mui-focused": { color: "#22c55e" } },
+                }}
+                inputProps={{
+                  sx: { color: "#fff", fontWeight: 500 },
+                }}
                 InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon sx={{ color: "#71717a" }} fontSize="small" />
+                    </InputAdornment>
+                  ),
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
                         aria-label="mostrar contraseña"
                         onClick={() => setShowPwd((v) => !v)}
                         edge="end"
+                        sx={{ color: "#71717a", "&:hover": { color: "#fff" } }}
                       >
                         {showPwd ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    background: "#0a0a0a",
+                    borderRadius: "16px",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)", transition: "all 0.3s" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "rgba(34,197,94,0.5)", borderWidth: "1px" },
+                    "&.Mui-focused": {
+                      background: "rgba(34, 197, 94, 0.05)",
+                      boxShadow: "0 0 0 4px rgba(34,197,94,0.1)",
+                    },
+                  },
+                }}
               />
 
-              <Box sx={{ textAlign: "left", mt: 1, mb: 2 }}>
-                <Link
+              <Box sx={{ textAlign: "right", mb: 4 }}>
+                <MuiLink
                   href="#"
-                  variant="body2"
+                  variant="caption"
                   sx={{
-                    color: "text.secondary",
+                    color: "#71717a",
+                    fontWeight: 600,
                     textDecoration: "none",
-                    "&:hover": { textDecoration: "underline" },
+                    "&:hover": { color: "#fff" },
+                    transition: "color 0.2s",
                   }}
                 >
-                  ¿Olvidaste tu contraseña?
-                </Link>
+                  ¿Necesitas acceso?
+                </MuiLink>
               </Box>
 
               <Button
@@ -206,23 +326,29 @@ const LoginClient: React.FC = () => {
                 variant="contained"
                 disabled={!emailOrPhone || !password}
                 sx={{
-                  mt: 2,
-                  py: 1.5,
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  backgroundColor: (t) =>
-                    t.palette.mode === "dark"
-                      ? t.palette.grey[800]
-                      : t.palette.grey[900],
+                  py: 1.8,
+                  fontWeight: 900,
+                  fontSize: "0.95rem",
+                  letterSpacing: "0.5px",
+                  borderRadius: "14px",
+                  color: "#000",
+                  textTransform: "none",
+                  background: "linear-gradient(to right, #22c55e, #16a34a)",
+                  boxShadow: "0 4px 15px rgba(34, 197, 94, 0.3)",
+                  transition: "all 0.3s ease",
                   "&:hover": {
-                    backgroundColor: (t) =>
-                      t.palette.mode === "dark"
-                        ? t.palette.grey[700]
-                        : t.palette.grey[800],
+                    background: "linear-gradient(to right, #16a34a, #15803d)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 8px 25px rgba(34, 197, 94, 0.5)",
+                  },
+                  "&:disabled": {
+                    background: "rgba(255,255,255,0.05)",
+                    color: "rgba(255,255,255,0.3)",
+                    boxShadow: "none",
                   },
                 }}
               >
-                Iniciar sesión
+                Autorizar Ingreso
               </Button>
             </form>
           </CardContent>

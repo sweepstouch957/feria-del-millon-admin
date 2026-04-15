@@ -9,6 +9,7 @@ import ReactQueryProvider from "@/provider/reactQueryProvider";
 import { AuthProvider } from "@/provider/authProvider";
 import MuiLocalizationProvider from "@/provider/MuiLocalizationProvider";
 import I18nProvider from "./i18nProvider";
+import { ThemeModeProvider } from "@/provider/ThemeModeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es"> {/* 👈 ahora controlado por i18n */}
+    <html lang="es">
       <head>
         <link rel="shortcut icon" href="/sweeps.ico" />
       </head>
@@ -41,11 +42,13 @@ export default function RootLayout({
         <I18nProvider>
           <ReactQueryProvider>
             <MuiLocalizationProvider>
-              <ClientThemeProvider>
-                <AuthProvider>
-                  <AuthenticatedLayout>{children}</AuthenticatedLayout>
-                </AuthProvider>
-              </ClientThemeProvider>
+              <ThemeModeProvider>
+                <ClientThemeProvider>
+                  <AuthProvider>
+                    <AuthenticatedLayout>{children}</AuthenticatedLayout>
+                  </AuthProvider>
+                </ClientThemeProvider>
+              </ThemeModeProvider>
             </MuiLocalizationProvider>
           </ReactQueryProvider>
         </I18nProvider>

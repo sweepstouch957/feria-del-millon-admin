@@ -13,7 +13,7 @@
   --gray-800: #424242;
   --gray-900: #212121;
 
-  /* Fondo y texto */
+  /* Fondo y texto — controlados por MUI CssBaseline */
   --background: var(--gray-50);
   --foreground: var(--gray-900);
 
@@ -30,50 +30,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: var(--gray-900);
-    --foreground: var(--gray-100);
-  }
-}
-
 body {
   margin: 0;
   font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
-  background: var(--background);
-  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Sidebar estilo sobrio */
-.sidebar {
-  background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+/* Smooth transitions for theme switching */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
 }
 
-/* Gradiente principal en tonos grises */
-.primary-gradient {
-  background: linear-gradient(135deg, var(--gray-700) 0%, var(--gray-900) 100%);
+/* Reset transitions for elements that shouldn't animate */
+input, textarea, select, button, a, [role="button"] {
+  transition-duration: 0s;
 }
-
-/* Botones y acentos */
-button,
-.btn {
-  background-color: var(--gray-800);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-button:hover,
-.btn:hover {
-  background-color: var(--gray-900);
-}
-
-/* Cards, paneles o contenedores */
-.card {
-  background-color: var(--gray-100);
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-  
