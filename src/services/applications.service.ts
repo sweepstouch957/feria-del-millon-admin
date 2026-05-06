@@ -88,3 +88,12 @@ export const setUnderReview = async (id: string): Promise<{ ok: boolean }> => {
   );
   return data;
 };
+
+export const markAsPaid = async (id: string): Promise<{ ok: boolean; doc: ArtistApplication }> => {
+  const { data } = await apiClient.patch(
+    `/applications/applications/${id}/mark-paid`,
+    {},
+    { headers: ADMIN_HEADERS }
+  );
+  return data;
+};

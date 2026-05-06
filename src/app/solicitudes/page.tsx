@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  listApplications, reviewApplication, setUnderReview,
+  listApplications, reviewApplication, setUnderReview, markAsPaid,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
 
@@ -221,6 +221,18 @@ function ApplicationDetailDialog({
     try {
       await setUnderReview(app._id);
       setToast({ open: true, msg: "Estado actualizado a En Revisión", sev: "success" });
+      onRefresh();
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.message || "Error", sev: "error" });
+    } finally { setSaving(false); }
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!window.confirm("¿Seguro que deseas marcar esta postulación como pagada manualmente?")) return;
+    setSaving(true);
+    try {
+      await markAsPaid(app._id);
+      setToast({ open: true, msg: "Marcado como pagado exitosamente", sev: "success" });
       onRefresh();
     } catch (e: any) {
       setToast({ open: true, msg: e?.message || "Error", sev: "error" });
@@ -546,6 +558,11 @@ function ApplicationDetailDialog({
         <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "divider", gap: 1 }}>
           {!reviewing && (
             <>
+              {!app.isPaid && (
+                <Button startIcon={<DollarSign size={16} />} variant="outlined" color="warning" onClick={handleMarkAsPaid} disabled={saving}>
+                  Marcar como pagado
+                </Button>
+              )}
               {app.status === "submitted" && (
                 <Button startIcon={<ClockIcon size={16} />} variant="outlined" onClick={handleSetUnderReview} disabled={saving}>
                   Marcar en revisión
