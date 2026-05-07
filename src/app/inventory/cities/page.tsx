@@ -196,7 +196,7 @@ export default function CitiesPage() {
           />
           {search && (
             <Typography sx={{ fontSize: 11.5, color: "text.disabled", mt: 1 }}>
-              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para "{search}"
+              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para &ldquo;{search}&rdquo;
             </Typography>
           )}
         </Box>
