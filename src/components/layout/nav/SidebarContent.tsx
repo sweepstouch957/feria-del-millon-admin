@@ -20,7 +20,7 @@ import {
   ConfirmationNumberOutlined as TicketsIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
-import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon } from "lucide-react";
+import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin } from "lucide-react";
 import { LAYOUT_COLORS as C } from "../layoutConfig";
 import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
@@ -52,11 +52,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
   );
 
   const inventoryItems = [
-    {
-      label: "Artes",
-      icon: <Paintbrush2 />,
-      href: "/inventory/artworks",
-    },
+    { label: "Artes",     icon: <Paintbrush2 />, href: "/inventory/artworks" },
+    { label: "Ciudades",  icon: <MapPin size={18} />, href: "/inventory/cities" },
   ];
 
   return (
