@@ -2,623 +2,533 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import Image from "next/image";
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Skeleton,
-  Chip,
-  Stack,
-  Avatar,
-  Tooltip,
-  Grid as Grid2
+  Box, Stack, Typography, TextField, Button, Paper, Skeleton,
+  Avatar, Tooltip, Snackbar, Alert, CircularProgress, Chip,
+  Select, MenuItem, FormControl, InputLabel, Divider, alpha,
+  InputAdornment, IconButton,
 } from "@mui/material";
-// 👇 Usa el Grid2 correcto (Unstable_Grid2) para poder usar size={{ xs, md }}
-
 import {
-  AttachMoney as CashierIcon,
-  TrendingUp as RankingIcon,
-  Contacts as ContactIcon,
-  Tablet as TabletIcon,
-  OpenInNew as ExternalIcon,
-  Place as PlaceIcon,
-  LocalPhone as PhoneIcon,
-  Tag as TagIcon,
-} from "@mui/icons-material";
-
-import { useAuth } from "@/provider/authProvider";
+  Save, Camera, X, User, Phone, MapPin, Instagram, Facebook,
+  Globe, FileText, Clock, Calendar, CheckCircle2, XCircle,
+  Shield, Mail, Link as LinkIcon, Eye, EyeOff,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/provider/authProvider";
+import { getUserById, updateUser, type UserDTO, type Roles as RolesMap } from "@services/user.service";
 
-/* -------------- utils -------------- */
-function slugify(input?: string | null) {
-  if (!input) return "";
-  return String(input)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const G   = "#22c55e";
+const GD  = "#16a34a";
+const S1  = "#111113";
+const S2  = "#18181b";
+const BR  = "rgba(255,255,255,0.07)";
+const TM  = "rgba(255,255,255,0.38)";
+
+// ── Role config ───────────────────────────────────────────────────────────────
+const ROLES: { key: keyof RolesMap; label: string; color: string }[] = [
+  { key: "superuser", label: "Superuser", color: "#ef4444" },
+  { key: "staff",     label: "Staff",     color: "#a78bfa" },
+  { key: "curador",   label: "Curador",   color: "#60a5fa" },
+  { key: "cajero",    label: "Cajero",    color: "#f59e0b" },
+  { key: "artista",   label: "Artista",   color: G         },
+];
+
+const DOC_TYPES = ["CC", "NIT", "CE", "PP", "OTRO", "INE"];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getInitials(u: Partial<UserDTO>) {
+  const f = u.firstName?.[0] || "";
+  const l = u.lastName?.[0] || "";
+  return (f + l).toUpperCase() || (u.email?.[0] || "?").toUpperCase();
 }
 
-function kioskUrlFromStore(store: any) {
-  const base = "https://kiosko.sweepstouch.com/?slug=";
-  const s = store?.slug
-    ? String(store.slug)
-    : [store?.name, store?.address, store?.city, store?.state, store?.country]
-        .filter(Boolean)
-        .join(" ");
-  const sSlug = slugify(s) || "store";
-  return `${base}${encodeURIComponent(sSlug)}`;
+function hashColor(str = "") {
+  const p = [G, "#60a5fa", "#a78bfa", "#f59e0b", "#f472b6", "#34d399"];
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % p.length;
+  return p[h];
 }
 
-function formatAddress(store: any) {
-  const addr =
-    store?.address?.formatted ||
-    [
-      store?.address?.line1,
-      store?.address?.line2,
-      store?.city,
-      store?.state,
-      store?.zip,
-      store?.country,
-    ]
-      .filter(Boolean)
-      .join(", ") ||
-    store?.address ||
-    "";
-  return addr || "—";
+function fmtDate(s?: string | null, withTime = false) {
+  if (!s) return null;
+  return new Date(s).toLocaleDateString("es-CO", {
+    year: "numeric", month: "long", day: "numeric",
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+  });
 }
 
-function getLatLng(store: any) {
-  const coords = store?.location?.coordinates;
-  if (Array.isArray(coords) && coords.length >= 2) {
-    const [lng, lat] = coords;
-    return { lat, lng };
-  }
-  const lat = store?.latitude ?? store?.lat ?? null;
-  const lng = store?.longitude ?? store?.lng ?? null;
-  return { lat, lng };
-}
-
-function getStoreImageUrl(store: any): string | null {
+// ── Section card ──────────────────────────────────────────────────────────────
+function Section({
+  icon, title, subtitle, children,
+}: { icon: React.ReactNode; title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    store?.image ||
-    store?.imageUrl ||
-    store?.photo ||
-    store?.photoUrl ||
-    store?.logo ||
-    store?.logoUrl ||
-    store?.banner ||
-    store?.bannerUrl ||
-    null
+    <Paper sx={{
+      bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 3,
+      overflow: "hidden",
+    }}>
+      <Box sx={{ px: 3, py: 2.25, borderBottom: `1px solid ${BR}`, display: "flex", gap: 1.5, alignItems: "center" }}>
+        <Box sx={{
+          width: 34, height: 34, borderRadius: 2,
+          bgcolor: alpha(G, 0.1), color: G,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          {icon}
+        </Box>
+        <Box>
+          <Typography sx={{ fontWeight: 800, fontSize: 14, color: "#EDEDED", lineHeight: 1.1 }}>{title}</Typography>
+          {subtitle && <Typography sx={{ fontSize: 11.5, color: TM, mt: 0.1 }}>{subtitle}</Typography>}
+        </Box>
+      </Box>
+      <Box sx={{ p: 3 }}>{children}</Box>
+    </Paper>
   );
 }
 
-const ReadOnlyField = ({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | number | null;
-}) => (
-  <TextField
-    fullWidth
-    label={label}
-    value={value ?? "—"}
-    disabled
-    variant="outlined"
-    sx={{
-      mb: 2,
-      "& .MuiInputBase-root.Mui-disabled": {
-        color: "text.primary",
-        WebkitTextFillColor: "inherit",
-        background:
-          "linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.00))",
-      },
-    }}
-  />
-);
+// ── Activity row ──────────────────────────────────────────────────────────────
+function ActivityRow({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
+  return (
+    <Stack direction="row" alignItems="center" gap={2} sx={{
+      p: 1.75, borderRadius: 2,
+      bgcolor: alpha("#fff", 0.02), border: `1px solid ${BR}`,
+    }}>
+      <Box sx={{ color: TM, flexShrink: 0 }}>{icon}</Box>
+      <Box>
+        <Typography sx={{ fontSize: 10.5, color: TM, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 13, color: value ? "#EDEDED" : TM, fontWeight: 600, mt: 0.1, fontStyle: value ? "normal" : "italic" }}>
+          {value || "—"}
+        </Typography>
+      </Box>
+    </Stack>
+  );
+}
 
-/* -------------- pretty helpers -------------- */
+// ── Styled text field ─────────────────────────────────────────────────────────
+function FField({ label, value, onChange, disabled, placeholder, type, multiline, rows, startIcon }: {
+  label: string; value: string; onChange?: (v: string) => void;
+  disabled?: boolean; placeholder?: string; type?: string;
+  multiline?: boolean; rows?: number; startIcon?: React.ReactNode;
+}) {
+  return (
+    <TextField
+      fullWidth size="small" label={label} value={value} type={type}
+      placeholder={placeholder} multiline={multiline} rows={rows}
+      onChange={e => onChange?.(e.target.value)}
+      disabled={disabled}
+      InputProps={startIcon ? {
+        startAdornment: <InputAdornment position="start" sx={{ color: TM }}>{startIcon}</InputAdornment>,
+      } : undefined}
+      sx={{
+        "& .MuiOutlinedInput-root": {
+          borderRadius: 2, bgcolor: alpha("#fff", 0.025), fontSize: 13,
+          "& fieldset": { borderColor: BR },
+          "&:hover fieldset": { borderColor: alpha("#fff", 0.18) },
+          "&.Mui-focused fieldset": { borderColor: G },
+          "&.Mui-disabled": { bgcolor: alpha("#fff", 0.01) },
+          "&.Mui-disabled fieldset": { borderColor: alpha("#fff", 0.04) },
+        },
+        "& .MuiInputLabel-root": { fontSize: 13 },
+        "& .MuiInputLabel-root.Mui-focused": { color: G },
+        "& .MuiInputBase-input.Mui-disabled": { WebkitTextFillColor: TM },
+      }}
+    />
+  );
+}
 
-const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <Typography
-    variant="h6"
-    gutterBottom
-    sx={{ color: "#212121", fontWeight: 800, letterSpacing: 0.2, mb: 2 }}
-  >
-    {children}
-  </Typography>
-);
-
-const GlassCard = ({
-  children,
-  sx,
-}: {
-  children: React.ReactNode;
-  sx?: any;
-}) => (
-  <Paper
-    sx={{
-      p: 3,
-      borderRadius: 3,
-      backdropFilter: "blur(6px)",
-      background:
-        "linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.75))",
-      boxShadow:
-        "0 1px 2px rgba(0,0,0,0.04), 0 12px 24px -8px rgba(0,0,0,0.12)",
-      ...sx,
-    }}
-  >
-    {children}
-  </Paper>
-);
-
-/* -------------- page -------------- */
-
-const AccountPage: React.FC = () => {
-  const { activeStore, user, currentUser } = useAuth() as any;
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function AccountPage() {
   const { t } = useTranslation();
-  const me = user || currentUser;
+  const { user: authUser } = useAuth();
 
-  const loadingUser = !me;
-  const loadingStore = !activeStore;
+  const [profile,  setProfile]  = React.useState<Partial<UserDTO & { profilePhotoUrl?: string }>>({});
+  const [loading,  setLoading]  = React.useState(true);
+  const [saving,   setSaving]   = React.useState(false);
+  const [toast,    setToast]    = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
+  const [photoEdit, setPhotoEdit] = React.useState(false);
+  const [photoInput, setPhotoInput] = React.useState("");
+  const [imgError,  setImgError]  = React.useState(false);
 
-  const isMerchantManager =
-    (me?.role || "").toLowerCase() === "merchant_manager";
+  // Load full profile
+  React.useEffect(() => {
+    if (!authUser?.id) return;
+    setLoading(true);
+    getUserById(authUser.id)
+      .then(u => {
+        setProfile(u as any);
+        setPhotoInput((u as any).profilePhotoUrl || "");
+      })
+      .catch(() => setToast({ open: true, msg: t("account.loadError"), sev: "error" }))
+      .finally(() => setLoading(false));
+  }, [authUser?.id, t]);
 
-  const storeLatLng = getLatLng(activeStore);
-  const hasLatLng =
-    typeof storeLatLng.lat === "number" && typeof storeLatLng.lng === "number";
+  const set = (key: string) => (val: string) =>
+    setProfile(p => ({ ...p, [key]: val }));
 
-  const fromNumber =
-    activeStore?.fromNumber ||
-    activeStore?.sourceTn ||
-    activeStore?.sourceTN ||
-    activeStore?.twilioPhoneNumber ||
-    activeStore?.bandwidthPhoneNumber ||
-    "—";
+  const handleSave = async () => {
+    if (!authUser?.id) return;
+    setSaving(true);
+    try {
+      await updateUser(authUser.id, {
+        firstName:      profile.firstName,
+        lastName:       profile.lastName,
+        mobile:         profile.mobile,
+        city:           profile.city,
+        address:        profile.address,
+        instagram:      profile.instagram,
+        facebook:       profile.facebook,
+        website:        profile.website,
+        documentType:   profile.documentType as any,
+        documentNumber: profile.documentNumber,
+        ...(photoInput !== ((profile as any).profilePhotoUrl || "")
+          ? { profilePhotoUrl: photoInput || null }
+          : {}),
+      } as any);
+      setProfile(p => ({ ...p, profilePhotoUrl: photoInput || undefined } as any));
+      setPhotoEdit(false);
+      setToast({ open: true, msg: t("account.saved"), sev: "success" });
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.message || t("account.saveError"), sev: "error" });
+    } finally { setSaving(false); }
+  };
 
-  const storeImage = getStoreImageUrl(activeStore);
-  const providerLabel =
-    activeStore?.provider ||
-    (activeStore?.twilioPhoneNumber
-      ? "twilio"
-      : activeStore?.bandwidthPhoneNumber
-      ? "bandwidth"
-      : undefined);
+  const activeRoles  = ROLES.filter(r => profile.roles?.[r.key]);
+  const photoUrl     = (profile as any).profilePhotoUrl || photoInput || null;
+  const ac           = hashColor(profile.email);
+  const fullName     = `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
 
-  // Acciones con rutas/links
-  const actions = [
-    {
-      label: t("navigation.cashier"),
-      icon: <CashierIcon />,
-      color: "#ff6f00",
-      href: "/cashier",
-      external: false,
-    },
-    {
-      label: t("account.ranking"),
-      icon: <RankingIcon />,
-      color: "#8e24aa",
-      href: "/cashier/ranking",
-      external: false,
-    },
-    {
-      label: t("navigation.contacts"),
-      icon: <ContactIcon />,
-      color: "#1976d2",
-      href: "/contacts",
-      external: false,
-    },
-    {
-      label: t("account.tabletsKiosk"),
-      icon: <TabletIcon />,
-      color: "#2e7d32",
-      href: kioskUrlFromStore(activeStore),
-      external: true,
-    },
-  ];
+  const SkRow = () => (
+    <Stack spacing={1.5}>
+      {[1,2].map(i => <Skeleton key={i} height={48} sx={{ borderRadius: 2, bgcolor: alpha("#fff", 0.04) }} />)}
+    </Stack>
+  );
 
   return (
-    <>
-      {/* Hero Header */}
-      <Box
-        sx={{
-          mb: 3,
-          p: { xs: 2, md: 3 },
-          borderRadius: 3,
-          background:
-            "linear-gradient(135deg, rgba(0,169,188,0.12) 0%, rgba(255,0,128,0.08) 100%)",
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
-        }}
-      >
-        <Avatar
-          sx={{
-            width: 56,
-            height: 56,
-            bgcolor: "#00A9BC",
-            fontWeight: 700,
-          }}
-          alt={activeStore?.name || "Store"}
-          src={storeImage || undefined}
-        >
-          {activeStore?.name?.[0]?.toUpperCase() ?? "S"}
-        </Avatar>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 900, color: "#212121", lineHeight: 1.15 }}
-            noWrap
-            title={activeStore?.name || t("navigation.account")}
-          >
-            {activeStore?.name || t("navigation.account")}
-          </Typography>
+    <Box sx={{ pb: 6 }}>
 
-          <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap">
-            {!loadingStore && providerLabel && (
-              <Chip
-                label={String(providerLabel).toUpperCase()}
-                color="info"
-                size="small"
-                icon={<TagIcon sx={{ fontSize: 18 }} />}
-                sx={{ fontWeight: 700, bgcolor: "rgba(0,169,188,0.12)" }}
-              />
-            )}
-            {!loadingUser && me?.role && (
-              <Chip
-                label={String(me.role).toUpperCase()}
-                size="small"
-                sx={{ fontWeight: 700, bgcolor: "rgba(0,0,0,0.06)" }}
-              />
-            )}
-            {hasLatLng && (
-              <Chip
-                label={t("account.hasLocation")}
-                size="small"
-                color="success"
-                sx={{ fontWeight: 700 }}
-              />
-            )}
-          </Stack>
-        </Box>
-
-        {!loadingStore && (
-          <Tooltip title={t("account.openKiosk")}>
-            <Button
-              component={Link}
-              href={kioskUrlFromStore(activeStore)}
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="contained"
-              endIcon={<ExternalIcon />}
-              sx={{
-                textTransform: "none",
-                borderRadius: 2,
-                fontWeight: 700,
-                bgcolor: "#00A9BC",
-                "&:hover": { bgcolor: "#008aa0" },
-              }}
-            >
-              {t("account.openKiosk")}
-            </Button>
-          </Tooltip>
-        )}
+      {/* ── Page header ──────────────────────────────────────────────────── */}
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
+          {t("navigation.account")}
+        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
+          {t("account.title")}
+        </Typography>
+        <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
+          {t("account.subtitle")}
+        </Typography>
       </Box>
 
-      <Grid2 container spacing={3}>
-        {/* Account Information: SOLO para merchant_manager */}
-        {isMerchantManager && (
-          <Grid2 size={{ xs: 12, md: 5 }}>
-            <GlassCard>
-              <SectionTitle>{t("account.accountInfo")}</SectionTitle>
+      <Stack direction={{ xs: "column", lg: "row" }} gap={3} alignItems="flex-start">
 
-              {loadingUser ? (
-                <>
-                  <Skeleton height={56} sx={{ mb: 2 }} />
-                  <Skeleton height={56} sx={{ mb: 2 }} />
-                  <Skeleton height={56} sx={{ mb: 2 }} />
-                </>
+        {/* ── LEFT: Profile card ───────────────────────────────────────── */}
+        <Box sx={{ width: { xs: "100%", lg: 300 }, flexShrink: 0, position: { lg: "sticky" }, top: { lg: 24 } }}>
+          <Paper sx={{
+            bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 3, overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          }}>
+            {/* Green top accent */}
+            <Box sx={{ height: 3, background: `linear-gradient(90deg, ${G}, ${alpha(G, 0.1)})` }} />
+
+            <Box sx={{ p: 3 }}>
+              {loading ? (
+                <Stack alignItems="center" gap={2}>
+                  <Skeleton variant="circular" width={96} height={96} sx={{ bgcolor: alpha("#fff", 0.06) }} />
+                  <Skeleton width={140} height={22} sx={{ bgcolor: alpha("#fff", 0.05) }} />
+                  <Skeleton width={180} height={16} sx={{ bgcolor: alpha("#fff", 0.04) }} />
+                </Stack>
               ) : (
-                <Grid2 container spacing={2}>
-                  <Grid2 size={{ xs: 12 }}>
-                    <ReadOnlyField
-                      label={t("account.fullName")}
-                      value={
-                        me?.name ||
-                        [me?.firstName, me?.lastName]
-                          .filter(Boolean)
-                          .join(" ") ||
-                        "—"
-                      }
-                    />
-                  </Grid2>
-                  <Grid2 size={{ xs: 12, md: 6 }}>
-                    <ReadOnlyField label={t("auth.email")} value={me?.email ?? "—"} />
-                  </Grid2>
-                  <Grid2 size={{ xs: 12, md: 6 }}>
-                    <ReadOnlyField
-                      label={t("account.phoneNumber")}
-                      value={me?.phoneNumber ?? me?.phone ?? "—"}
-                    />
-                  </Grid2>
-                  <Grid2 size={{ xs: 12, md: 6 }}>
-                    <ReadOnlyField
-                      label={t("account.role")}
-                      value={me?.role ? String(me.role).toUpperCase() : "—"}
-                    />
-                  </Grid2>
-                  <Grid2 size={{ xs: 12, md: 6 }}>
-                    <ReadOnlyField
-                      label={t("account.userId")}
-                      value={me?._id ?? me?.id ?? "—"}
-                    />
-                  </Grid2>
-                </Grid2>
-              )}
-            </GlassCard>
-          </Grid2>
-        )}
-
-        {/* Store Information */}
-        <Grid2 size={{ xs: 12, md: isMerchantManager ? 7 : 12 }}>
-          <GlassCard>
-            <SectionTitle>{t("account.storeInfo")}</SectionTitle>
-
-            {/* Header con imagen */}
-            {loadingStore ? (
-              <Skeleton
-                variant="rectangular"
-                height={180}
-                sx={{ mb: 2, borderRadius: 2 }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  mb: 2,
-                  position: "relative",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  background:
-                    "linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02))",
-                }}
-              >
-                {storeImage ? (
-                  <a
-                    href={storeImage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: "block" }}
-                  >
-                    <Image
-                      src={storeImage}
-                      alt={activeStore?.name || "Store"}
-                      width={1200}
-                      height={420}
-                      style={{
-                        width: "100%",
-                        height: "220px",
-                        objectFit: "cover",
-                      }}
-                    />
-                  </a>
-                ) : (
-                  <Box
-                    sx={{
-                      height: 180,
-                      bgcolor: "grey.100",
-                      color: "text.secondary",
-                      display: "grid",
-                      placeItems: "center",
-                    }}
-                  >
-                    {t("account.noImage")}
-                  </Box>
-                )}
-                {/* Overlay con nombre */}
-                <Box
-                  sx={{
-                    position: "absolute",
-                    left: 16,
-                    bottom: 16,
-                    px: 1.25,
-                    py: 0.5,
-                    borderRadius: 1.5,
-                    bgcolor: "rgba(0,0,0,0.45)",
-                    color: "white",
-                    backdropFilter: "blur(2px)",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ fontWeight: 800 }}
-                    title={activeStore?.name}
-                  >
-                    {activeStore?.name ?? "—"}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {/* Campos */}
-            {loadingStore ? (
-              <>
-                <Skeleton height={56} sx={{ mb: 2 }} />
-                <Skeleton height={56} sx={{ mb: 2 }} />
-                <Skeleton height={56} sx={{ mb: 2 }} />
-                <Skeleton height={56} sx={{ mb: 2 }} />
-                <Skeleton height={56} sx={{ mb: 2 }} />
-              </>
-            ) : (
-              <Grid2 container spacing={2}>
-                <Grid2 size={{ xs: 12 }}>
-                  <ReadOnlyField
-                    label={t("account.address")}
-                    value={formatAddress(activeStore)}
-                  />
-                </Grid2>
-
-                <Grid2 size={{ xs: 12, md: 6 }}>
-                  <ReadOnlyField label={t("account.fromNumber")} value={fromNumber} />
-                </Grid2>
-
-                <Grid2 size={{ xs: 12, md: 6 }}>
-                  <ReadOnlyField
-                    label={t("account.slug")}
-                    value={
-                      activeStore?.slug ?? slugify(activeStore?.name) ?? "—"
-                    }
-                  />
-                </Grid2>
-
-                <Grid2 size={{ xs: 12, md: 6 }}>
-                  <ReadOnlyField
-                    label={t("account.latitude")}
-                    value={
-                      typeof storeLatLng.lat === "number"
-                        ? storeLatLng.lat
-                        : "—"
-                    }
-                  />
-                </Grid2>
-                <Grid2 size={{ xs: 12, md: 6 }}>
-                  <ReadOnlyField
-                    label={t("account.longitude")}
-                    value={
-                      typeof storeLatLng.lng === "number"
-                        ? storeLatLng.lng
-                        : "—"
-                    }
-                  />
-                </Grid2>
-
-                {hasLatLng && (
-                  <Grid2 size={{ xs: 12 }}>
-                    <Button
-                      component={Link}
-                      href={`https://www.google.com/maps/search/?api=1&query=${storeLatLng.lat},${storeLatLng.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      variant="outlined"
-                      startIcon={<PlaceIcon />}
-                      sx={{
-                        textTransform: "none",
-                        borderRadius: 2,
-                        fontWeight: 700,
-                      }}
+                <>
+                  {/* Avatar with photo-edit overlay */}
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2.5 }}>
+                    <Box
+                      sx={{ position: "relative", cursor: "pointer", mb: 1.5 }}
+                      onClick={() => setPhotoEdit(v => !v)}
                     >
-                      {t("account.openInMaps")}
-                    </Button>
-                  </Grid2>
-                )}
-              </Grid2>
-            )}
-          </GlassCard>
-        </Grid2>
+                      <Avatar
+                        src={!imgError && photoUrl ? photoUrl : undefined}
+                        onError={() => setImgError(true)}
+                        sx={{
+                          width: 96, height: 96, fontWeight: 900, fontSize: 34,
+                          bgcolor: alpha(ac, 0.14), color: ac,
+                          border: `3px solid ${profile.active ? alpha(G, 0.5) : BR}`,
+                          boxShadow: profile.active ? `0 0 24px ${alpha(G, 0.2)}` : "none",
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        {getInitials(profile)}
+                      </Avatar>
 
-        {/* Quick Actions */}
-        <Grid2 size={{ xs: 12 }}>
-          <GlassCard sx={{ p: { xs: 2, md: 3 } }}>
-            <SectionTitle>{t("account.quickActions")}</SectionTitle>
-            <Grid2 container spacing={2}>
-              {actions.map((button) => {
-                const isExternal = button.external;
-                return (
-                  <Grid2 key={button.label} size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card
-                      component={Link as any}
-                      href={button.href}
-                      {...(isExternal
-                        ? { target: "_blank", rel: "noopener noreferrer" }
-                        : {})}
-                      sx={{
-                        cursor: "pointer",
-                        textDecoration: "none",
-                        borderRadius: 3,
-                        transition: "all .25s ease",
-                        boxShadow:
-                          "0 2px 8px rgba(0,0,0,0.06), 0 12px 24px -10px rgba(0,0,0,0.08)",
-                        "&:hover": {
-                          transform: "translateY(-4px) scale(1.01)",
-                          boxShadow:
-                            "0 6px 18px rgba(0,0,0,0.10), 0 22px 40px -16px rgba(0,0,0,0.20)",
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ textAlign: "center", p: 2.5 }}>
-                        <Box
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: "50%",
-                            background: button.color,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            margin: "0 auto 12px",
-                            color: "white",
-                            boxShadow: "inset 0 0 12px rgba(255,255,255,0.25)",
+                      {/* Hover overlay */}
+                      <Box sx={{
+                        position: "absolute", inset: 0, borderRadius: "50%",
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        opacity: 0, transition: "opacity 0.2s",
+                        "&:hover": { opacity: 1 },
+                      }}>
+                        <Camera size={22} color="#fff" />
+                        <Typography sx={{ fontSize: 9, color: "#fff", fontWeight: 700, mt: 0.3, letterSpacing: 0.3 }}>
+                          {t("account.changePhoto")}
+                        </Typography>
+                      </Box>
+
+                      {/* Active dot */}
+                      <Box sx={{
+                        position: "absolute", bottom: 4, right: 4,
+                        width: 14, height: 14, borderRadius: "50%",
+                        bgcolor: profile.active ? G : "#52525b",
+                        border: `2.5px solid ${S1}`,
+                        boxShadow: profile.active ? `0 0 8px ${G}` : "none",
+                      }} />
+                    </Box>
+
+                    {/* Photo URL input (expandable) */}
+                    {photoEdit && (
+                      <Box sx={{ width: "100%", mt: 0.5 }}>
+                        <TextField
+                          fullWidth size="small"
+                          label={t("account.photoUrlLabel")}
+                          placeholder={t("account.photoUrlPlaceholder")}
+                          value={photoInput}
+                          onChange={e => { setPhotoInput(e.target.value); setImgError(false); }}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start" sx={{ color: TM }}><LinkIcon size={13} /></InputAdornment>,
+                            endAdornment: photoInput ? (
+                              <InputAdornment position="end">
+                                <IconButton size="small" onClick={() => { setPhotoInput(""); setImgError(false); }} sx={{ color: TM }}>
+                                  <X size={13} />
+                                </IconButton>
+                              </InputAdornment>
+                            ) : null,
                           }}
-                        >
-                          {button.icon}
-                        </Box>
-                        <Typography
-                          variant="body1"
-                          sx={{ fontWeight: 800, color: "#212121" }}
-                        >
-                          {button.label}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "text.secondary" }}
-                        >
-                          {isExternal ? t("account.opensNewTab") : t("account.open")}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid2>
-                );
-              })}
-            </Grid2>
-          </GlassCard>
-        </Grid2>
-      </Grid2>
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 2, bgcolor: alpha("#fff", 0.03), fontSize: 12,
+                              "& fieldset": { borderColor: BR },
+                              "&.Mui-focused fieldset": { borderColor: G },
+                            },
+                            "& .MuiInputLabel-root.Mui-focused": { color: G },
+                            "& .MuiInputLabel-root": { fontSize: 12 },
+                          }}
+                        />
+                        {imgError && photoInput && (
+                          <Typography sx={{ fontSize: 10.5, color: "#ef4444", mt: 0.5, pl: 0.5 }}>
+                            No se pudo cargar la imagen
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
 
-      {/* Footer info line */}
-      {!loadingUser && !loadingStore && (
-        <Box sx={{ mt: 2, textAlign: "right", color: "text.secondary" }}>
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <PhoneIcon fontSize="small" />
-              <Typography variant="caption">
-                {fromNumber !== "—"
-                  ? fromNumber
-                  : t("account.noSenderNumber")}
-              </Typography>
-            </Stack>
-            {providerLabel && (
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <TagIcon fontSize="small" />
-                <Typography variant="caption">
-                  {t("account.provider")}: {String(providerLabel).toUpperCase()}
-                </Typography>
+                    {/* Name & email */}
+                    <Typography sx={{ fontWeight: 900, fontSize: 17, color: "#EDEDED", letterSpacing: -0.3, mt: 1, textAlign: "center", lineHeight: 1.2 }}>
+                      {fullName || t("account.firstName")}
+                    </Typography>
+                    <Typography sx={{ fontSize: 12, color: TM, mt: 0.4, textAlign: "center", fontFamily: "monospace" }}>
+                      {profile.email}
+                    </Typography>
+                  </Box>
+
+                  {/* Status chip */}
+                  <Box sx={{ display: "flex", justifyContent: "center", mb: 2.5 }}>
+                    <Chip
+                      size="small"
+                      icon={profile.active
+                        ? <CheckCircle2 size={11} style={{ marginLeft: 6 }} />
+                        : <XCircle size={11} style={{ marginLeft: 6 }} />
+                      }
+                      label={profile.active ? t("account.active") : t("account.inactive")}
+                      sx={{
+                        fontWeight: 800, fontSize: 10.5, letterSpacing: 0.2,
+                        bgcolor: profile.active ? alpha(G, 0.12) : alpha("#71717a", 0.15),
+                        color:   profile.active ? G : "#71717a",
+                        border: `1px solid ${profile.active ? alpha(G, 0.3) : alpha("#71717a", 0.3)}`,
+                        "& .MuiChip-icon": { color: "inherit" },
+                      }}
+                    />
+                  </Box>
+
+                  <Divider sx={{ borderColor: BR, mb: 2.5 }} />
+
+                  {/* Roles */}
+                  <Box>
+                    <Stack direction="row" alignItems="center" gap={0.75} mb={1.25}>
+                      <Shield size={12} color={TM} />
+                      <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: TM, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                        {t("account.roles")}
+                      </Typography>
+                    </Stack>
+                    {activeRoles.length > 0 ? (
+                      <Stack gap={0.75}>
+                        {activeRoles.map(r => (
+                          <Box key={r.key} sx={{
+                            display: "flex", alignItems: "center", gap: 1.25, px: 1.5, py: 0.9,
+                            borderRadius: 1.75, bgcolor: alpha(r.color, 0.08),
+                            border: `1px solid ${alpha(r.color, 0.2)}`,
+                          }}>
+                            <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: r.color, boxShadow: `0 0 6px ${r.color}`, flexShrink: 0 }} />
+                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.label}</Typography>
+                          </Box>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Typography sx={{ fontSize: 12, color: TM, fontStyle: "italic", pl: 0.5 }}>
+                        {t("account.noRoles")}
+                      </Typography>
+                    )}
+                  </Box>
+                </>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* ── RIGHT: Form sections ─────────────────────────────────────── */}
+        <Stack flex={1} spacing={2.5} sx={{ minWidth: 0 }}>
+
+          {/* Personal info */}
+          <Section icon={<User size={16} />} title={t("account.personalInfo")} subtitle={t("account.personalInfoSub")}>
+            {loading ? <SkRow /> : (
+              <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
+                <FField label={t("account.firstName")} value={profile.firstName || ""} onChange={set("firstName")} />
+                <FField label={t("account.lastName")}  value={profile.lastName  || ""} onChange={set("lastName")} />
               </Stack>
             )}
-          </Stack>
-        </Box>
-      )}
-    </>
-  );
-};
+          </Section>
 
-export default AccountPage;
+          {/* Email (read-only) */}
+          <Section icon={<Mail size={16} />} title={t("auth.email")} subtitle={t("account.emailReadOnly")}>
+            {loading ? <SkRow /> : (
+              <FField
+                label={t("auth.email")} value={profile.email || ""} disabled
+                startIcon={<Mail size={14} />}
+              />
+            )}
+          </Section>
+
+          {/* Contact */}
+          <Section icon={<Phone size={16} />} title={t("account.contactInfo")} subtitle={t("account.contactInfoSub")}>
+            {loading ? <SkRow /> : (
+              <Stack spacing={2}>
+                <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
+                  <FField label={t("account.phone")} value={profile.mobile || ""} onChange={set("mobile")}
+                    startIcon={<Phone size={14} />} />
+                  <FField label={t("account.city")} value={profile.city || ""} onChange={set("city")}
+                    startIcon={<MapPin size={14} />} />
+                </Stack>
+                <FField label={t("account.address")} value={profile.address || ""} onChange={set("address")}
+                  startIcon={<MapPin size={14} />} />
+              </Stack>
+            )}
+          </Section>
+
+          {/* Social links */}
+          <Section icon={<Globe size={16} />} title={t("account.socialLinks")} subtitle={t("account.socialLinksSub")}>
+            {loading ? <SkRow /> : (
+              <Stack spacing={2}>
+                <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
+                  <FField label={t("account.instagram")} value={profile.instagram || ""} onChange={set("instagram")}
+                    startIcon={<Instagram size={14} />} />
+                  <FField label={t("account.facebook")} value={profile.facebook || ""} onChange={set("facebook")}
+                    startIcon={<Facebook size={14} />} />
+                </Stack>
+                <FField label={t("account.website")} value={profile.website || ""} onChange={set("website")}
+                  startIcon={<Globe size={14} />} />
+              </Stack>
+            )}
+          </Section>
+
+          {/* Identity document */}
+          <Section icon={<FileText size={16} />} title={t("account.identity")} subtitle={t("account.identitySub")}>
+            {loading ? <SkRow /> : (
+              <Stack direction={{ xs: "column", sm: "row" }} gap={2}>
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel sx={{ fontSize: 13, "&.Mui-focused": { color: G } }}>
+                    {t("account.documentType")}
+                  </InputLabel>
+                  <Select
+                    value={profile.documentType || ""}
+                    label={t("account.documentType")}
+                    onChange={e => set("documentType")(e.target.value)}
+                    sx={{
+                      borderRadius: 2, fontSize: 13, bgcolor: alpha("#fff", 0.025),
+                      "& fieldset": { borderColor: BR },
+                      "&:hover fieldset": { borderColor: alpha("#fff", 0.18) },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G },
+                    }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: 13 }}><em>—</em></MenuItem>
+                    {DOC_TYPES.map(d => (
+                      <MenuItem key={d} value={d} sx={{ fontSize: 13 }}>{d}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FField
+                  label={t("account.documentNumber")}
+                  value={profile.documentNumber || ""}
+                  onChange={set("documentNumber")}
+                  startIcon={<FileText size={14} />}
+                />
+              </Stack>
+            )}
+          </Section>
+
+          {/* Activity (read-only) */}
+          <Section icon={<Clock size={16} />} title={t("account.activitySection")} subtitle={t("account.activitySub")}>
+            {loading ? <SkRow /> : (
+              <Stack spacing={1.25}>
+                <ActivityRow
+                  icon={<Clock size={15} />}
+                  label={t("account.lastLogin")}
+                  value={fmtDate((profile as any).lastLoginAt, true) || t("account.never")}
+                />
+                <ActivityRow
+                  icon={<Calendar size={15} />}
+                  label={t("account.memberSince")}
+                  value={fmtDate((profile as any).registeredAt) || fmtDate((profile as any).createdAt) || "—"}
+                />
+                <ActivityRow
+                  icon={<Calendar size={15} />}
+                  label={t("account.registeredAt")}
+                  value={fmtDate((profile as any).createdAt, true)}
+                />
+              </Stack>
+            )}
+          </Section>
+
+          {/* Save button */}
+          {!loading && (
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save size={16} />}
+                sx={{
+                  px: 4, py: 1.25, borderRadius: 2.5, fontWeight: 800, fontSize: 14,
+                  bgcolor: G, color: "#000",
+                  "&:hover": { bgcolor: GD, boxShadow: `0 4px 20px ${alpha(G, 0.35)}` },
+                  "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) },
+                  transition: "all 0.2s",
+                  boxShadow: `0 2px 12px ${alpha(G, 0.2)}`,
+                }}
+              >
+                {saving ? t("account.saving") : t("account.saveChanges")}
+              </Button>
+            </Box>
+          )}
+        </Stack>
+      </Stack>
+
+      {/* Toast */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3500}
+        onClose={() => setToast(t => ({ ...t, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert severity={toast.sev} variant="filled" onClose={() => setToast(t => ({ ...t, open: false }))}>
+          {toast.msg}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}

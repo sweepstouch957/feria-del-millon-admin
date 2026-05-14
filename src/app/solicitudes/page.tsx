@@ -17,10 +17,11 @@ import {
   Image as ImageIcon, Palette as PaletteIcon, User as UserIcon,
   Mail as MailIcon, Phone as PhoneIcon, MapPin as MapPinIcon,
   Instagram as InstagramIcon, Calendar as CalendarIcon, DollarSign,
+  Trash2 as Trash2Icon,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  listApplications, reviewApplication, setUnderReview, markAsPaid,
+  listApplications, reviewApplication, setUnderReview, markAsPaid, deleteApplication,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
 
@@ -200,9 +201,13 @@ function ApplicationDetailDialog({
   const [rejReason, setRejReason] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [toast, setToast] = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deletePassword, setDeletePassword] = React.useState("");
+  const [deletePasswordError, setDeletePasswordError] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
 
   // Reset state when dialog opens
-  React.useEffect(() => { if (open) { setTab(0); setReviewing(false); setNotes(""); setRejReason(""); } }, [open]);
+  React.useEffect(() => { if (open) { setTab(0); setReviewing(false); setNotes(""); setRejReason(""); setDeleteDialogOpen(false); setDeletePassword(""); setDeletePasswordError(false); } }, [open]);
 
   if (!app) return null;
 
@@ -237,6 +242,22 @@ function ApplicationDetailDialog({
     } catch (e: any) {
       setToast({ open: true, msg: e?.message || "Error", sev: "error" });
     } finally { setSaving(false); }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deletePassword !== "0123456") {
+      setDeletePasswordError(true);
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteApplication(app._id);
+      setDeleteDialogOpen(false);
+      onRefresh();
+      onClose();
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.message || "Error al eliminar", sev: "error" });
+    } finally { setDeleting(false); }
   };
 
   const handleReview = async () => {
@@ -556,6 +577,19 @@ function ApplicationDetailDialog({
         </DialogContent>
 
         <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "divider", gap: 1 }}>
+          <Tooltip title="Eliminar solicitud permanentemente">
+            <Button
+              startIcon={<Trash2Icon size={16} />}
+              variant="outlined"
+              color="error"
+              onClick={() => { setDeletePassword(""); setDeletePasswordError(false); setDeleteDialogOpen(true); }}
+              disabled={saving || deleting}
+              sx={{ mr: "auto" }}
+            >
+              Eliminar
+            </Button>
+          </Tooltip>
+
           {!reviewing && (
             <>
               {!app.isPaid && (
@@ -596,8 +630,49 @@ function ApplicationDetailDialog({
               </Button>
             </>
           )}
-          <Box flex={1} />
           <Button onClick={onClose} variant="outlined" color="inherit">Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Trash2Icon size={18} color="#ef4444" />
+          </Box>
+          <Box>
+            <Typography fontWeight={900} fontSize={16}>Eliminar solicitud</Typography>
+            <Typography variant="caption" color="text.secondary">Esta acción no se puede deshacer</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography variant="body2" color="text.secondary" mb={2.5}>
+            Se eliminará permanentemente la solicitud de <strong>{artist?.firstName} {artist?.lastName}</strong>. Ingresa la contraseña de administrador para continuar.
+          </Typography>
+          <TextField
+            label="Contraseña de administrador"
+            type="password"
+            fullWidth
+            size="small"
+            value={deletePassword}
+            onChange={(e) => { setDeletePassword(e.target.value); setDeletePasswordError(false); }}
+            error={deletePasswordError}
+            helperText={deletePasswordError ? "Contraseña incorrecta" : ""}
+            onKeyDown={(e) => { if (e.key === "Enter") handleDeleteConfirm(); }}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1, gap: 1 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit" disabled={deleting}>Cancelar</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteConfirm}
+            disabled={deleting || !deletePassword}
+            startIcon={deleting ? <CircularProgress size={14} color="inherit" /> : <Trash2Icon size={14} />}
+          >
+            {deleting ? "Eliminando…" : "Eliminar solicitud"}
+          </Button>
         </DialogActions>
       </Dialog>
 

@@ -97,3 +97,11 @@ export const markAsPaid = async (id: string): Promise<{ ok: boolean; doc: Artist
   );
   return data;
 };
+
+export const deleteApplication = async (id: string): Promise<{ ok: boolean }> => {
+  const { data } = await apiClient.delete(
+    `/applications/applications/${id}`,
+    { headers: ADMIN_HEADERS }
+  );
+  return data;
+};
