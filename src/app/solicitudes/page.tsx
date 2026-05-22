@@ -19,11 +19,21 @@ import {
   Instagram as InstagramIcon, Calendar as CalendarIcon, DollarSign,
   Trash2 as Trash2Icon, RotateCcw as RevisionIcon,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  listApplications, reviewApplication, requestRevision, setUnderReview, markAsPaid, deleteApplication,
+  listApplications, getApplicationStats, reviewApplication, requestRevision,
+  setUnderReview, markAsPaid, deleteApplication,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
+
+/* ── HEIC → JPEG via Cloudinary ────────────────────────────────────────────── */
+function resolveImgUrl(url?: string): string {
+  if (!url) return "";
+  if (/\.(heic|heif)$/i.test(url) && url.includes("res.cloudinary.com")) {
+    return url.replace("/upload/", "/upload/f_jpg,q_auto/");
+  }
+  return url;
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: "default" | "primary" | "success" | "warning" | "info" | "error" }> = {
   pending_payment:    { label: "Pago pendiente",         color: "warning" },
@@ -122,7 +132,7 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
           >
             {img.url ? (
               <img
-                src={img.url} alt={img.title}
+                src={resolveImgUrl(img.url)} alt={img.title}
                 draggable={false}
                 style={{
                   maxHeight: "65vh", maxWidth: "100%", objectFit: "contain", borderRadius: 8,
@@ -162,7 +172,7 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
                 "&:hover": { opacity: 1 }, background: "#111",
               }}
             >
-              {im.url ? <img src={im.url} alt={im.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {im.url ? <img src={resolveImgUrl(im.url)} alt={im.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><ImageIcon size={20} color="rgba(255,255,255,0.3)" /></Box>}
             </Box>
           ))}
@@ -442,7 +452,7 @@ function ApplicationDetailDialog({
                       >
                         <Box sx={{ height: 180, background: dk ? "rgba(255,255,255,0.03)" : "#f8f9fa", position: "relative", overflow: "hidden" }}>
                           {img.url ? (
-                            <img src={img.url} alt={img.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .3s" }} />
+                            <img src={resolveImgUrl(img.url)} alt={img.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .3s" }} />
                           ) : (
                             <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <ImageIcon size={32} color={dk ? '#52525b' : '#9ca3af'} />
@@ -499,7 +509,7 @@ function ApplicationDetailDialog({
                         "&:hover .zoom-overlay": { opacity: 1 },
                       }}
                     >
-                      <img src={app.detailImageUrl} alt="Imagen de detalle" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+                      <img src={resolveImgUrl(app.detailImageUrl)} alt="Imagen de detalle" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
                       <Box className="zoom-overlay" sx={{
                         position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center",
                         opacity: 0, transition: "opacity .2s",
@@ -541,7 +551,7 @@ function ApplicationDetailDialog({
                         "&:hover .zoom-overlay": { opacity: 1 },
                       }}
                     >
-                      <img src={app.montageImageUrl} alt="Plano de montaje" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+                      <img src={resolveImgUrl(app.montageImageUrl)} alt="Plano de montaje" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
                       <Box className="zoom-overlay" sx={{
                         position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center",
                         opacity: 0, transition: "opacity .2s",
@@ -794,7 +804,6 @@ function DocLink({ label, url, icon, type }: { label: string; url?: string; icon
 export default function SolicitudesPage() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = React.useState("");
   const [filterPaid, setFilterPaid] = React.useState("");
   const [q, setQ] = React.useState("");
@@ -813,6 +822,12 @@ export default function SolicitudesPage() {
       page: pagination.page + 1,
       limit: pagination.pageSize,
     }),
+  });
+
+  const { data: stats, refetch: refetchStats } = useQuery({
+    queryKey: ["application-stats"],
+    queryFn: getApplicationStats,
+    staleTime: 30_000,
   });
 
   const handleView = (app: ArtistApplication) => {
@@ -892,26 +907,62 @@ export default function SolicitudesPage() {
     [data?.docs]
   );
 
-  // Quick stats
-  const total = data?.total || 0;
-  const paid = rows.filter((r) => r.isPaid).length;
-  const submitted = rows.filter((r) => ["submitted", "under_review"].includes(r.status)).length;
+  const byStatus = stats?.byStatus || {};
+
+  const KPI_CONFIG = [
+    { key: "__total__",        label: "Total",          val: stats?.total ?? 0,                      color: isDark ? '#e2e8f0' : '#1e293b',  bg: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc',  border: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'    },
+    { key: "__paid__",         label: "Pagadas",        val: stats?.paid  ?? 0,                      color: isDark ? '#4ade80' : '#16a34a',  bg: isDark ? 'rgba(34,197,94,0.08)' : '#f0fdf4',    border: isDark ? 'rgba(34,197,94,0.2)' : '#bbf7d0'      },
+    { key: "pending_payment",  label: "Sin pago",       val: byStatus["pending_payment"]  ?? 0,      color: isDark ? '#fb923c' : '#c2410c',  bg: isDark ? 'rgba(251,146,60,0.08)' : '#fff7ed',   border: isDark ? 'rgba(251,146,60,0.2)' : '#fed7aa'     },
+    { key: "draft",            label: "Borrador",       val: byStatus["draft"]            ?? 0,      color: isDark ? '#818cf8' : '#4338ca',  bg: isDark ? 'rgba(129,140,248,0.08)' : '#eef2ff',  border: isDark ? 'rgba(129,140,248,0.2)' : '#c7d2fe'    },
+    { key: "submitted",        label: "Enviadas",       val: byStatus["submitted"]        ?? 0,      color: isDark ? '#38bdf8' : '#0369a1',  bg: isDark ? 'rgba(14,165,233,0.08)' : '#f0f9ff',   border: isDark ? 'rgba(14,165,233,0.2)' : '#bae6fd'     },
+    { key: "under_review",     label: "En revisión",    val: byStatus["under_review"]     ?? 0,      color: isDark ? '#a78bfa' : '#6d28d9',  bg: isDark ? 'rgba(167,139,250,0.08)' : '#f5f3ff',  border: isDark ? 'rgba(167,139,250,0.2)' : '#ddd6fe'    },
+    { key: "revision_requested", label: "Con corrección", val: byStatus["revision_requested"] ?? 0, color: isDark ? '#fbbf24' : '#92400e',  bg: isDark ? 'rgba(251,191,36,0.08)' : '#fef3c7',   border: isDark ? 'rgba(251,191,36,0.2)' : '#fde68a'     },
+    { key: "accepted",         label: "Aceptadas",      val: byStatus["accepted"]         ?? 0,      color: isDark ? '#4ade80' : '#065f46',  bg: isDark ? 'rgba(74,222,128,0.1)' : '#ecfdf5',    border: isDark ? 'rgba(74,222,128,0.25)' : '#6ee7b7'    },
+    { key: "rejected",         label: "Rechazadas",     val: byStatus["rejected"]         ?? 0,      color: isDark ? '#f87171' : '#991b1b',  bg: isDark ? 'rgba(239,68,68,0.08)' : '#fef2f2',    border: isDark ? 'rgba(239,68,68,0.2)' : '#fca5a5'      },
+  ];
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
-      {/* Stats bar */}
-      <Stack direction="row" spacing={2} mb={3} flexWrap="wrap" useFlexGap>
-        {[
-          { label: "Total solicitudes", val: total, bg: isDark ? 'rgba(14,165,233,0.08)' : '#f0f9ff', border: isDark ? 'rgba(14,165,233,0.2)' : '#bae6fd', color: isDark ? '#38bdf8' : '#0369a1' },
-          { label: "Pagadas", val: paid, bg: isDark ? 'rgba(34,197,94,0.08)' : '#f0fdf4', border: isDark ? 'rgba(34,197,94,0.2)' : '#bbf7d0', color: isDark ? '#4ade80' : '#16a34a' },
-          { label: "Pendientes de revisión", val: submitted, bg: isDark ? 'rgba(245,158,11,0.08)' : '#fef3c7', border: isDark ? 'rgba(245,158,11,0.2)' : '#fde68a', color: isDark ? '#fbbf24' : '#92400e' },
-        ].map((s) => (
-          <Box key={s.label} sx={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 2, px: 3, py: 2, minWidth: 160 }}>
-            <Typography variant="caption" fontWeight={700} sx={{ color: s.color, textTransform: "uppercase", fontSize: 10, letterSpacing: .5 }}>{s.label}</Typography>
-            <Typography variant="h5" fontWeight={900} sx={{ color: s.color }}>{s.val}</Typography>
+      {/* Global KPI bar */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "repeat(3,1fr)", sm: "repeat(5,1fr)", md: "repeat(9,1fr)" },
+          gap: 1.5,
+          mb: 3,
+        }}
+      >
+        {KPI_CONFIG.map((s) => (
+          <Box
+            key={s.key}
+            onClick={() => {
+              if (s.key === "__total__" || s.key === "__paid__") return;
+              setFilterStatus(s.key);
+              setPagination({ page: 0, pageSize: 20 });
+            }}
+            sx={{
+              background: s.bg,
+              border: `1px solid ${s.border}`,
+              borderRadius: 2.5,
+              px: 2,
+              py: 1.75,
+              cursor: (s.key === "__total__" || s.key === "__paid__") ? "default" : "pointer",
+              transition: "all .18s",
+              "&:hover": (s.key === "__total__" || s.key === "__paid__") ? {} : {
+                transform: "translateY(-2px)",
+                boxShadow: `0 6px 20px ${s.border}`,
+              },
+            }}
+          >
+            <Typography
+              sx={{ color: s.color, textTransform: "uppercase", fontSize: 9, fontWeight: 800, letterSpacing: .6, mb: 0.5, opacity: 0.75 }}
+            >{s.label}</Typography>
+            <Typography sx={{ color: s.color, fontWeight: 900, fontSize: 22, lineHeight: 1 }}>
+              {stats ? s.val : "—"}
+            </Typography>
           </Box>
         ))}
-      </Stack>
+      </Box>
 
       <Card sx={{ borderRadius: 3, boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
         <CardHeader
@@ -922,7 +973,7 @@ export default function SolicitudesPage() {
           </Typography>}
           action={
             <Tooltip title="Refrescar">
-              <IconButton onClick={() => refetch()}><RefreshIcon size={18} /></IconButton>
+              <IconButton onClick={() => { refetch(); refetchStats(); }}><RefreshIcon size={18} /></IconButton>
             </Tooltip>
           }
         />
@@ -955,7 +1006,7 @@ export default function SolicitudesPage() {
                 </Select>
               </FormControl>
               <Box flex={1} />
-              <Button variant="outlined" startIcon={<RefreshIcon size={16} />} onClick={() => refetch()}>
+              <Button variant="outlined" startIcon={<RefreshIcon size={16} />} onClick={() => { refetch(); refetchStats(); }}>
                 Actualizar
               </Button>
             </Stack>
@@ -1014,7 +1065,7 @@ export default function SolicitudesPage() {
       <ApplicationDetailDialog
         app={selectedApp} open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        onRefresh={() => refetch()}
+        onRefresh={() => { refetch(); refetchStats(); }}
       />
 
       <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast((t) => ({ ...t, open: false }))}>

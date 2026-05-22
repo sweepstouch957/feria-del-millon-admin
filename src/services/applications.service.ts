@@ -60,6 +60,17 @@ export interface ApplicationListResponse {
 
 const ADMIN_HEADERS = { "x-user-admin": "true" };
 
+export interface ApplicationStats {
+  total: number;
+  paid: number;
+  byStatus: Record<string, number>;
+}
+
+export const getApplicationStats = async (): Promise<ApplicationStats> => {
+  const { data } = await apiClient.get("/applications/applications/stats", { headers: ADMIN_HEADERS });
+  return data;
+};
+
 export const listApplications = async (params: ApplicationListParams = {}): Promise<ApplicationListResponse> => {
   const { data } = await apiClient.get("/applications/applications", { params, headers: ADMIN_HEADERS });
   return data;
