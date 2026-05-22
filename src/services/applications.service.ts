@@ -131,3 +131,13 @@ export const requestRevision = async (
   );
   return data;
 };
+
+export const sendPaymentReminder = async (id: string): Promise<{ ok: boolean }> => {
+  const { data } = await apiClient.post(
+    `/applications/applications/${id}/send-reminder`,
+    {},
+    { headers: ADMIN_HEADERS }
+  );
+  return data;
+};
+

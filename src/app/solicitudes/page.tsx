@@ -22,7 +22,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
   listApplications, getApplicationStats, reviewApplication, requestRevision,
-  setUnderReview, markAsPaid, deleteApplication,
+  setUnderReview, markAsPaid, deleteApplication, sendPaymentReminder,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
 
@@ -264,6 +264,17 @@ function ApplicationDetailDialog({
       setToast({ open: true, msg: e?.message || "Error", sev: "error" });
     } finally { setSaving(false); }
   };
+
+  const handleSendPaymentReminder = async () => {
+    setSaving(true);
+    try {
+      await sendPaymentReminder(app._id);
+      setToast({ open: true, msg: "Recordatorio de pago enviado por correo", sev: "success" });
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error al enviar recordatorio", sev: "error" });
+    } finally { setSaving(false); }
+  };
+
 
   const handleDeleteConfirm = async () => {
     if (deletePassword !== "0123456") {
@@ -626,9 +637,14 @@ function ApplicationDetailDialog({
           {!reviewing && (
             <>
               {!app.isPaid && (
-                <Button startIcon={<DollarSign size={16} />} variant="outlined" color="warning" onClick={handleMarkAsPaid} disabled={saving}>
-                  Marcar como pagado
-                </Button>
+                <>
+                  <Button startIcon={<DollarSign size={16} />} variant="outlined" color="warning" onClick={handleMarkAsPaid} disabled={saving}>
+                    Marcar como pagado
+                  </Button>
+                  <Button startIcon={<MailIcon size={16} />} variant="outlined" color="info" onClick={handleSendPaymentReminder} disabled={saving}>
+                    Enviar Recordatorio
+                  </Button>
+                </>
               )}
               {app.status === "submitted" && (
                 <Button startIcon={<ClockIcon size={16} />} variant="outlined" onClick={handleSetUnderReview} disabled={saving}>
