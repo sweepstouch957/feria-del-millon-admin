@@ -16,7 +16,7 @@ export interface ArtistApplication {
   _id: string;
   convocatoria: { _id: string; name: string; slug: string; fee: number; currency: string } | string;
   artist: { _id: string; firstName: string; lastName: string; email: string; mobile?: string; city?: string } | string;
-  status: "pending_payment" | "draft" | "submitted" | "under_review" | "accepted" | "rejected";
+  status: "pending_payment" | "draft" | "submitted" | "under_review" | "revision_requested" | "accepted" | "rejected";
   paymentStatus: "pending" | "approved" | "rejected" | "cancelled";
   isPaid: boolean;
   paidAt?: string;
@@ -29,6 +29,9 @@ export interface ArtistApplication {
   montageImageUrl?: string;
   adminNotes?: string;
   rejectionReason?: string;
+  revisionNotes?: string;
+  revisionRequestedAt?: string;
+  revisionRequestedBy?: string;
   reviewedBy?: string;
   reviewedAt?: string;
   submittedAt?: string;
@@ -101,6 +104,18 @@ export const markAsPaid = async (id: string): Promise<{ ok: boolean; doc: Artist
 export const deleteApplication = async (id: string): Promise<{ ok: boolean }> => {
   const { data } = await apiClient.delete(
     `/applications/applications/${id}`,
+    { headers: ADMIN_HEADERS }
+  );
+  return data;
+};
+
+export const requestRevision = async (
+  id: string,
+  notes: string
+): Promise<{ ok: boolean; doc: ArtistApplication }> => {
+  const { data } = await apiClient.patch(
+    `/applications/applications/${id}/request-revision`,
+    { notes },
     { headers: ADMIN_HEADERS }
   );
   return data;

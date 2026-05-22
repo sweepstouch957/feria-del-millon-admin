@@ -17,21 +17,22 @@ import {
   Image as ImageIcon, Palette as PaletteIcon, User as UserIcon,
   Mail as MailIcon, Phone as PhoneIcon, MapPin as MapPinIcon,
   Instagram as InstagramIcon, Calendar as CalendarIcon, DollarSign,
-  Trash2 as Trash2Icon,
+  Trash2 as Trash2Icon, RotateCcw as RevisionIcon,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  listApplications, reviewApplication, setUnderReview, markAsPaid, deleteApplication,
+  listApplications, reviewApplication, requestRevision, setUnderReview, markAsPaid, deleteApplication,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
 
 const STATUS_CONFIG: Record<string, { label: string; color: "default" | "primary" | "success" | "warning" | "info" | "error" }> = {
-  pending_payment: { label: "Pago pendiente", color: "warning" },
-  draft: { label: "Borrador", color: "info" },
-  submitted: { label: "Enviada", color: "primary" },
-  under_review: { label: "En revisión", color: "info" },
-  accepted: { label: "Aceptada", color: "success" },
-  rejected: { label: "Rechazada", color: "error" },
+  pending_payment:    { label: "Pago pendiente",         color: "warning" },
+  draft:              { label: "Borrador",                color: "info"    },
+  submitted:          { label: "Enviada",                 color: "primary" },
+  under_review:       { label: "En revisión",             color: "info"    },
+  revision_requested: { label: "Corrección solicitada",   color: "warning" },
+  accepted:           { label: "Aceptada",                color: "success" },
+  rejected:           { label: "Rechazada",               color: "error"   },
 };
 
 // ─── Lightbox ────────────────────────────────────────────────────────────────
@@ -206,8 +207,18 @@ function ApplicationDetailDialog({
   const [deletePasswordError, setDeletePasswordError] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
+  const [revisionDialogOpen, setRevisionDialogOpen] = React.useState(false);
+  const [revisionMsg, setRevisionMsg] = React.useState("");
+  const [revisionSaving, setRevisionSaving] = React.useState(false);
+
   // Reset state when dialog opens
-  React.useEffect(() => { if (open) { setTab(0); setReviewing(false); setNotes(""); setRejReason(""); setDeleteDialogOpen(false); setDeletePassword(""); setDeletePasswordError(false); } }, [open]);
+  React.useEffect(() => {
+    if (open) {
+      setTab(0); setReviewing(false); setNotes(""); setRejReason("");
+      setDeleteDialogOpen(false); setDeletePassword(""); setDeletePasswordError(false);
+      setRevisionDialogOpen(false); setRevisionMsg("");
+    }
+  }, [open]);
 
   if (!app) return null;
 
@@ -258,6 +269,18 @@ function ApplicationDetailDialog({
     } catch (e: any) {
       setToast({ open: true, msg: e?.message || "Error al eliminar", sev: "error" });
     } finally { setDeleting(false); }
+  };
+
+  const handleRequestRevision = async () => {
+    setRevisionSaving(true);
+    try {
+      await requestRevision(app._id, revisionMsg);
+      setToast({ open: true, msg: "Artista notificado — se le invitó a corregir y reenviar su postulación", sev: "success" });
+      setRevisionDialogOpen(false);
+      onRefresh();
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.message || "Error al solicitar corrección", sev: "error" });
+    } finally { setRevisionSaving(false); }
   };
 
   const handleReview = async () => {
@@ -602,7 +625,18 @@ function ApplicationDetailDialog({
                   Marcar en revisión
                 </Button>
               )}
-              {["submitted", "under_review"].includes(app.status) && (
+              {["submitted", "under_review", "revision_requested"].includes(app.status) && (
+                <Button
+                  startIcon={<RevisionIcon size={16} />}
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => { setRevisionMsg(app.revisionNotes || ""); setRevisionDialogOpen(true); }}
+                  disabled={saving}
+                >
+                  Invitar a editar
+                </Button>
+              )}
+              {["submitted", "under_review", "revision_requested"].includes(app.status) && (
                 <Button
                   startIcon={<CheckCircleIcon size={16} />}
                   variant="contained" color="success"
@@ -611,7 +645,7 @@ function ApplicationDetailDialog({
                   Aceptar
                 </Button>
               )}
-              {["submitted", "under_review"].includes(app.status) && (
+              {["submitted", "under_review", "revision_requested"].includes(app.status) && (
                 <Button
                   startIcon={<XCircleIcon size={16} />}
                   variant="contained" color="error"
@@ -672,6 +706,49 @@ function ApplicationDetailDialog({
             startIcon={deleting ? <CircularProgress size={14} color="inherit" /> : <Trash2Icon size={14} />}
           >
             {deleting ? "Eliminando…" : "Eliminar solicitud"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Revision request dialog ─────────────────────────────────────── */}
+      <Dialog open={revisionDialogOpen} onClose={() => setRevisionDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: "rgba(251,191,36,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <RevisionIcon size={18} color="#fbbf24" />
+          </Box>
+          <Box>
+            <Typography fontWeight={900} fontSize={16}>Invitar a editar postulación</Typography>
+            <Typography variant="caption" color="text.secondary">El artista recibirá un correo y podrá corregir y reenviar</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography variant="body2" color="text.secondary" mb={2.5}>
+            Se notificará a <strong>{artist?.firstName} {artist?.lastName}</strong> que debe realizar correcciones.
+            Su postulación volverá a estado editable.
+          </Typography>
+          <TextField
+            label="Observaciones para el artista (opcional)"
+            multiline
+            rows={4}
+            fullWidth
+            size="small"
+            value={revisionMsg}
+            onChange={(e) => setRevisionMsg(e.target.value)}
+            placeholder="Ej: Por favor sube la imagen de detalle de tu técnica y corrige las dimensiones de la obra #2…"
+            helperText="El artista verá este mensaje en el correo y dentro del formulario."
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1, gap: 1 }}>
+          <Button onClick={() => setRevisionDialogOpen(false)} color="inherit" disabled={revisionSaving}>Cancelar</Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleRequestRevision}
+            disabled={revisionSaving}
+            startIcon={revisionSaving ? <CircularProgress size={14} color="inherit" /> : <RevisionIcon size={14} />}
+          >
+            {revisionSaving ? "Enviando…" : "Solicitar corrección y notificar"}
           </Button>
         </DialogActions>
       </Dialog>
