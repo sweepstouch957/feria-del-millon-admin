@@ -636,15 +636,15 @@ function ApplicationDetailDialog({
 
           {!reviewing && (
             <>
+              {(!app.isPaid || app.status === "pending_payment") && (
+                <Button startIcon={<DollarSign size={16} />} variant="outlined" color="warning" onClick={handleMarkAsPaid} disabled={saving}>
+                  {app.isPaid ? "Desbloquear formulario" : "Marcar como pagado"}
+                </Button>
+              )}
               {!app.isPaid && (
-                <>
-                  <Button startIcon={<DollarSign size={16} />} variant="outlined" color="warning" onClick={handleMarkAsPaid} disabled={saving}>
-                    Marcar como pagado
-                  </Button>
-                  <Button startIcon={<MailIcon size={16} />} variant="outlined" color="info" onClick={handleSendPaymentReminder} disabled={saving}>
-                    Enviar Recordatorio
-                  </Button>
-                </>
+                <Button startIcon={<MailIcon size={16} />} variant="outlined" color="info" onClick={handleSendPaymentReminder} disabled={saving}>
+                  Enviar Recordatorio
+                </Button>
               )}
               {app.status === "submitted" && (
                 <Button startIcon={<ClockIcon size={16} />} variant="outlined" onClick={handleSetUnderReview} disabled={saving}>
