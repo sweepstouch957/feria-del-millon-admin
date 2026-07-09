@@ -18,6 +18,8 @@ import {
   Mail as MailIcon, Phone as PhoneIcon, MapPin as MapPinIcon,
   Instagram as InstagramIcon, Calendar as CalendarIcon, DollarSign,
   Trash2 as Trash2Icon, RotateCcw as RevisionIcon, Bell as BellIcon,
+  Scale as ScaleIcon, StickyNote as NoteIcon, Ruler as RulerIcon,
+  Hourglass as HourglassIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -375,7 +377,7 @@ function ApplicationDetailDialog({
             <Stack spacing={3}>
               {/* Quick stats */}
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 1.5 }}>
-                <MetaCard icon={<DollarSign size={16} />} label="Pago" value={app.isPaid ? "✅ Confirmado" : "⏳ Pendiente"} color={app.isPaid ? "#16a34a" : "#d97706"} />
+                <MetaCard icon={<DollarSign size={16} />} label="Pago" value={app.isPaid ? "Confirmado" : "Pendiente"} color={app.isPaid ? "#16a34a" : "#d97706"} />
                 <MetaCard icon={<ImageIcon size={16} />} label="Obras cargadas" value={`${app.artworkImages?.length || 0} / 15`} />
                 <MetaCard icon={<CalendarIcon size={16} />} label="Enviada" value={app.submittedAt ? new Date(app.submittedAt).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" }) : "—"} />
                 <MetaCard icon={<MapPinIcon size={16} />} label="Ciudad" value={artist?.city || "—"} />
@@ -417,7 +419,7 @@ function ApplicationDetailDialog({
               {app.adminNotes && (
                 <Box sx={{ background: dk ? "rgba(14,165,233,0.08)" : "#f0f9ff", border: `1px solid ${dk ? 'rgba(14,165,233,0.2)' : '#bae6fd'}`, borderRadius: 2, p: 2 }}>
                   <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#38bdf8' : '#0369a1', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-                    📝 NOTA DEL CURADOR
+                    <NoteIcon size={14} /> NOTA DEL CURADOR
                   </Typography>
                   <Typography variant="body2" color="text.primary">{app.adminNotes}</Typography>
                 </Box>
@@ -425,7 +427,7 @@ function ApplicationDetailDialog({
               {app.rejectionReason && (
                 <Box sx={{ background: dk ? "rgba(239,68,68,0.08)" : "#fef2f2", border: `1px solid ${dk ? 'rgba(239,68,68,0.2)' : '#fca5a5'}`, borderRadius: 2, p: 2 }}>
                   <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#f87171' : '#dc2626', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-                    ❌ RAZÓN DE RECHAZO
+                    <XCircleIcon size={14} /> RAZÓN DE RECHAZO
                   </Typography>
                   <Typography variant="body2" color="text.primary">{app.rejectionReason}</Typography>
                 </Box>
@@ -591,10 +593,10 @@ function ApplicationDetailDialog({
           {/* Tab: Documentos */}
           {tab === 2 && (
             <Stack spacing={2}>
-              <DocLink label="CV del artista" url={app.cvUrl} icon="📄" type="PDF" />
-              <DocLink label="Foto de perfil" url={app.profilePhotoUrl} icon="🖼️" type="Imagen" />
-              <DocLink label="Imagen de detalle" url={app.detailImageUrl} icon="🔍" type="Imagen" />
-              <DocLink label="Plano de montaje" url={app.montageImageUrl} icon="📐" type="Imagen" />
+              <DocLink label="CV del artista" url={app.cvUrl} icon={<FileIcon size={26} />} type="PDF" />
+              <DocLink label="Foto de perfil" url={app.profilePhotoUrl} icon={<ImageIcon size={26} />} type="Imagen" />
+              <DocLink label="Imagen de detalle" url={app.detailImageUrl} icon={<SearchIcon size={26} />} type="Imagen" />
+              <DocLink label="Plano de montaje" url={app.montageImageUrl} icon={<RulerIcon size={26} />} type="Imagen" />
             </Stack>
           )}
 
@@ -602,14 +604,14 @@ function ApplicationDetailDialog({
           {reviewing && (
             <Box sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#fafafa", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, borderRadius: 2.5 }}>
               <Typography variant="subtitle2" fontWeight={800} mb={2} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                ⚖️ Emitir resolución
+                <ScaleIcon size={16} /> Emitir resolución
               </Typography>
               <Stack spacing={2}>
                 <FormControl size="small" fullWidth>
                   <InputLabel>Decisión</InputLabel>
                   <Select value={decision} label="Decisión" onChange={(e) => setDecision(e.target.value as any)}>
-                    <MenuItem value="accepted">✅ Aceptar postulación</MenuItem>
-                    <MenuItem value="rejected">❌ Rechazar postulación</MenuItem>
+                    <MenuItem value="accepted"><CheckCircleIcon size={14} style={{ marginRight: 8 }} /> Aceptar postulación</MenuItem>
+                    <MenuItem value="rejected"><XCircleIcon size={14} style={{ marginRight: 8 }} /> Rechazar postulación</MenuItem>
                   </Select>
                 </FormControl>
                 <TextField label="Notas del curador (visibles al artista)" multiline rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth size="small" />
@@ -789,7 +791,7 @@ function ApplicationDetailDialog({
   );
 }
 
-function DocLink({ label, url, icon, type }: { label: string; url?: string; icon: string; type?: string }) {
+function DocLink({ label, url, icon, type }: { label: string; url?: string; icon: React.ReactNode; type?: string }) {
   const t = useTheme();
   const dk = t.palette.mode === "dark";
   return (
@@ -799,7 +801,7 @@ function DocLink({ label, url, icon, type }: { label: string; url?: string; icon
       borderRadius: 2.5, background: url ? (dk ? 'rgba(255,255,255,0.03)' : '#fff') : (dk ? 'rgba(255,255,255,0.02)' : '#f8fafc'),
       transition: "all .2s", "&:hover": url ? { borderColor: '#4ade80', background: dk ? 'rgba(74,222,128,0.05)' : '#f0fdf4' } : {},
     }}>
-      <Typography fontSize={28}>{icon}</Typography>
+      <Box sx={{ display: "flex", color: url ? "text.secondary" : "text.disabled" }}>{icon}</Box>
       <Box flex={1}>
         <Typography variant="subtitle2" fontWeight={700} color="text.primary">{label}</Typography>
         {url ? (
@@ -812,7 +814,7 @@ function DocLink({ label, url, icon, type }: { label: string; url?: string; icon
           <Typography variant="caption" color="text.disabled">No cargado</Typography>
         )}
       </Box>
-      <Chip size="small" label={url ? "✅ Cargado" : "—"} color={url ? "success" : "default"} variant={url ? "filled" : "outlined"} sx={{ fontSize: 11 }} />
+      <Chip size="small" icon={url ? <CheckCircleIcon size={12} /> : undefined} label={url ? "Cargado" : "—"} color={url ? "success" : "default"} variant={url ? "filled" : "outlined"} sx={{ fontSize: 11 }} />
     </Box>
   );
 }
@@ -913,8 +915,8 @@ export default function SolicitudesPage() {
     {
       field: "isPaid", headerName: "Pago", width: 110,
       renderCell: (p) => p.row?.isPaid
-        ? <Chip size="small" color="success" label="✅ Pagado" sx={{ fontSize: 11 }} />
-        : <Chip size="small" color="warning" label="⏳ Pendiente" sx={{ fontSize: 11 }} />,
+        ? <Chip size="small" color="success" icon={<CheckCircleIcon size={12} />} label="Pagado" sx={{ fontSize: 11 }} />
+        : <Chip size="small" color="warning" icon={<ClockIcon size={12} />} label="Pendiente" sx={{ fontSize: 11 }} />,
     },
     {
       field: "artworkImages", headerName: "Obras", width: 80, align: "center", headerAlign: "center",
@@ -1026,8 +1028,8 @@ export default function SolicitudesPage() {
                 <InputLabel>Pago</InputLabel>
                 <Select value={filterPaid} label="Pago" onChange={(e) => { setFilterPaid(e.target.value); setPagination({ page: 0, pageSize: 20 }); }}>
                   <MenuItem value="">Todos</MenuItem>
-                  <MenuItem value="true">✅ Pagados</MenuItem>
-                  <MenuItem value="false">⏳ Sin pago</MenuItem>
+                  <MenuItem value="true"><CheckCircleIcon size={14} style={{ marginRight: 8 }} /> Pagados</MenuItem>
+                  <MenuItem value="false"><HourglassIcon size={14} style={{ marginRight: 8 }} /> Sin pago</MenuItem>
                 </Select>
               </FormControl>
               <Box flex={1} />
@@ -1042,10 +1044,10 @@ export default function SolicitudesPage() {
               </Button>
               <Menu anchorEl={remAnchor} open={!!remAnchor} onClose={() => setRemAnchor(null)}>
                 <MenuItem onClick={() => handleBulkReminders("payment")}>
-                  ⏳&nbsp; Sin pago — recordar pago de inscripción
+                  <HourglassIcon size={15} style={{ marginRight: 10 }} /> Sin pago — recordar pago de inscripción
                 </MenuItem>
                 <MenuItem onClick={() => handleBulkReminders("complete")}>
-                  🎨&nbsp; Pagados en borrador — recordar subir obras
+                  <PaletteIcon size={15} style={{ marginRight: 10 }} /> Pagados en borrador — recordar subir obras
                 </MenuItem>
               </Menu>
               <Button variant="outlined" startIcon={<RefreshIcon size={16} />} onClick={() => { refetch(); refetchStats(); }}>

@@ -147,7 +147,7 @@ export function QrValidationPanel() {
 
     if (lastResult.status === "checked_in") {
       if (lastResult.sameDay) {
-        return "Acceso permitido: boleto válido para hoy ✅";
+        return "Acceso permitido: boleto válido para hoy";
       }
       return "Boleto válido pero para otro día. Revisa la fecha antes de permitir el acceso.";
     }
@@ -316,7 +316,7 @@ export function QrValidationPanel() {
                 Acceso permitido
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Boleto válido para hoy. Puede ingresar ✅
+                Boleto válido para hoy. Puede ingresar
               </Typography>
 
               {lastResult?.shortCode && (

@@ -225,7 +225,7 @@
                     },
                 });
 
-                toast.success("Venta registrada como pagada ✨");
+                toast.success("Venta registrada como pagada");
             } catch (err: any) {
                 console.error(err);
                 toast.error(

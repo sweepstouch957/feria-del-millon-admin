@@ -60,7 +60,7 @@ export default function ArtworksTable({
       } else {
         await navigator.clipboard.writeText(url);
       }
-      onShare("Enlace listo para compartir ✨");
+      onShare("Enlace listo para compartir");
     } catch {
       await navigator.clipboard.writeText(url);
       onShare("Enlace copiado al portapapeles");
@@ -206,7 +206,7 @@ export default function ArtworksTable({
                         color="text.secondary"
                         sx={{ mt: 0.5 }}
                       >
-                        Crea tu primera obra y verás aquí todo tu catálogo ✨
+                        Crea tu primera obra y verás aquí todo tu catálogo
                       </Typography>
                     </Box>
                   </TableCell>

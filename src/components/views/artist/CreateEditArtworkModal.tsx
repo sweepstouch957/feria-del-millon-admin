@@ -168,7 +168,7 @@ export default function CreateEditArtworkModal({
   const mCreate = useMutation({
     mutationFn: async (payload: CreateArtworkInput) => createArtwork(payload),
     onSuccess: () => {
-      toast.success("Obra creada ✨");
+      toast.success("Obra creada");
       qc.invalidateQueries({ queryKey: ["artworks"] });
       onDone();
     },
@@ -186,7 +186,7 @@ export default function CreateEditArtworkModal({
       payload: PatchArtworkDto;
     }) => patchArtwork(id, payload),
     onSuccess: (resp) => {
-      toast.success("Obra actualizada ✅");
+      toast.success("Obra actualizada");
       qc.invalidateQueries({ queryKey: ["artworks"] });
       qc.invalidateQueries({ queryKey: ["artwork-detail", resp.doc.id] });
       onDone();
