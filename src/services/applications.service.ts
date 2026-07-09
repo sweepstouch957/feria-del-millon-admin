@@ -112,6 +112,18 @@ export const markAsPaid = async (id: string): Promise<{ ok: boolean; doc: Artist
   return data;
 };
 
+export const sendBulkReminders = async (
+  type: "payment" | "complete"
+): Promise<{ ok: boolean; targeted: number; sent: number; failed: number }> => {
+  const { data } = await apiClient.post(
+    `/applications/applications/reminders/bulk`,
+    { type },
+    // el envío es secuencial en el backend — puede tardar varios minutos
+    { headers: ADMIN_HEADERS, timeout: 300_000 }
+  );
+  return data;
+};
+
 export const deleteApplication = async (id: string): Promise<{ ok: boolean }> => {
   const { data } = await apiClient.delete(
     `/applications/applications/${id}`,

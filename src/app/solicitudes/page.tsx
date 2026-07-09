@@ -3,11 +3,11 @@
 import * as React from "react";
 import { useTheme } from "@mui/material/styles";
 import {
-  Box, Card, CardHeader, CardContent, Stack, TextField, InputAdornment,
+  Box, Card, CardContent, Stack, TextField, InputAdornment,
   IconButton, Select, MenuItem, FormControl, InputLabel, Chip, Button,
   Tooltip, Typography, Divider, Dialog, DialogTitle, DialogContent,
   DialogActions, Snackbar, Alert, LinearProgress, Avatar, Badge,
-  Tab, Tabs, CircularProgress,
+  Tab, Tabs, CircularProgress, Menu,
 } from "@mui/material";
 import { DataGrid, type GridColDef, type GridRenderCellParams, type GridPaginationModel } from "@mui/x-data-grid";
 import {
@@ -17,12 +17,13 @@ import {
   Image as ImageIcon, Palette as PaletteIcon, User as UserIcon,
   Mail as MailIcon, Phone as PhoneIcon, MapPin as MapPinIcon,
   Instagram as InstagramIcon, Calendar as CalendarIcon, DollarSign,
-  Trash2 as Trash2Icon, RotateCcw as RevisionIcon,
+  Trash2 as Trash2Icon, RotateCcw as RevisionIcon, Bell as BellIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   listApplications, getApplicationStats, reviewApplication, requestRevision,
   setUnderReview, markAsPaid, deleteApplication, sendPaymentReminder,
+  sendBulkReminders,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
 
@@ -828,6 +829,27 @@ export default function SolicitudesPage() {
   const [selectedApp, setSelectedApp] = React.useState<ArtistApplication | null>(null);
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [toast, setToast] = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
+  const [remAnchor, setRemAnchor] = React.useState<null | HTMLElement>(null);
+  const [remSending, setRemSending] = React.useState(false);
+
+  const handleBulkReminders = async (type: "payment" | "complete") => {
+    setRemAnchor(null);
+    const label = type === "payment"
+      ? "los artistas que NO han pagado la inscripción"
+      : "los artistas pagados con la postulación en borrador (sin enviar obras)";
+    if (!window.confirm(`¿Enviar recordatorio por correo a todos ${label}?\n\nSe envía máximo 1 correo cada 72h por artista.`)) return;
+    setRemSending(true);
+    try {
+      const r = await sendBulkReminders(type);
+      setToast({
+        open: true,
+        msg: `Recordatorios enviados: ${r.sent} de ${r.targeted}${r.failed ? ` (${r.failed} fallidos)` : ""}`,
+        sev: r.failed && !r.sent ? "error" : "success",
+      });
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error enviando recordatorios", sev: "error" });
+    } finally { setRemSending(false); }
+  };
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["applications", filterStatus, filterPaid, q, pagination.page, pagination.pageSize],
@@ -981,19 +1003,6 @@ export default function SolicitudesPage() {
       </Box>
 
       <Card sx={{ borderRadius: 3, boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
-        <CardHeader
-          avatar={<PaletteIcon size={24} />}
-          title={<Typography variant="h6" fontWeight={800}>Solicitudes de artistas</Typography>}
-          subheader={<Typography variant="body2" color="text.secondary">
-            Gestiona las postulaciones a convocatorias
-          </Typography>}
-          action={
-            <Tooltip title="Refrescar">
-              <IconButton onClick={() => { refetch(); refetchStats(); }}><RefreshIcon size={18} /></IconButton>
-            </Tooltip>
-          }
-        />
-        <Divider />
         <CardContent>
           <Stack spacing={2}>
             {/* Filters */}
@@ -1022,6 +1031,23 @@ export default function SolicitudesPage() {
                 </Select>
               </FormControl>
               <Box flex={1} />
+              <Button
+                variant="outlined"
+                color="info"
+                startIcon={remSending ? <CircularProgress size={14} /> : <BellIcon size={16} />}
+                disabled={remSending}
+                onClick={(e) => setRemAnchor(e.currentTarget)}
+              >
+                Recordatorios
+              </Button>
+              <Menu anchorEl={remAnchor} open={!!remAnchor} onClose={() => setRemAnchor(null)}>
+                <MenuItem onClick={() => handleBulkReminders("payment")}>
+                  ⏳&nbsp; Sin pago — recordar pago de inscripción
+                </MenuItem>
+                <MenuItem onClick={() => handleBulkReminders("complete")}>
+                  🎨&nbsp; Pagados en borrador — recordar subir obras
+                </MenuItem>
+              </Menu>
               <Button variant="outlined" startIcon={<RefreshIcon size={16} />} onClick={() => { refetch(); refetchStats(); }}>
                 Actualizar
               </Button>
