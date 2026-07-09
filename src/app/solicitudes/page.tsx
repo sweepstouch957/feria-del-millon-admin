@@ -832,17 +832,19 @@ export default function SolicitudesPage() {
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [toast, setToast] = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
   const [remAnchor, setRemAnchor] = React.useState<null | HTMLElement>(null);
+  const [remConfirm, setRemConfirm] = React.useState<null | "payment" | "complete">(null);
   const [remSending, setRemSending] = React.useState(false);
 
-  const handleBulkReminders = async (type: "payment" | "complete") => {
+  const openReminderConfirm = (type: "payment" | "complete") => {
     setRemAnchor(null);
-    const label = type === "payment"
-      ? "los artistas que NO han pagado la inscripción"
-      : "los artistas pagados con la postulación en borrador (sin enviar obras)";
-    if (!window.confirm(`¿Enviar recordatorio por correo a todos ${label}?\n\nSe envía máximo 1 correo cada 72h por artista.`)) return;
+    setRemConfirm(type);
+  };
+
+  const handleBulkReminders = async () => {
+    if (!remConfirm) return;
     setRemSending(true);
     try {
-      const r = await sendBulkReminders(type);
+      const r = await sendBulkReminders(remConfirm);
       setToast({
         open: true,
         msg: `Recordatorios enviados: ${r.sent} de ${r.targeted}${r.failed ? ` (${r.failed} fallidos)` : ""}`,
@@ -850,7 +852,10 @@ export default function SolicitudesPage() {
       });
     } catch (e: any) {
       setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error enviando recordatorios", sev: "error" });
-    } finally { setRemSending(false); }
+    } finally {
+      setRemSending(false);
+      setRemConfirm(null);
+    }
   };
 
   const { data, isLoading, refetch } = useQuery({
@@ -1043,13 +1048,61 @@ export default function SolicitudesPage() {
                 Recordatorios
               </Button>
               <Menu anchorEl={remAnchor} open={!!remAnchor} onClose={() => setRemAnchor(null)}>
-                <MenuItem onClick={() => handleBulkReminders("payment")}>
+                <MenuItem onClick={() => openReminderConfirm("payment")}>
                   <HourglassIcon size={15} style={{ marginRight: 10 }} /> Sin pago — recordar pago de inscripción
                 </MenuItem>
-                <MenuItem onClick={() => handleBulkReminders("complete")}>
+                <MenuItem onClick={() => openReminderConfirm("complete")}>
                   <PaletteIcon size={15} style={{ marginRight: 10 }} /> Pagados en borrador — recordar subir obras
                 </MenuItem>
               </Menu>
+              <Dialog
+                open={!!remConfirm}
+                onClose={() => { if (!remSending) setRemConfirm(null); }}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3 } }}
+              >
+                <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 800 }}>
+                  <Box
+                    sx={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
+                      background: remConfirm === "payment" ? "rgba(251,146,60,0.14)" : "rgba(96,165,250,0.14)",
+                      color: remConfirm === "payment" ? "#fb923c" : "#60a5fa",
+                    }}
+                  >
+                    {remConfirm === "payment" ? <HourglassIcon size={20} /> : <PaletteIcon size={20} />}
+                  </Box>
+                  {remConfirm === "payment" ? "Recordar pago de inscripción" : "Recordar completar postulación"}
+                </DialogTitle>
+                <DialogContent>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {remConfirm === "payment" ? (
+                      <>Se enviará un correo a los <strong>{byStatus["pending_payment"] ?? "—"} artistas sin pago</strong>, con
+                      enlace directo para completar su pago de inscripción.</>
+                    ) : (
+                      <>Se enviará un correo a los <strong>{byStatus["draft"] ?? "—"} artistas pagados en borrador</strong>, invitándolos
+                      a subir sus obras y enviar la postulación (el enlace los lleva a su paso actual del formulario).</>
+                    )}
+                  </Typography>
+                  <Alert severity="info" sx={{ fontSize: 12.5, py: 0.25, borderRadius: 2 }}>
+                    Se envía máximo 1 correo cada 72 h por artista — quienes recibieron uno recientemente se omiten automáticamente.
+                  </Alert>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+                  <Button color="inherit" onClick={() => setRemConfirm(null)} disabled={remSending}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleBulkReminders}
+                    disabled={remSending}
+                    startIcon={remSending ? <CircularProgress size={14} color="inherit" /> : <BellIcon size={15} />}
+                  >
+                    {remSending ? "Enviando…" : "Enviar correos"}
+                  </Button>
+                </DialogActions>
+              </Dialog>
               <Button variant="outlined" startIcon={<RefreshIcon size={16} />} onClick={() => { refetch(); refetchStats(); }}>
                 Actualizar
               </Button>
