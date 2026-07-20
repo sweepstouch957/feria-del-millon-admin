@@ -261,6 +261,22 @@ export const markOrderPaid = async (
 };
 
 
+/**
+ * POST /order/orders/:id/refund
+ * Reembolsa una orden pagada y DEVUELVE el inventario (stock + copias) para
+ * revender. Transición atómica paid→refunded; idempotente.
+ */
+export const refundOrder = async (
+    orderId: string
+): Promise<{ ok: boolean; already?: boolean; restoreError?: string }> => {
+    const { data } = await apiClient.post<{ ok: boolean; already?: boolean; restoreError?: string }>(
+        `/order/orders/${orderId}/refund`,
+        {},
+        { withCredentials: true }
+    );
+    return data;
+};
+
 export const confirmCashPayment = async (
     payload: CashPaymentConfirmInput
 ): Promise<{ ok: boolean }> => {
