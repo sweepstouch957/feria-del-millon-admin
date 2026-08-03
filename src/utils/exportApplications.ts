@@ -102,6 +102,15 @@ function csvField(v: string): string {
   return s;
 }
 
+// Fuerza a Excel a tratar el valor como TEXTO (no como número → evita que un
+// teléfono largo salga en notación científica "5.73E+11" o pierda ceros a la
+// izquierda). Excel evalúa `="573..."` como cadena literal.
+function asExcelText(v: string): string {
+  const s = String(v ?? "").trim();
+  if (!s) return "";
+  return `="${s.replace(/"/g, '""')}"`;
+}
+
 const HEADERS = [
   "Nombre",
   "Apellido",
@@ -126,7 +135,7 @@ export function applicationsToCsv(apps: ArtistApplication[]): string {
       artist.firstName || "",
       artist.lastName || "",
       artist.email || "",
-      artist.mobile || "",
+      asExcelText(artist.mobile || ""), // texto → sin notación científica
       artist.city || "",
       conv.name || "",
       STATUS_LABEL[a.status] || a.status || "",

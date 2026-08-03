@@ -1085,21 +1085,18 @@ export default function SolicitudesPage() {
               <Box flex={1} />
               <Button
                 onClick={openExport}
+                disableElevation
                 startIcon={<SheetIcon size={16} />}
                 sx={{
                   color: "#fff",
-                  fontWeight: 800,
+                  fontWeight: 700,
                   px: 2.2,
                   borderRadius: 2,
                   textTransform: "none",
-                  background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-                  boxShadow: "0 6px 18px rgba(34,197,94,0.35)",
-                  transition: "all .2s",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #15803d 0%, #16a34a 100%)",
-                    boxShadow: "0 8px 24px rgba(34,197,94,0.45)",
-                    transform: "translateY(-1px)",
-                  },
+                  bgcolor: "#16a34a",
+                  boxShadow: "none",
+                  transition: "background .18s",
+                  "&:hover": { bgcolor: "#15803d", boxShadow: "none" },
                 }}
               >
                 Exportar Excel
@@ -1270,10 +1267,10 @@ export default function SolicitudesPage() {
                     onClick={() => setExportSeg(opt.key as Segment)}
                     sx={{
                       display: "flex", alignItems: "center", gap: 1.5, p: 1.75, cursor: "pointer",
-                      borderRadius: 2.5, transition: "all .15s",
-                      border: `2px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb")}`,
+                      borderRadius: 2.5, transition: "border-color .15s, background .15s",
+                      border: `1.5px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.08)" : "#e8ebef")}`,
                       background: selected ? opt.bg : "transparent",
-                      "&:hover": { borderColor: opt.color },
+                      "&:hover": { borderColor: selected ? opt.color : (isDark ? "rgba(255,255,255,0.18)" : "#cbd5e1") },
                     }}
                   >
                     <Box sx={{
@@ -1284,14 +1281,21 @@ export default function SolicitudesPage() {
                       {opt.icon}
                     </Box>
                     <Box flex={1} minWidth={0}>
-                      <Typography fontWeight={800} fontSize={14}>{opt.label}</Typography>
+                      <Typography fontWeight={700} fontSize={14}>{opt.label}</Typography>
                       <Typography variant="caption" color="text.secondary">{opt.desc}</Typography>
                     </Box>
-                    <Chip
-                      label={count}
-                      size="small"
-                      sx={{ fontWeight: 800, minWidth: 44, bgcolor: opt.bg, color: opt.color }}
-                    />
+                    <Typography sx={{ fontWeight: 800, fontSize: 15, color: selected ? opt.color : "text.secondary", minWidth: 32, textAlign: "right" }}>
+                      {count}
+                    </Typography>
+                    <Box sx={{
+                      width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: `2px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.2)" : "#cbd5e1")}`,
+                      background: selected ? opt.color : "transparent",
+                      transition: "all .15s",
+                    }}>
+                      {selected && <CheckCircleIcon size={12} color="#fff" />}
+                    </Box>
                   </Box>
                 );
               })}
@@ -1305,13 +1309,14 @@ export default function SolicitudesPage() {
           </Button>
           <Button
             variant="contained"
+            disableElevation
             onClick={handleExport}
             disabled={exportLoading || !!exportError || !exportCounts || (exportCounts?.[exportSeg] ?? 0) === 0}
             startIcon={<DownloadIcon size={16} />}
             sx={{
-              fontWeight: 800, textTransform: "none",
-              background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-              "&:hover": { background: "linear-gradient(135deg, #15803d 0%, #16a34a 100%)" },
+              fontWeight: 700, textTransform: "none", boxShadow: "none",
+              bgcolor: "#16a34a",
+              "&:hover": { bgcolor: "#15803d", boxShadow: "none" },
             }}
           >
             Descargar Excel{exportCounts ? ` (${exportCounts[exportSeg]})` : ""}
