@@ -19,7 +19,8 @@ import {
   Instagram as InstagramIcon, Calendar as CalendarIcon, DollarSign,
   Trash2 as Trash2Icon, RotateCcw as RevisionIcon, Bell as BellIcon,
   Scale as ScaleIcon, StickyNote as NoteIcon, Ruler as RulerIcon,
-  Hourglass as HourglassIcon,
+  Hourglass as HourglassIcon, FileSpreadsheet as SheetIcon,
+  Download as DownloadIcon, CreditCard as CardIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -28,6 +29,10 @@ import {
   sendBulkReminders,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
+import {
+  fetchAllApplications, countSegments, inSegment, applicationsToCsv, downloadCsv,
+  type Segment,
+} from "@utils/exportApplications";
 
 /* ── HEIC → JPEG via Cloudinary ────────────────────────────────────────────── */
 function resolveImgUrl(url?: string): string {
@@ -835,6 +840,46 @@ export default function SolicitudesPage() {
   const [remConfirm, setRemConfirm] = React.useState<null | "payment" | "complete">(null);
   const [remSending, setRemSending] = React.useState(false);
 
+  // ── Exportar a Excel ──────────────────────────────────────────────────────
+  const [exportOpen, setExportOpen] = React.useState(false);
+  const [exportLoading, setExportLoading] = React.useState(false);
+  const [exportApps, setExportApps] = React.useState<ArtistApplication[] | null>(null);
+  const [exportSeg, setExportSeg] = React.useState<Segment>("paid_submitted");
+  const [exportError, setExportError] = React.useState("");
+
+  const exportCounts = React.useMemo(
+    () => (exportApps ? countSegments(exportApps) : null),
+    [exportApps]
+  );
+
+  const openExport = async () => {
+    setExportOpen(true);
+    setExportError("");
+    if (exportApps) return; // ya cargado
+    setExportLoading(true);
+    try {
+      const apps = await fetchAllApplications();
+      setExportApps(apps);
+    } catch (e: any) {
+      setExportError(e?.response?.data?.error || e?.message || "No se pudo cargar el listado");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    if (!exportApps) return;
+    const subset = exportApps.filter((a) => inSegment(a, exportSeg));
+    if (subset.length === 0) {
+      setToast({ open: true, msg: "No hay inscritos en ese grupo para exportar", sev: "error" });
+      return;
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`inscritos_${exportSeg}_${stamp}.csv`, applicationsToCsv(subset));
+    setToast({ open: true, msg: `Exportados ${subset.length} inscritos`, sev: "success" });
+    setExportOpen(false);
+  };
+
   const openReminderConfirm = (type: "payment" | "complete") => {
     setRemAnchor(null);
     setRemConfirm(type);
@@ -1039,6 +1084,27 @@ export default function SolicitudesPage() {
               </FormControl>
               <Box flex={1} />
               <Button
+                onClick={openExport}
+                startIcon={<SheetIcon size={16} />}
+                sx={{
+                  color: "#fff",
+                  fontWeight: 800,
+                  px: 2.2,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
+                  boxShadow: "0 6px 18px rgba(34,197,94,0.35)",
+                  transition: "all .2s",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #15803d 0%, #16a34a 100%)",
+                    boxShadow: "0 8px 24px rgba(34,197,94,0.45)",
+                    transform: "translateY(-1px)",
+                  },
+                }}
+              >
+                Exportar Excel
+              </Button>
+              <Button
                 variant="outlined"
                 color="info"
                 startIcon={remSending ? <CircularProgress size={14} /> : <BellIcon size={16} />}
@@ -1157,6 +1223,101 @@ export default function SolicitudesPage() {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* ── Export Excel dialog ─────────────────────────────────────────── */}
+      <Dialog
+        open={exportOpen}
+        onClose={() => !exportLoading && setExportOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 900, pb: 1 }}>
+          <Box sx={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
+            background: "rgba(34,197,94,0.14)", color: "#16a34a",
+          }}>
+            <SheetIcon size={20} />
+          </Box>
+          <Box>
+            <Typography fontWeight={900} fontSize={17}>Exportar inscritos a Excel</Typography>
+            <Typography variant="caption" color="text.secondary">Elige qué grupo quieres descargar</Typography>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 1 }}>
+          {exportLoading ? (
+            <Box sx={{ py: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
+              <CircularProgress size={30} />
+              <Typography variant="body2" color="text.secondary">Cargando inscritos…</Typography>
+            </Box>
+          ) : exportError ? (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>{exportError}</Alert>
+          ) : (
+            <Stack spacing={1.25} sx={{ mt: 0.5 }}>
+              {([
+                { key: "paid_submitted",     label: "Pagaron y enviaron propuesta", desc: "Pagaron la inscripción y ya enviaron su postulación.", icon: <CheckCircleIcon size={18} />, color: "#16a34a", bg: "rgba(34,197,94,0.1)" },
+                { key: "paid_not_submitted", label: "Pagaron pero no enviaron",      desc: "Pagaron pero aún no completaron/enviaron su propuesta.", icon: <CardIcon size={18} />,        color: "#0369a1", bg: "rgba(14,165,233,0.1)" },
+                { key: "not_paid",           label: "No han pagado",                 desc: "Se registraron pero aún no pagan la inscripción.",       icon: <HourglassIcon size={18} />,    color: "#c2410c", bg: "rgba(251,146,60,0.1)" },
+                { key: "all",                label: "Todos los inscritos",           desc: "Listado completo, sin filtrar.",                          icon: <UserIcon size={18} />,         color: "#475569", bg: "rgba(100,116,139,0.1)" },
+              ] as const).map((opt) => {
+                const selected = exportSeg === opt.key;
+                const count = exportCounts ? exportCounts[opt.key as Segment] : 0;
+                return (
+                  <Box
+                    key={opt.key}
+                    onClick={() => setExportSeg(opt.key as Segment)}
+                    sx={{
+                      display: "flex", alignItems: "center", gap: 1.5, p: 1.75, cursor: "pointer",
+                      borderRadius: 2.5, transition: "all .15s",
+                      border: `2px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb")}`,
+                      background: selected ? opt.bg : "transparent",
+                      "&:hover": { borderColor: opt.color },
+                    }}
+                  >
+                    <Box sx={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 38, height: 38, borderRadius: 2, flexShrink: 0,
+                      background: opt.bg, color: opt.color,
+                    }}>
+                      {opt.icon}
+                    </Box>
+                    <Box flex={1} minWidth={0}>
+                      <Typography fontWeight={800} fontSize={14}>{opt.label}</Typography>
+                      <Typography variant="caption" color="text.secondary">{opt.desc}</Typography>
+                    </Box>
+                    <Chip
+                      label={count}
+                      size="small"
+                      sx={{ fontWeight: 800, minWidth: 44, bgcolor: opt.bg, color: opt.color }}
+                    />
+                  </Box>
+                );
+              })}
+            </Stack>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button color="inherit" onClick={() => setExportOpen(false)} disabled={exportLoading}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleExport}
+            disabled={exportLoading || !!exportError || !exportCounts || (exportCounts?.[exportSeg] ?? 0) === 0}
+            startIcon={<DownloadIcon size={16} />}
+            sx={{
+              fontWeight: 800, textTransform: "none",
+              background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
+              "&:hover": { background: "linear-gradient(135deg, #15803d 0%, #16a34a 100%)" },
+            }}
+          >
+            Descargar Excel{exportCounts ? ` (${exportCounts[exportSeg]})` : ""}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Detail dialog */}
       <ApplicationDetailDialog
