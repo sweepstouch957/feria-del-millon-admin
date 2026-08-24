@@ -45,7 +45,7 @@ type EditDayState = {
 export function DaysGrid({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient();
 
-  /** 🔹 FUTURO: selección de evento */
+  /** FUTURO: selección de evento */
   const [selectedEvent, setSelectedEvent] = useState(eventId);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -160,7 +160,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
           subheader="Configura capacidad, precio y estado por día."
           action={
             <Stack direction="row" spacing={1}>
-              {/* 🔹 Botón “Agregar día” deshabilitado (futuro feature) */}
+              {/* Botón “Agregar día” deshabilitado (futuro feature) */}
               <Button
                 size="small"
                 startIcon={<AddIcon />}
@@ -178,7 +178,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
           }
         />
         <CardContent>
-          {/* 🔹 Selector de Evento (para futuro multi-evento) */}
+          {/* Selector de Evento (para futuro multi-evento) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
             <TextField
               select

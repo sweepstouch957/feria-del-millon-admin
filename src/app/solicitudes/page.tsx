@@ -21,6 +21,7 @@ import {
   Scale as ScaleIcon, StickyNote as NoteIcon, Ruler as RulerIcon,
   Hourglass as HourglassIcon, FileSpreadsheet as SheetIcon,
   Download as DownloadIcon, CreditCard as CardIcon,
+  Settings as SettingsIcon, Lock as LockIcon, Unlock as UnlockIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -33,6 +34,10 @@ import {
   fetchAllApplications, countSegments, inSegment, applicationsToCsv, downloadCsv,
   type Segment,
 } from "@utils/exportApplications";
+import {
+  getConvocatorias, updateConvocatoria,
+  type Convocatoria, type ConvocatoriaStatus,
+} from "@services/events.service";
 
 /* ── HEIC → JPEG via Cloudinary ────────────────────────────────────────────── */
 function resolveImgUrl(url?: string): string {
@@ -880,6 +885,76 @@ export default function SolicitudesPage() {
     setExportOpen(false);
   };
 
+  // ── Configurar convocatoria ────────────────────────────────────────────────
+  const [cfgOpen, setCfgOpen] = React.useState(false);
+  const [cfgLoading, setCfgLoading] = React.useState(false);
+  const [cfgSaving, setCfgSaving] = React.useState(false);
+  const [cfgError, setCfgError] = React.useState("");
+  const [convs, setConvs] = React.useState<Convocatoria[] | null>(null);
+  const [cfgId, setCfgId] = React.useState("");
+  const [cfgForm, setCfgForm] = React.useState({
+    name: "", fee: 0, status: "open" as ConvocatoriaStatus,
+    startDate: "", endDate: "", maxArtworksPerArtist: 3,
+  });
+
+  const loadConvForm = (c: Convocatoria) => {
+    setCfgId(c._id);
+    setCfgForm({
+      name: c.name || "",
+      fee: c.fee ?? 0,
+      status: c.status,
+      startDate: (c.startDate || "").slice(0, 10),
+      endDate: (c.endDate || "").slice(0, 10),
+      maxArtworksPerArtist: c.maxArtworksPerArtist ?? 3,
+    });
+  };
+
+  const openConfig = async () => {
+    setCfgOpen(true);
+    setCfgError("");
+    setCfgLoading(true);
+    try {
+      const list = await getConvocatorias();
+      setConvs(list);
+      if (list.length > 0) loadConvForm(list.find((c) => c.status === "open") || list[0]);
+    } catch (e: any) {
+      setCfgError(e?.response?.data?.error || e?.message || "No se pudieron cargar las convocatorias");
+    } finally {
+      setCfgLoading(false);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!cfgId) return;
+    setCfgSaving(true);
+    setCfgError("");
+    try {
+      await updateConvocatoria(cfgId, {
+        name: cfgForm.name,
+        fee: Number(cfgForm.fee),
+        status: cfgForm.status,
+        startDate: cfgForm.startDate,
+        endDate: cfgForm.endDate,
+        maxArtworksPerArtist: Number(cfgForm.maxArtworksPerArtist),
+      });
+      setToast({ open: true, msg: "Convocatoria actualizada", sev: "success" });
+      setCfgOpen(false);
+    } catch (e: any) {
+      setCfgError(e?.response?.data?.error || e?.message || "Error al guardar");
+    } finally {
+      setCfgSaving(false);
+    }
+  };
+
+  const CONV_STATUS_OPTS: { value: ConvocatoriaStatus; label: string }[] = [
+    { value: "open", label: "Abierta — recibe postulaciones" },
+    { value: "closed", label: "Cerrada — no recibe nuevas" },
+    { value: "draft", label: "Borrador" },
+    { value: "selection", label: "En selección" },
+    { value: "finalized", label: "Finalizada" },
+    { value: "archived", label: "Archivada" },
+  ];
+
   const openReminderConfirm = (type: "payment" | "complete") => {
     setRemAnchor(null);
     setRemConfirm(type);
@@ -1084,6 +1159,14 @@ export default function SolicitudesPage() {
               </FormControl>
               <Box flex={1} />
               <Button
+                onClick={openConfig}
+                variant="outlined"
+                startIcon={<SettingsIcon size={16} />}
+                sx={{ fontWeight: 700, textTransform: "none", borderRadius: 2 }}
+              >
+                Convocatoria
+              </Button>
+              <Button
                 onClick={openExport}
                 disableElevation
                 startIcon={<SheetIcon size={16} />}
@@ -1220,6 +1303,145 @@ export default function SolicitudesPage() {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* ── Configurar convocatoria dialog ──────────────────────────────── */}
+      <Dialog
+        open={cfgOpen}
+        onClose={() => !cfgSaving && setCfgOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 900, pb: 1 }}>
+          <Box sx={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
+            background: "rgba(100,116,139,0.14)", color: isDark ? "#cbd5e1" : "#475569",
+          }}>
+            <SettingsIcon size={20} />
+          </Box>
+          <Box>
+            <Typography fontWeight={900} fontSize={17}>Configurar convocatoria</Typography>
+            <Typography variant="caption" color="text.secondary">Ábrela, ciérrala o ajusta sus datos</Typography>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 1 }}>
+          {cfgLoading ? (
+            <Box sx={{ py: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
+              <CircularProgress size={30} />
+              <Typography variant="body2" color="text.secondary">Cargando…</Typography>
+            </Box>
+          ) : cfgError && !convs ? (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>{cfgError}</Alert>
+          ) : !convs || convs.length === 0 ? (
+            <Alert severity="info" sx={{ borderRadius: 2 }}>No hay convocatorias creadas.</Alert>
+          ) : (
+            <Stack spacing={2} sx={{ mt: 0.5 }}>
+              {convs.length > 1 && (
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Convocatoria</InputLabel>
+                  <Select
+                    value={cfgId}
+                    label="Convocatoria"
+                    onChange={(e) => {
+                      const c = convs.find((x) => x._id === e.target.value);
+                      if (c) loadConvForm(c);
+                    }}
+                  >
+                    {convs.map((c) => (
+                      <MenuItem key={c._id} value={c._id}>{c.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+
+              {/* Estado — el control principal */}
+              <Box sx={{
+                borderRadius: 2.5, p: 2,
+                border: `1.5px solid ${cfgForm.status === "open" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.3)"}`,
+                background: cfgForm.status === "open" ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.05)",
+              }}>
+                <Stack direction="row" alignItems="center" spacing={1} mb={1.25}>
+                  <Box sx={{ color: cfgForm.status === "open" ? "#16a34a" : "#dc2626", display: "flex" }}>
+                    {cfgForm.status === "open" ? <UnlockIcon size={18} /> : <LockIcon size={18} />}
+                  </Box>
+                  <Typography fontWeight={800} fontSize={14}>
+                    {cfgForm.status === "open" ? "Convocatoria abierta" : "Convocatoria cerrada"}
+                  </Typography>
+                </Stack>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Estado</InputLabel>
+                  <Select
+                    value={cfgForm.status}
+                    label="Estado"
+                    onChange={(e) => setCfgForm((f) => ({ ...f, status: e.target.value as ConvocatoriaStatus }))}
+                  >
+                    {CONV_STATUS_OPTS.map((o) => (
+                      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                  {cfgForm.status === "open"
+                    ? "Los artistas pueden iniciar y enviar postulaciones."
+                    : "No se aceptan nuevas postulaciones. Las ya iniciadas pueden completarse."}
+                </Typography>
+              </Box>
+
+              <TextField
+                size="small" label="Nombre" fullWidth
+                value={cfgForm.name}
+                onChange={(e) => setCfgForm((f) => ({ ...f, name: e.target.value }))}
+              />
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  size="small" label="Cuota de inscripción (COP)" type="number" fullWidth
+                  value={cfgForm.fee}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, fee: Number(e.target.value) }))}
+                />
+                <TextField
+                  size="small" label="Máx. obras por artista" type="number" fullWidth
+                  value={cfgForm.maxArtworksPerArtist}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, maxArtworksPerArtist: Number(e.target.value) }))}
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  size="small" label="Fecha de inicio" type="date" fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={cfgForm.startDate}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, startDate: e.target.value }))}
+                />
+                <TextField
+                  size="small" label="Fecha de cierre" type="date" fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={cfgForm.endDate}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, endDate: e.target.value }))}
+                />
+              </Stack>
+
+              {cfgError && <Alert severity="error" sx={{ borderRadius: 2 }}>{cfgError}</Alert>}
+            </Stack>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button color="inherit" onClick={() => setCfgOpen(false)} disabled={cfgSaving}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={handleSaveConfig}
+            disabled={cfgSaving || cfgLoading || !cfgId}
+            startIcon={cfgSaving ? <CircularProgress size={14} color="inherit" /> : undefined}
+            sx={{ fontWeight: 700, textTransform: "none", boxShadow: "none", bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d", boxShadow: "none" } }}
+          >
+            {cfgSaving ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Export Excel dialog ─────────────────────────────────────────── */}
       <Dialog

@@ -208,7 +208,7 @@ const buildQuery = (params: Record<string, any> = {}) =>
  * Compra de tickets (soporta preventa). Devuelve tickets con qrToken y (opcional) qrDataUrl.
  * POST /ticket/tickets/purchase
  *
- * 👉 Esta función sigue existiendo por compatibilidad (panel, admin, etc.)
+ * Esta función sigue existiendo por compatibilidad (panel, admin, etc.)
  */
 export const purchaseTickets = async (payload: PurchaseTicketsDto) => {
   const { data } = await apiClient.post<PurchaseTicketsResponse>(

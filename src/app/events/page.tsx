@@ -18,7 +18,7 @@ import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
 import PavilionArtistsManager from "@components/views/events/PavilionArtistsManager";
 
 export default function EventsManagerPage() {
-  // 🎯 Hook de eventos
+  // Hook de eventos
   const {
     events,
     loadingEvents,
@@ -33,7 +33,7 @@ export default function EventsManagerPage() {
     isSavingEvent,
   } = useEventsManager();
 
-  // 🎯 Hook de pabellones (enlazado al evento seleccionado)
+  // Hook de pabellones (enlazado al evento seleccionado)
   const {
     pavilions,
     loadingPavilions,

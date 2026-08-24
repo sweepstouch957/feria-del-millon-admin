@@ -33,7 +33,7 @@ import { DateRange } from "react-date-range";
 /** IMPORTA TU PREVIEWER (no se redeclara) */
 import ImagePreviewer, {
   useImagePreview,
-} from "@/components/common/ImagePreviwer"; // ⬅️ asegura que el path/archivo coincida
+} from "@/components/common/ImagePreviwer"; // asegura que el path/archivo coincida
 
 /* ============================================================
  * Tipos

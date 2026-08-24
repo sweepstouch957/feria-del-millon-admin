@@ -26,7 +26,7 @@ export interface PavilionDoc {
   active?: boolean;
   meta?: Record<string, any>;
   artists?: string[]; 
-  artistInfo?: ArtistInfo[]; // 👈 NUEVO
+  artistInfo?: ArtistInfo[]; // NUEVO
   createdAt?: string;
   updatedAt?: string;
 }
@@ -123,7 +123,7 @@ export const listPavilionsByUser = async (
   return data;
 };
 
-// ✅ Actualizar pabellón (PATCH /event/events/:eventId/pavilions/:pavilionId)
+// Actualizar pabellón (PATCH /event/events/:eventId/pavilions/:pavilionId)
 export const updatePavilion = async (
   eventId: string,
   pavilionId: string,

@@ -67,7 +67,7 @@ export default function ArtworksTable({
     }
   };
 
-  // 👇 aquí forzamos texto oscuro y borde visible
+  // aquí forzamos texto oscuro y borde visible
   const actionButtonSx = {
     borderRadius: 999,
     textTransform: "none",

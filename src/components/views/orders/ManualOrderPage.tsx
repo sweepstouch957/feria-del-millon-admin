@@ -56,7 +56,7 @@
             null
         );
 
-        // 🔎 Lista de obras (busca por slug / sku / nombre según backend)
+        // Lista de obras (busca por slug / sku / nombre según backend)
         const {
             rows,
             isLoading,

@@ -16,7 +16,7 @@ type BetterQrScannerProps = {
     className?: string;
 };
 
-// 👉 Helper para escoger la “mejor” cámara (preferir trasera)
+// Helper para escoger la “mejor” cámara (preferir trasera)
 function pickBestVideoDevice(devices: MediaDeviceInfo[]): string {
     const videoDevices = devices.filter((d) => d.kind === "videoinput");
     if (!videoDevices.length) {

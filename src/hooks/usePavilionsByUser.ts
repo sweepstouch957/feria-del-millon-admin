@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   listPavilionsByUser,
   type ListPavilionsByUserResponse,
-} from "@services/pavilions.service"; // ⬅️ ajusta si lo agregaste en events.service
+} from "@services/pavilions.service"; // ajusta si lo agregaste en events.service
 
 type Options = {
   /** ms que el dato se considera fresco (default 60s). */

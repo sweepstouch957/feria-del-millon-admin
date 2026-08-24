@@ -22,15 +22,15 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
     (p) => pathname === p || pathname?.startsWith(`${p}/`)
   );
 
-  // 🔹 Rutas públicas (login, forgot-password)
+  //Rutas públicas (login, forgot-password)
   if (isPublic) return <>{children}</>;
 
-  // 🔹 Mientras carga la sesión o hace redirect
+  //Mientras carga la sesión o hace redirect
   if (isAuthLoading || !isAuthenticated) {
     return <LoadingScreen label={t("loading.session")} />;
   }
 
-  // 🔹 Sesión válida
+  //Sesión válida
   return <MergedLayout>{children}</MergedLayout>;
 };
 

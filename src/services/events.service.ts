@@ -92,7 +92,7 @@ export const getEventBySlug = async (slug: string) => {
   return normalizeId(data);
 };
 
-// GET /event/events/artist/:artistId  🔥 NUEVO ENDPOINT
+// GET /event/events/artist/:artistId NUEVO ENDPOINT
 export const getEventByArtistId = async (
   artistId: string,
   status?: EventStatus
@@ -182,13 +182,67 @@ export const listEventArtists = async (
   };
 };
 
-// ✅ Actualizar evento (PATCH /event/events/:eventId)
+// Actualizar evento (PATCH /event/events/:eventId)
 export const updateEvent = async (
   eventId: string,
   payload: Partial<CreateEventDto & { status?: EventStatus }>
 ) => {
   const { data } = await apiClient.patch<EventDoc>(
     `/event/events/${encodeURIComponent(eventId)}`,
+    payload,
+    { withCredentials: true }
+  );
+  return normalizeId(data);
+};
+
+/* ========= Convocatorias ========= */
+export type ConvocatoriaStatus =
+  | "draft"
+  | "open"
+  | "closed"
+  | "selection"
+  | "finalized"
+  | "archived";
+
+export interface Convocatoria {
+  _id: string;
+  id?: string;
+  name: string;
+  slug: string;
+  event: string;
+  startDate: string;
+  endDate: string;
+  fee: number;
+  currency: string;
+  status: ConvocatoriaStatus;
+  description?: string;
+  maxArtworksPerArtist?: number;
+  termsUrl?: string;
+  websiteUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// GET /event/convocatorias
+export const getConvocatorias = async (): Promise<Convocatoria[]> => {
+  const { data } = await apiClient.get<Convocatoria[]>("/event/convocatorias", {
+    withCredentials: true,
+  });
+  return (data || []).map(normalizeId);
+};
+
+// PATCH /event/convocatorias/:id  (staff)
+export const updateConvocatoria = async (
+  id: string,
+  payload: Partial<
+    Pick<
+      Convocatoria,
+      "name" | "description" | "startDate" | "endDate" | "fee" | "currency" | "status" | "maxArtworksPerArtist" | "termsUrl" | "websiteUrl"
+    >
+  >
+): Promise<Convocatoria> => {
+  const { data } = await apiClient.patch<Convocatoria>(
+    `/event/convocatorias/${encodeURIComponent(id)}`,
     payload,
     { withCredentials: true }
   );

@@ -378,7 +378,7 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
             icon={<TicketsIcon sx={{ fontSize: 18 }} />}
             text={t("navigation.tickets")}
           />
-          {/* 🆕 Pedidos */}
+          {/* Pedidos */}
           <NavItem
             inset
             active={pathname === "/orders"}
@@ -386,7 +386,7 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
             icon={<ShoppingBag />} // puedes cambiar por ShoppingCartIcon
             text={t("navigation.orders")}
           />
-          {/* 🆕 Reservaciones */}
+          {/* Reservaciones */}
           <NavItem
             inset
             active={pathname === "/reservations"}
