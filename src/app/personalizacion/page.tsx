@@ -78,6 +78,8 @@ export default function PersonalizacionPage() {
     setC((ct) => ({ ...ct, stats: ct.stats.map((s, idx) => (idx === i ? { ...s, [k]: v } : s)) }));
   const setContact = (k: keyof SiteConfig["content"]["contact"], v: string) =>
     setC((ct) => ({ ...ct, contact: { ...ct.contact, [k]: v } }));
+  const setSocial = (k: keyof SiteConfig["content"]["social"], v: string) =>
+    setC((ct) => ({ ...ct, social: { ...ct.social, [k]: v } }));
 
   // Secciones: visibilidad + orden
   const toggleVisible = (k: SectionKey) =>
@@ -344,6 +346,21 @@ export default function PersonalizacionPage() {
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Email" value={content.contact.email} onChange={(e) => setContact("email", e.target.value)} fullWidth />
             <TextField size="small" label="Teléfono" value={content.contact.phone} onChange={(e) => setContact("phone", e.target.value)} fullWidth />
+          </Stack>
+        </Section>
+
+        {/* Redes sociales */}
+        <Section title="Redes sociales">
+          <Typography variant="caption" color="text.secondary">
+            Pega el enlace completo. Vacío = no se muestra ese ícono.
+          </Typography>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Instagram" value={content.social.instagram} onChange={(e) => setSocial("instagram", e.target.value)} fullWidth placeholder="https://instagram.com/…" />
+            <TextField size="small" label="Facebook" value={content.social.facebook} onChange={(e) => setSocial("facebook", e.target.value)} fullWidth placeholder="https://facebook.com/…" />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="WhatsApp" value={content.social.whatsapp} onChange={(e) => setSocial("whatsapp", e.target.value)} fullWidth placeholder="https://wa.me/57…" />
+            <TextField size="small" label="YouTube" value={content.social.youtube} onChange={(e) => setSocial("youtube", e.target.value)} fullWidth placeholder="https://youtube.com/…" />
           </Stack>
         </Section>
       </Stack>
