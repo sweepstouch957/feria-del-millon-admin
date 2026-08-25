@@ -34,7 +34,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./ui/LanguageSwitcher";
 import ProfileMenu from "./ui/ProfileMenu";
 import { useAuth } from "@/provider/authProvider";
-import { NotebookIcon, Paintbrush2, ShoppingBag, FileText as SolicitudesIcon } from "lucide-react";
+import { NotebookIcon, Paintbrush2, ShoppingBag, FileText as SolicitudesIcon, Palette as PersonalizacionIcon } from "lucide-react";
 
 /** Paleta negro profundo y verde neón */
 const C = {
@@ -352,6 +352,12 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
           onClick={() => router.push("/solicitudes")}
           icon={<SolicitudesIcon size={18} />}
           text="Solicitudes"
+        />
+        <NavItem
+          active={pathname === "/personalizacion"}
+          onClick={() => router.push("/personalizacion")}
+          icon={<PersonalizacionIcon size={18} />}
+          text="Personalización"
         />
       </List>
 
