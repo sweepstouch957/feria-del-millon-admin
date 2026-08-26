@@ -253,28 +253,38 @@ export default function PersonalizacionPage() {
           <TextField size="small" label="Descripción (meta description)" value={content.seo.description} onChange={(e) => setSeo("description", e.target.value)} fullWidth multiline rows={2} />
         </Section>
 
-        {/* Tema */}
-        <Section title="Tema — colores">
+        {/* Tema — paleta editorial de la landing */}
+        <Section title="Tema — colores de la landing">
+          <Typography variant="caption" color="text.secondary">
+            Colores del tema claro. El modo oscuro se genera automáticamente.
+          </Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(3, 1fr)" }, gap: 2 }}>
-            <ColorField label="Acento de marca" value={theme.accent} onChange={(v) => setTheme("accent", v)} />
+            <ColorField label="Verde (acento)" value={theme.accent} onChange={(v) => setTheme("accent", v)} />
+            <ColorField label="Verde profundo (sedes)" value={theme.greenDeep ?? "#14513C"} onChange={(v) => setTheme("greenDeep", v)} />
             <ColorField label="Acento oscuro" value={theme.accentDark} onChange={(v) => setTheme("accentDark", v)} />
-            <Box />
-            <ColorField label="Hero — color 1" value={theme.heroFrom} onChange={(v) => setTheme("heroFrom", v)} />
-            <ColorField label="Hero — color 2" value={theme.heroVia} onChange={(v) => setTheme("heroVia", v)} />
-            <ColorField label="Hero — color 3" value={theme.heroTo} onChange={(v) => setTheme("heroTo", v)} />
+            <ColorField label="Fondo (crema)" value={theme.bg ?? "#F7F6F2"} onChange={(v) => setTheme("bg", v)} />
+            <ColorField label="Texto" value={theme.fg ?? "#0B0B0A"} onChange={(v) => setTheme("fg", v)} />
+            <ColorField label="Panel oscuro" value={theme.panel ?? "#0B0B0A"} onChange={(v) => setTheme("panel", v)} />
+            <ColorField label="Texto sobre oscuro" value={theme.onDark ?? "#F5F4EF"} onChange={(v) => setTheme("onDark", v)} />
           </Box>
           <Divider />
           <Box>
-            <Typography variant="caption" fontWeight={700} color="text.secondary">Vista previa del hero</Typography>
-            <Box sx={{
-              mt: 1, height: 90, borderRadius: 2, border: "1px solid", borderColor: "divider",
-              backgroundImage: content.hero.image
-                ? `linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.55)), url(${content.hero.image})`
-                : `linear-gradient(to bottom right, ${theme.heroFrom}, ${theme.heroVia}, ${theme.heroTo})`,
-              backgroundSize: "cover", backgroundPosition: "center",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Typography sx={{ color: "#fff", fontWeight: 800 }}>{content.hero.title}</Typography>
+            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>Vista previa</Typography>
+            <Box sx={{ borderRadius: 2, overflow: "hidden", border: "1px solid", borderColor: "divider", background: theme.panel ?? "#0B0B0A", p: 3, textAlign: "center" }}>
+              <Typography sx={{ fontFamily: "Jost, sans-serif", fontWeight: 200, fontSize: 34, textTransform: "uppercase", color: theme.onDark ?? "#F5F4EF", lineHeight: 1 }}>
+                Feria <span style={{ color: theme.accent }}>del</span> <b style={{ fontWeight: 500 }}>Millón</b>
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
+              {[
+                ["Fondo", theme.bg ?? "#F7F6F2"], ["Texto", theme.fg ?? "#0B0B0A"], ["Panel", theme.panel ?? "#0B0B0A"],
+                ["Verde", theme.accent], ["Verde profundo", theme.greenDeep ?? "#14513C"],
+              ].map(([lbl, col]) => (
+                <Box key={lbl} sx={{ textAlign: "center" }}>
+                  <Box sx={{ width: 44, height: 32, borderRadius: 1, border: "1px solid", borderColor: "divider", background: col }} />
+                  <Typography variant="caption" sx={{ fontSize: 9, color: "text.secondary" }}>{lbl}</Typography>
+                </Box>
+              ))}
             </Box>
           </Box>
         </Section>
@@ -570,6 +580,10 @@ export default function PersonalizacionPage() {
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="WhatsApp" value={content.social.whatsapp} onChange={(e) => setSocial("whatsapp", e.target.value)} fullWidth placeholder="https://wa.me/57…" />
             <TextField size="small" label="YouTube" value={content.social.youtube} onChange={(e) => setSocial("youtube", e.target.value)} fullWidth placeholder="https://youtube.com/…" />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="TikTok" value={content.social.tiktok} onChange={(e) => setSocial("tiktok", e.target.value)} fullWidth placeholder="https://tiktok.com/@…" />
+            <Box sx={{ flex: 1 }} />
           </Stack>
         </Section>
       </Stack>

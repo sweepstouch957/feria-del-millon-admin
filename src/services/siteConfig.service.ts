@@ -45,7 +45,7 @@ export interface SiteContent {
   statsTitle: string;
   stats: SiteStat[];
   contact: { badge: string; title: string; subtitle: string; email: string; phone: string };
-  social: { instagram: string; facebook: string; whatsapp: string; youtube: string };
+  social: { instagram: string; facebook: string; whatsapp: string; youtube: string; tiktok: string };
 }
 
 // Navbar configurable: cada pestaña puede mostrarse/ocultarse y habilitarse.
@@ -280,7 +280,7 @@ export const SITE_DEFAULTS: SiteConfig = {
       email: "coordinaciongeneral@feriadelmillon.com",
       phone: "+57 322 700 8576",
     },
-    social: { instagram: "", facebook: "", whatsapp: "", youtube: "" },
+    social: { instagram: "", facebook: "", whatsapp: "", youtube: "", tiktok: "" },
   },
   landing: LANDING_DEFAULTS,
   nav: { items: [...DEFAULT_NAV] },
