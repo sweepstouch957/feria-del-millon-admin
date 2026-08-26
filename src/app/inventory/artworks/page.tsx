@@ -55,6 +55,7 @@ const formatPrice = (price?: number, currency = "COP") =>
     : new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency,
+        currencyDisplay: "code", // muestra "COP 1.000.000"
         maximumFractionDigits: 0,
       }).format(price);
 
