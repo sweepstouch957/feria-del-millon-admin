@@ -21,6 +21,8 @@ const eslintConfig = [
     ],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      // Admin es dashboard interno: LCP/bandwidth no aplica -> <img> permitido.
+      "@next/next/no-img-element": "off",
     },
   },
 ];

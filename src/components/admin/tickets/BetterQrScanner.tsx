@@ -100,7 +100,7 @@ export function BetterQrScanner({
                 stopRef.current = () => {
                     try {
                         controls.stop();
-                    } catch (e) {
+                    } catch {
                         // por si ya está parado
                     }
                     codeReader.reset();

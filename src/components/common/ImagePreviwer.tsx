@@ -128,7 +128,6 @@ export default function ImagePreviewer({
                 display: "inline-block",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={preview.imgUrl}
                 alt="Campaign Preview"

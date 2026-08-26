@@ -1,17 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
 import {
   Box, Stack, Typography, TextField, Button, Paper, Skeleton,
-  Avatar, Tooltip, Snackbar, Alert, CircularProgress, Chip,
+  Avatar, Snackbar, Alert, CircularProgress, Chip,
   Select, MenuItem, FormControl, InputLabel, Divider, alpha,
   InputAdornment, IconButton,
 } from "@mui/material";
 import {
   Save, Camera, X, User, Phone, MapPin, Instagram, Facebook,
   Globe, FileText, Clock, Calendar, CheckCircle2, XCircle,
-  Shield, Mail, Link as LinkIcon, Eye, EyeOff,
+  Shield, Mail, Link as LinkIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/provider/authProvider";
@@ -21,7 +20,6 @@ import { getUserById, updateUser, type UserDTO, type Roles as RolesMap } from "@
 const G   = "#22c55e";
 const GD  = "#16a34a";
 const S1  = "#111113";
-const S2  = "#18181b";
 const BR  = "rgba(255,255,255,0.07)";
 const TM  = "rgba(255,255,255,0.38)";
 

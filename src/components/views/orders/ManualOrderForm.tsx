@@ -16,7 +16,6 @@ import {
 import type {
   UseFormRegister,
   FieldErrors,
-  SubmitHandler,
 } from "react-hook-form";
 import type { PaymentMethod } from "@services/orders.service";
 import type { ArtworkRow } from "@hooks/useArtworksCursor";

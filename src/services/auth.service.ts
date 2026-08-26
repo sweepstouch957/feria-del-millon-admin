@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // services/auth.service.ts
 import apiClient from "@/axios";
 import { AUTH_TOKEN_KEY } from "@/core/constants";

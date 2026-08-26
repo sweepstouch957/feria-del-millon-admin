@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import * as React from "react";
 import {
@@ -8,7 +7,7 @@ import {
   Snackbar, Alert, Switch, FormControlLabel,
 } from "@mui/material";
 import {
-  Plus, Pencil, Trash2, GripVertical,
+  Plus, Pencil, Trash2,
   Palette, ToggleLeft, ToggleRight,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

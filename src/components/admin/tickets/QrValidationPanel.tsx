@@ -216,7 +216,7 @@ export function QrValidationPanel() {
                     if (!text) return;
                     handleScanFromCamera(text);
                   }}
-                  onError={(err) => {
+                  onError={() => {
                     // si quieres loguear algo
                     // console.warn("[BetterQrScanner error]", err);
                   }}

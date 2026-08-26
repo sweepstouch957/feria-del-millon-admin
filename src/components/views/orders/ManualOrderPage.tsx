@@ -21,7 +21,6 @@
     } from "@mui/material";
     import { useForm } from "react-hook-form";
     import { toast } from "sonner";
-    import { useTranslation } from "react-i18next";
 
     import {
         createOrder,
@@ -48,7 +47,6 @@
     import { DEFAULT_EVENT_ID } from "@/core/constants";
 
     const ManualOrderPage = () => {
-        const { t } = useTranslation();
         const { user } = useAuth();
 
         const [search, setSearch] = useState("");

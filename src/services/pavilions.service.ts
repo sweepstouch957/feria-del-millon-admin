@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import apiClient from "@/axios";
 export interface ArtistInfo {

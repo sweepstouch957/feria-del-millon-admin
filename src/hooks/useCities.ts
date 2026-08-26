@@ -1,5 +1,4 @@
   // hooks/queries/useCities.ts
-  /* eslint-disable @typescript-eslint/no-explicit-any */
 
   import { CityDoc, listCities } from "@services/city.service";
   import { useQuery } from "@tanstack/react-query";

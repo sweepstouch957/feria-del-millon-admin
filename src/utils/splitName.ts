@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /** Split inteligente de nombre/dirección (para ProfileMenu + StoreSwitcher) */
 export function splitNameAddress(s: any): { name: string; address: string } {
   const name = String(s?.name ?? "").trim();
