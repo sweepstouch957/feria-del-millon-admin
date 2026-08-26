@@ -12,6 +12,8 @@ import {
   Stack,
   TextField,
   Typography,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import type {
   UseFormRegister,
@@ -33,6 +35,11 @@ export type ManualOrderFormValues = {
   cityId: string;
   state: string;
   zipCode: string;
+
+  // Fiado / apartar (pago diferido)
+  apartar?: boolean;
+  abonoInicial?: number;
+  dueDate?: string;
 };
 
 type ManualOrderFormProps = {
@@ -115,6 +122,25 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
               </MenuItem>
             ))}
           </TextField>
+
+          <FormControlLabel
+            control={<Checkbox {...register("apartar")} disabled={!hasArtwork || isSubmitting} />}
+            label="Apartar (fiado / pago diferido)"
+          />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Abono inicial (COP)" type="number" size="small" fullWidth
+              {...register("abonoInicial", { valueAsNumber: true })}
+              disabled={!hasArtwork || isSubmitting}
+              helperText="Solo si es apartada. 0 = únicamente reservar"
+            />
+            <TextField
+              label="Fecha límite de pago" type="date" size="small" fullWidth
+              InputLabelProps={{ shrink: true }}
+              {...register("dueDate")}
+              disabled={!hasArtwork || isSubmitting}
+            />
+          </Stack>
 
           <Divider />
 

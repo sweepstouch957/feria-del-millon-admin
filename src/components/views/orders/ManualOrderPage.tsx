@@ -25,6 +25,7 @@
     import {
         createOrder,
         markOrderPaid,
+        registerAbono,
         type OrderItemInput,
         type BuyerInput,
         type OrderDoc,
@@ -97,6 +98,9 @@
                 cityId: "",
                 state: "",
                 zipCode: "",
+                apartar: false,
+                abonoInicial: 0,
+                dueDate: "",
             },
         });
         
@@ -205,25 +209,35 @@
                     userId: user?.id,
                 });
 
-                // 2) Marcar como pagada (manual)
-                await markOrderPaid(order.id, {
-                    method: values.paymentMethod,
-                    amount: order.total,
-                    details: {
-                        cashierId: user?.id,
-                        notes: values.notes,
-                        deliveryAddress: buyer.address,
-                    },
-                    invoice: {
-                        channel: "event_pos",
-                        issuedBy:
-                            `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() ||
-                            user?.email ||
-                            "Cajero",
-                    },
-                });
-
-                toast.success("Venta registrada como pagada");
+                // 2) Pagar la venta completa, o APARTAR (fiado / abono inicial)
+                if (values.apartar) {
+                    const res = await registerAbono(order.id, {
+                        amount: Number(values.abonoInicial || 0),
+                        method: values.paymentMethod,
+                        note: values.notes,
+                        by: user?.id,
+                        dueDate: values.dueDate || undefined,
+                    });
+                    toast.success(res.settled ? "Venta saldada por completo" : "Obra apartada — abono registrado (queda en Cartera)");
+                } else {
+                    await markOrderPaid(order.id, {
+                        method: values.paymentMethod,
+                        amount: order.total,
+                        details: {
+                            cashierId: user?.id,
+                            notes: values.notes,
+                            deliveryAddress: buyer.address,
+                        },
+                        invoice: {
+                            channel: "event_pos",
+                            issuedBy:
+                                `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() ||
+                                user?.email ||
+                                "Cajero",
+                        },
+                    });
+                    toast.success("Venta registrada como pagada");
+                }
             } catch (err: any) {
                 console.error(err);
                 toast.error(

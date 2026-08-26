@@ -20,7 +20,7 @@ import {
   ConfirmationNumberOutlined as TicketsIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
-import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Palette as PersonalizacionIcon } from "lucide-react";
+import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Palette as PersonalizacionIcon, Wallet as CarteraIcon } from "lucide-react";
 import { LAYOUT_COLORS as C } from "../layoutConfig";
 import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
@@ -211,6 +211,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
                 icon={<NotebookIcon />}
                 text="Crear pedido"
               />
+              <NavItem
+                inset
+                active={pathname === "/orders/cartera"}
+                onClick={() => router.push("/orders/cartera")}
+                icon={<CarteraIcon />}
+                text="Cartera / Fiado"
+              />
             </CollapsibleGroup>
           </List>
         </>
@@ -285,6 +292,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
                 onClick={() => router.push("/orders/new")}
                 icon={<NotebookIcon />}
                 text="Crear pedido"
+              />
+              <NavItem
+                inset
+                active={pathname === "/orders/cartera"}
+                onClick={() => router.push("/orders/cartera")}
+                icon={<CarteraIcon />}
+                text="Cartera / Fiado"
               />
             </CollapsibleGroup>
           </List>

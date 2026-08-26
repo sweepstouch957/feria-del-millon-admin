@@ -79,6 +79,7 @@ export interface OrderDoc {
     status:
     | "created"
     | "payment_processing"
+    | "partial"
     | "paid"
     | "failed"
     | "canceled"
@@ -95,6 +96,15 @@ export interface OrderDoc {
     reservationId?: string | null;
     payment?: PaymentSnapshot;
     invoice?: InvoiceSnapshot;
+    /** Fiado / abonos (pago diferido) */
+    layaway?: {
+        enabled?: boolean;
+        amountPaid?: number;
+        balanceDue?: number;
+        dueDate?: string;
+        stockClaimed?: boolean;
+        installments?: { amount: number; method?: string; at?: string; note?: string; by?: string }[];
+    };
     createdAt?: string;
     updatedAt?: string;
 }
@@ -254,6 +264,19 @@ export const markOrderPaid = async (
 ): Promise<{ ok: boolean; already?: boolean }> => {
     const { data } = await apiClient.post<{ ok: boolean; already?: boolean }>(
         `/order/orders/${orderId}/paid`,
+        payload,
+        { withCredentials: true }
+    );
+    return data;
+};
+
+/** POST /order/orders/:id/abono — registra un abono (pago parcial o saldo). */
+export const registerAbono = async (
+    orderId: string,
+    payload: { amount: number; method?: PaymentMethod; note?: string; by?: string; dueDate?: string }
+): Promise<{ ok: boolean; settled?: boolean; order?: OrderDoc }> => {
+    const { data } = await apiClient.post<{ ok: boolean; settled?: boolean; order?: OrderDoc }>(
+        `/order/orders/${orderId}/abono`,
         payload,
         { withCredentials: true }
     );
