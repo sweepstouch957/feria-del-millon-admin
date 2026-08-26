@@ -40,6 +40,47 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// Editor de lista de strings (párrafos, items del ticker, etc.)
+function StrList({
+  label, items, onChange, multiline = false, placeholder,
+}: {
+  label: string; items: string[]; onChange: (v: string[]) => void; multiline?: boolean; placeholder?: string;
+}) {
+  const set = (i: number, v: string) => onChange(items.map((x, idx) => (idx === i ? v : x)));
+  const add = () => onChange([...items, ""]);
+  const rm = (i: number) => onChange(items.filter((_, idx) => idx !== i));
+  return (
+    <Box>
+      <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>{label}</Typography>
+      <Stack spacing={1}>
+        {items.map((v, i) => (
+          <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
+            <TextField size="small" value={v} placeholder={placeholder} onChange={(e) => set(i, e.target.value)} fullWidth multiline={multiline} rows={multiline ? 2 : 1} />
+            <IconButton size="small" color="error" onClick={() => rm(i)} sx={{ mt: 0.5 }}><Trash2 size={15} /></IconButton>
+          </Stack>
+        ))}
+        <Button size="small" variant="text" startIcon={<Plus size={14} />} onClick={add} sx={{ textTransform: "none", alignSelf: "flex-start" }}>Agregar</Button>
+      </Stack>
+    </Box>
+  );
+}
+
+// Contenedor de fila para listas de objetos (con quitar)
+function Row({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
+  return (
+    <Box sx={{ p: 1.25, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+      <Stack direction="row" spacing={1} alignItems="flex-start">
+        <Box flex={1}><Stack spacing={1}>{children}</Stack></Box>
+        <IconButton size="small" color="error" onClick={onRemove}><Trash2 size={15} /></IconButton>
+      </Stack>
+    </Box>
+  );
+}
+
+function AddBtn({ onClick }: { onClick: () => void }) {
+  return <Button size="small" variant="outlined" startIcon={<Plus size={15} />} onClick={onClick} sx={{ textTransform: "none", alignSelf: "flex-start" }}>Agregar</Button>;
+}
+
 export default function PersonalizacionPage() {
   const [cfg, setCfg] = React.useState<SiteConfig | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -64,18 +105,10 @@ export default function PersonalizacionPage() {
     setC((ct) => ({ ...ct, seo: { ...ct.seo, [k]: v } }));
   const setHero = (k: keyof SiteConfig["content"]["hero"], v: string) =>
     setC((ct) => ({ ...ct, hero: { ...ct.hero, [k]: v } }));
-  const setEvent = (k: keyof SiteConfig["content"]["eventInfo"], v: string) =>
-    setC((ct) => ({ ...ct, eventInfo: { ...ct.eventInfo, [k]: v } }));
-  const setCard = (i: number, k: "title" | "description", v: string) =>
-    setC((ct) => ({ ...ct, eventCards: ct.eventCards.map((c, idx) => (idx === i ? { ...c, [k]: v } : c)) }));
-  const setPav = (k: "badge" | "title", v: string) =>
-    setC((ct) => ({ ...ct, pavilions: { ...ct.pavilions, [k]: v } }));
   const setFeat = (k: "badge" | "title", v: string) =>
     setC((ct) => ({ ...ct, featured: { ...ct.featured, [k]: v } }));
   const setTech = (k: "title" | "subtitle", v: string) =>
     setC((ct) => ({ ...ct, techniques: { ...ct.techniques, [k]: v } }));
-  const setStat = (i: number, k: "number" | "label" | "suffix", v: string) =>
-    setC((ct) => ({ ...ct, stats: ct.stats.map((s, idx) => (idx === i ? { ...s, [k]: v } : s)) }));
   const setContact = (k: keyof SiteConfig["content"]["contact"], v: string) =>
     setC((ct) => ({ ...ct, contact: { ...ct.contact, [k]: v } }));
   const setSocial = (k: keyof SiteConfig["content"]["social"], v: string) =>
@@ -113,6 +146,10 @@ export default function PersonalizacionPage() {
   const removeNav = (i: number) =>
     setCfg((c) => (c ? { ...c, nav: { items: c.nav.items.filter((_, idx) => idx !== i) } } : c));
 
+  // ── Landing v2: setter genérico por bloque ─────────────────────────────
+  const setL = (updater: (l: SiteConfig["landing"]) => SiteConfig["landing"]) =>
+    setCfg((c) => (c ? { ...c, landing: updater(c.landing) } : c));
+
   const handleSave = async () => {
     if (!cfg) return;
     setSaving(true);
@@ -149,7 +186,7 @@ export default function PersonalizacionPage() {
     return <Box sx={{ p: 6, display: "flex", justifyContent: "center" }}><CircularProgress /></Box>;
   }
 
-  const { theme, content, sections, nav } = cfg;
+  const { theme, content, sections, nav, landing } = cfg;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
@@ -356,27 +393,149 @@ export default function PersonalizacionPage() {
           <TextField size="small" label="Botón de tickets" value={content.hero.ticketsLabel} onChange={(e) => setHero("ticketsLabel", e.target.value)} fullWidth />
         </Section>
 
-        {/* Info del evento + cards */}
-        <Section title="Sección de evento">
-          <TextField size="small" label="Badge" value={content.eventInfo.badge} onChange={(e) => setEvent("badge", e.target.value)} fullWidth />
-          <TextField size="small" label="Título" value={content.eventInfo.title} onChange={(e) => setEvent("title", e.target.value)} fullWidth />
-          <TextField size="small" label="Descripción" value={content.eventInfo.description} onChange={(e) => setEvent("description", e.target.value)} fullWidth multiline rows={2} />
-          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Tarjetas (3)</Typography></Divider>
-          {content.eventCards.map((card, i) => (
-            <Stack key={i} direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField size="small" label={`Tarjeta ${i + 1} — título`} value={card.title} onChange={(e) => setCard(i, "title", e.target.value)} sx={{ minWidth: 180 }} />
-              <TextField size="small" label="Descripción" value={card.description} onChange={(e) => setCard(i, "description", e.target.value)} fullWidth />
-            </Stack>
+        {/* ═══ LANDING v2 — bloques editables ═══ */}
+        <Divider textAlign="left"><Typography variant="overline" fontWeight={800} color="text.secondary">Contenido del landing</Typography></Divider>
+
+        {/* Hero — barra y datos */}
+        <Section title="Portada — barra superior y datos">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Edición (izq.)" value={landing.heroMeta.edition} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, edition: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Ubicación (centro)" value={landing.heroMeta.location} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, location: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Año (der.)" value={landing.heroMeta.year} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, year: e.target.value } }))} sx={{ minWidth: 100 }} />
+          </Stack>
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Datos (pie del hero)</Typography></Divider>
+          {landing.heroMeta.stats.map((s, i) => (
+            <Row key={i} onRemove={() => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, stats: l.heroMeta.stats.filter((_, idx) => idx !== i) } }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <TextField size="small" label="Etiqueta" value={s.label} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, stats: l.heroMeta.stats.map((x, idx) => (idx === i ? { ...x, label: e.target.value } : x)) } }))} sx={{ minWidth: 160 }} />
+                <TextField size="small" label="Valor" value={s.value} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, stats: l.heroMeta.stats.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)) } }))} fullWidth />
+              </Stack>
+            </Row>
           ))}
+          <AddBtn onClick={() => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, stats: [...l.heroMeta.stats, { label: "Nuevo", value: "" }] } }))} />
         </Section>
 
-        {/* Pabellones / Obras / Técnicas */}
-        <Section title="Pabellones">
+        {/* Ticker */}
+        <Section title="Ticker (cinta que se desliza)">
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" alignItems="center"><Switch checked={landing.showTicker} onChange={() => setL((l) => ({ ...l, showTicker: !l.showTicker }))} /><Typography variant="body2">Mostrar ticker</Typography></Stack>
+          </Stack>
+          <StrList label="Palabras / frases del ticker" items={landing.ticker.items} onChange={(items) => setL((l) => ({ ...l, ticker: { ...l.ticker, items } }))} placeholder="Pintura" />
+        </Section>
+
+        {/* La feria (about) */}
+        <Section title="La feria (intro + estadísticas)">
+          <TextField size="small" label="Badge" value={landing.about.badge} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, badge: e.target.value } }))} fullWidth />
+          <TextField size="small" label="Título" value={landing.about.title} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, title: e.target.value } }))} fullWidth multiline rows={2} />
+          <StrList label="Párrafos" multiline items={landing.about.paragraphs} onChange={(paragraphs) => setL((l) => ({ ...l, about: { ...l.about, paragraphs } }))} />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField size="small" label="Badge" value={content.pavilions.badge} onChange={(e) => setPav("badge", e.target.value)} sx={{ minWidth: 160 }} />
-            <TextField size="small" label="Título" value={content.pavilions.title} onChange={(e) => setPav("title", e.target.value)} fullWidth />
+            <TextField size="small" label="Texto del enlace" value={landing.about.ctaLabel} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, ctaLabel: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Ruta del enlace" value={landing.about.ctaHref} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, ctaHref: e.target.value } }))} fullWidth />
+          </Stack>
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Estadísticas grandes</Typography></Divider>
+          {landing.about.stats.map((s, i) => (
+            <Row key={i} onRemove={() => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.filter((_, idx) => idx !== i) } }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
+                <TextField size="small" label="Número" value={s.value} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)) } }))} sx={{ width: 120 }} />
+                <TextField size="small" label="Etiqueta" value={s.label} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, label: e.target.value } : x)) } }))} fullWidth />
+                <Stack direction="row" alignItems="center"><Switch size="small" color="success" checked={!!s.accent} onChange={() => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, accent: !x.accent } : x)) } }))} /><Typography variant="caption">Verde</Typography></Stack>
+              </Stack>
+            </Row>
+          ))}
+          <AddBtn onClick={() => setL((l) => ({ ...l, about: { ...l.about, stats: [...l.about.stats, { value: "", label: "Nuevo" }] } }))} />
+        </Section>
+
+        {/* Técnicas — tarjetas */}
+        <Section title="Técnicas — tarjetas (imagen + nombre)">
+          {landing.techniqueItems.map((t, i) => (
+            <Row key={i} onRemove={() => setL((l) => ({ ...l, techniqueItems: l.techniqueItems.filter((_, idx) => idx !== i) }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <TextField size="small" label="Nombre" value={t.name} onChange={(e) => setL((l) => ({ ...l, techniqueItems: l.techniqueItems.map((x, idx) => (idx === i ? { ...x, name: e.target.value } : x)) }))} sx={{ minWidth: 140 }} />
+                <TextField size="small" label="Imagen (URL)" value={t.image} onChange={(e) => setL((l) => ({ ...l, techniqueItems: l.techniqueItems.map((x, idx) => (idx === i ? { ...x, image: e.target.value } : x)) }))} fullWidth />
+                <TextField size="small" label="Enlace" value={t.href} onChange={(e) => setL((l) => ({ ...l, techniqueItems: l.techniqueItems.map((x, idx) => (idx === i ? { ...x, href: e.target.value } : x)) }))} sx={{ minWidth: 160 }} />
+              </Stack>
+            </Row>
+          ))}
+          <AddBtn onClick={() => setL((l) => ({ ...l, techniqueItems: [...l.techniqueItems, { name: "Nueva", image: "", href: "/catalogo" }] }))} />
+        </Section>
+
+        {/* Sedes */}
+        <Section title="Sedes">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Badge" value={landing.sedes.badge} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, badge: e.target.value } }))} sx={{ minWidth: 140 }} />
+            <TextField size="small" label="Título" value={landing.sedes.title} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, title: e.target.value } }))} fullWidth />
+          </Stack>
+          <TextField size="small" label="Subtítulo" value={landing.sedes.subtitle} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, subtitle: e.target.value } }))} fullWidth multiline rows={2} />
+          {landing.sedes.items.map((s, i) => (
+            <Row key={i} onRemove={() => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.filter((_, idx) => idx !== i) } }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
+                <TextField size="small" label="Ciudad" value={s.name} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, name: e.target.value } : x)) } }))} sx={{ minWidth: 160 }} />
+                <TextField size="small" label="Etiqueta" value={s.tag} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, tag: e.target.value } : x)) } }))} fullWidth />
+                <Stack direction="row" alignItems="center"><Switch size="small" color="success" checked={!!s.highlight} onChange={() => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, highlight: !x.highlight } : x)) } }))} /><Typography variant="caption">Destacar</Typography></Stack>
+              </Stack>
+            </Row>
+          ))}
+          <AddBtn onClick={() => setL((l) => ({ ...l, sedes: { ...l.sedes, items: [...l.sedes.items, { name: "Nueva", tag: "Sede" }] } }))} />
+        </Section>
+
+        {/* Programas */}
+        <Section title="Programas">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Badge" value={landing.programs.badge} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, badge: e.target.value } }))} sx={{ minWidth: 140 }} />
+            <TextField size="small" label="Título" value={landing.programs.title} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, title: e.target.value } }))} fullWidth />
+          </Stack>
+          {landing.programs.items.map((p, i) => (
+            <Row key={i} onRemove={() => setL((l) => ({ ...l, programs: { ...l.programs, items: l.programs.items.filter((_, idx) => idx !== i) } }))}>
+              <TextField size="small" label="Título" value={p.title} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, items: l.programs.items.map((x, idx) => (idx === i ? { ...x, title: e.target.value } : x)) } }))} fullWidth />
+              <TextField size="small" label="Descripción" value={p.description} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, items: l.programs.items.map((x, idx) => (idx === i ? { ...x, description: e.target.value } : x)) } }))} fullWidth multiline rows={2} />
+              <TextField size="small" label="Enlace" value={p.href} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, items: l.programs.items.map((x, idx) => (idx === i ? { ...x, href: e.target.value } : x)) } }))} fullWidth />
+            </Row>
+          ))}
+          <AddBtn onClick={() => setL((l) => ({ ...l, programs: { ...l.programs, items: [...l.programs.items, { title: "Nuevo", description: "", href: "#" }] } }))} />
+        </Section>
+
+        {/* Convocatoria */}
+        <Section title="Convocatoria">
+          <Stack direction="row" alignItems="center"><Switch checked={landing.convocatoria.open} onChange={() => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, open: !l.convocatoria.open } }))} color="success" /><Typography variant="body2">Convocatoria abierta (apagado = se oculta la sección)</Typography></Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Badge" value={landing.convocatoria.badge} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, badge: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Título" value={landing.convocatoria.title} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, title: e.target.value } }))} sx={{ minWidth: 140 }} />
+            <TextField size="small" label="Título (acento verde)" value={landing.convocatoria.titleAccent} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, titleAccent: e.target.value } }))} sx={{ minWidth: 160 }} />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Fecha apertura" value={landing.convocatoria.openDate} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, openDate: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Fecha cierre" value={landing.convocatoria.closeDate} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, closeDate: e.target.value } }))} fullWidth />
+          </Stack>
+          <TextField size="small" label="Párrafo" value={landing.convocatoria.paragraph} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, paragraph: e.target.value } }))} fullWidth multiline rows={2} />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Botón 1 — texto" value={landing.convocatoria.ctaPrimaryLabel} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, ctaPrimaryLabel: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Botón 1 — ruta" value={landing.convocatoria.primaryHref} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, primaryHref: e.target.value } }))} fullWidth />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Botón 2 — texto" value={landing.convocatoria.ctaSecondaryLabel} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, ctaSecondaryLabel: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Botón 2 — ruta" value={landing.convocatoria.secondaryHref} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, secondaryHref: e.target.value } }))} fullWidth />
           </Stack>
         </Section>
+
+        {/* Boletín */}
+        <Section title="Boletín (newsletter)">
+          <Stack direction="row" alignItems="center"><Switch checked={landing.newsletter.enabled} onChange={() => setL((l) => ({ ...l, newsletter: { ...l.newsletter, enabled: !l.newsletter.enabled } }))} color="success" /><Typography variant="body2">Mostrar sección</Typography></Stack>
+          <TextField size="small" label="Badge" value={landing.newsletter.badge} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, badge: e.target.value } }))} fullWidth />
+          <TextField size="small" label="Título" value={landing.newsletter.title} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, title: e.target.value } }))} fullWidth multiline rows={2} />
+          <TextField size="small" label="Párrafo" value={landing.newsletter.paragraph} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, paragraph: e.target.value } }))} fullWidth multiline rows={2} />
+          <TextField size="small" label="Nota (letra pequeña)" value={landing.newsletter.note} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, note: e.target.value } }))} fullWidth />
+        </Section>
+
+        {/* Footer + ajustes */}
+        <Section title="Pie de página y ajustes">
+          <TextField size="small" label="Descripción del footer" value={landing.footer.description} onChange={(e) => setL((l) => ({ ...l, footer: { ...l.footer, description: e.target.value } }))} fullWidth multiline rows={2} />
+          <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
+            <Stack direction="row" alignItems="center"><Switch checked={landing.showPrices} onChange={() => setL((l) => ({ ...l, showPrices: !l.showPrices }))} color="success" /><Typography variant="body2">Mostrar precios en obras</Typography></Stack>
+            <TextField size="small" label="Precio de referencia" value={landing.priceLabel} onChange={(e) => setL((l) => ({ ...l, priceLabel: e.target.value }))} sx={{ minWidth: 160 }} />
+          </Stack>
+        </Section>
+
+        {/* Obras destacadas (título de sección; las obras salen del catálogo) */}
         <Section title="Obras destacadas">
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Badge" value={content.featured.badge} onChange={(e) => setFeat("badge", e.target.value)} sx={{ minWidth: 160 }} />
@@ -386,18 +545,6 @@ export default function PersonalizacionPage() {
         <Section title="Técnicas">
           <TextField size="small" label="Título" value={content.techniques.title} onChange={(e) => setTech("title", e.target.value)} fullWidth />
           <TextField size="small" label="Subtítulo" value={content.techniques.subtitle} onChange={(e) => setTech("subtitle", e.target.value)} fullWidth />
-        </Section>
-
-        {/* Stats */}
-        <Section title="Estadísticas">
-          <TextField size="small" label="Título de la sección" value={content.statsTitle} onChange={(e) => setC((ct) => ({ ...ct, statsTitle: e.target.value }))} fullWidth />
-          {content.stats.map((s, i) => (
-            <Stack key={i} direction="row" spacing={2}>
-              <TextField size="small" label="Número" value={s.number} onChange={(e) => setStat(i, "number", e.target.value)} sx={{ width: 120 }} />
-              <TextField size="small" label="Sufijo" value={s.suffix || ""} onChange={(e) => setStat(i, "suffix", e.target.value)} sx={{ width: 90 }} />
-              <TextField size="small" label="Etiqueta" value={s.label} onChange={(e) => setStat(i, "label", e.target.value)} fullWidth />
-            </Stack>
-          ))}
         </Section>
 
         {/* Contacto */}
