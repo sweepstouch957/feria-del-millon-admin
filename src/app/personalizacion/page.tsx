@@ -150,6 +150,11 @@ export default function PersonalizacionPage() {
   const setL = (updater: (l: SiteConfig["landing"]) => SiteConfig["landing"]) =>
     setCfg((c) => (c ? { ...c, landing: updater(c.landing) } : c));
 
+  // Página de convocatoria (bases)
+  type CP = SiteConfig["landing"]["convocatoriaPage"];
+  const setCP = (updater: (cp: CP) => CP) =>
+    setL((l) => ({ ...l, convocatoriaPage: updater(l.convocatoriaPage) }));
+
   const handleSave = async () => {
     if (!cfg) return;
     setSaving(true);
@@ -187,6 +192,7 @@ export default function PersonalizacionPage() {
   }
 
   const { theme, content, sections, nav, landing } = cfg;
+  const cp = landing.convocatoriaPage;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
@@ -525,6 +531,113 @@ export default function PersonalizacionPage() {
             <TextField size="small" label="Botón 2 — texto" value={landing.convocatoria.ctaSecondaryLabel} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, ctaSecondaryLabel: e.target.value } }))} fullWidth />
             <TextField size="small" label="Botón 2 — ruta" value={landing.convocatoria.secondaryHref} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, secondaryHref: e.target.value } }))} fullWidth />
           </Stack>
+        </Section>
+
+        {/* ═══ PÁGINA DE CONVOCATORIA (bases) ═══ */}
+        <Divider textAlign="left"><Typography variant="overline" fontWeight={800} color="text.secondary">Página de convocatoria</Typography></Divider>
+
+        <Section title="Convocatoria — portada">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Título" value={cp.hero.title} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, title: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Título (bold)" value={cp.hero.titleStrong} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, titleStrong: e.target.value } }))} sx={{ minWidth: 140 }} />
+            <TextField size="small" label="Año" value={cp.hero.year} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, year: e.target.value } }))} sx={{ width: 100 }} />
+          </Stack>
+          <TextField size="small" label="Párrafo" value={cp.hero.paragraph} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, paragraph: e.target.value } }))} fullWidth multiline rows={2} />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Badge izq." value={cp.hero.badgeLeft} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, badgeLeft: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Badge centro" value={cp.hero.badgeCenter} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, badgeCenter: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Badge der." value={cp.hero.badgeRight} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, badgeRight: e.target.value } }))} fullWidth />
+          </Stack>
+          <TextField size="small" label="Botón principal (hero)" value={cp.hero.ctaPrimary} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, ctaPrimary: e.target.value } }))} fullWidth />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Fechas</Typography></Divider>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Etiqueta apertura" value={cp.dates.openLabel} onChange={(e) => setCP((c) => ({ ...c, dates: { ...c.dates, openLabel: e.target.value } }))} sx={{ minWidth: 160 }} />
+            <TextField size="small" label="Valor apertura" value={cp.dates.openValue} onChange={(e) => setCP((c) => ({ ...c, dates: { ...c.dates, openValue: e.target.value } }))} fullWidth />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Selección" value={cp.dates.seleccionValue} onChange={(e) => setCP((c) => ({ ...c, dates: { ...c.dates, seleccionValue: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Evento" value={cp.dates.eventoValue} onChange={(e) => setCP((c) => ({ ...c, dates: { ...c.dates, eventoValue: e.target.value } }))} fullWidth />
+          </Stack>
+          <StrList label="Correos de contacto" items={cp.contactEmails} onChange={(v) => setCP((c) => ({ ...c, contactEmails: v }))} placeholder="correo@feriadelmillon.com" />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Estadísticas del hero</Typography></Divider>
+          {cp.stats.map((s, i) => (
+            <Row key={i} onRemove={() => setCP((c) => ({ ...c, stats: c.stats.filter((_, idx) => idx !== i) }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
+                <TextField size="small" label="Valor" value={s.value} onChange={(e) => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, value: e.target.value } : x) }))} sx={{ width: 120 }} />
+                <TextField size="small" label="Etiqueta" value={s.label} onChange={(e) => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x) }))} fullWidth />
+                <Stack direction="row" alignItems="center"><Switch size="small" color="success" checked={!!s.accent} onChange={() => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, accent: !x.accent } : x) }))} /><Typography variant="caption">Verde</Typography></Stack>
+              </Stack>
+            </Row>
+          ))}
+          <AddBtn onClick={() => setCP((c) => ({ ...c, stats: [...c.stats, { value: "", label: "Nuevo" }] }))} />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Mensaje cuando está CERRADA</Typography></Divider>
+          <TextField size="small" label="Título cerrada" value={cp.closed.title} onChange={(e) => setCP((c) => ({ ...c, closed: { ...c.closed, title: e.target.value } }))} fullWidth />
+          <TextField size="small" label="Mensaje cerrada" value={cp.closed.message} onChange={(e) => setCP((c) => ({ ...c, closed: { ...c.closed, message: e.target.value } }))} fullWidth multiline rows={2} />
+          <Typography variant="caption" color="text.secondary">El estado abierto/cerrado se controla con el interruptor de la sección “Convocatoria” de arriba.</Typography>
+        </Section>
+
+        <Section title="Convocatoria — textos">
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">01 · La feria</Typography></Divider>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Título" value={cp.intro.title} onChange={(e) => setCP((c) => ({ ...c, intro: { ...c.intro, title: e.target.value } }))} fullWidth />
+            <TextField size="small" label="Título (bold)" value={cp.intro.titleStrong} onChange={(e) => setCP((c) => ({ ...c, intro: { ...c.intro, titleStrong: e.target.value } }))} fullWidth />
+          </Stack>
+          <StrList label="Párrafos" multiline items={cp.intro.paragraphs} onChange={(v) => setCP((c) => ({ ...c, intro: { ...c.intro, paragraphs: v } }))} />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">02 · Impacto</Typography></Divider>
+          <StrList label="Items de impacto" items={cp.impacto.items} onChange={(v) => setCP((c) => ({ ...c, impacto: { ...c.impacto, items: v } }))} />
+          <TextField size="small" label="Nota de impacto" value={cp.impacto.note} onChange={(e) => setCP((c) => ({ ...c, impacto: { ...c.impacto, note: e.target.value } }))} fullWidth multiline rows={2} />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">11 · Llamado final</Typography></Divider>
+          <TextField size="small" label="Párrafo CTA" value={cp.cta.paragraph} onChange={(e) => setCP((c) => ({ ...c, cta: { ...c.cta, paragraph: e.target.value } }))} fullWidth multiline rows={2} />
+          <TextField size="small" label="Nota CTA" value={cp.cta.note} onChange={(e) => setCP((c) => ({ ...c, cta: { ...c.cta, note: e.target.value } }))} fullWidth />
+        </Section>
+
+        <Section title="Convocatoria — quién participa / requisitos">
+          {(["participantes", "requisitos"] as const).map((key) => (
+            <Box key={key} sx={{ p: 1.25, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary">{key === "participantes" ? "04 · Quién participa" : "05 · Requisitos del proyecto"}</Typography>
+              <StrList label={cp[key].noTitle} items={cp[key].no} onChange={(v) => setCP((c) => ({ ...c, [key]: { ...c[key], no: v } }))} />
+              <StrList label={cp[key].siTitle} items={cp[key].si} onChange={(v) => setCP((c) => ({ ...c, [key]: { ...c[key], si: v } }))} />
+            </Box>
+          ))}
+        </Section>
+
+        <Section title="Convocatoria — documentos y pasos">
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">06 · Documentos requeridos</Typography></Divider>
+          {cp.documentos.items.map((d, i) => (
+            <Row key={i} onRemove={() => setCP((c) => ({ ...c, documentos: { ...c.documentos, items: c.documentos.items.filter((_, idx) => idx !== i) } }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <TextField size="small" label="Documento" value={d.title} onChange={(e) => setCP((c) => ({ ...c, documentos: { ...c.documentos, items: c.documentos.items.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x) } }))} fullWidth />
+                <TextField size="small" label="Especificación" value={d.spec} onChange={(e) => setCP((c) => ({ ...c, documentos: { ...c.documentos, items: c.documentos.items.map((x, idx) => idx === i ? { ...x, spec: e.target.value } : x) } }))} fullWidth />
+              </Stack>
+            </Row>
+          ))}
+          <AddBtn onClick={() => setCP((c) => ({ ...c, documentos: { ...c.documentos, items: [...c.documentos.items, { title: "Nuevo", spec: "" }] } }))} />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">07 · Pasos de inscripción</Typography></Divider>
+          {cp.pasos.items.map((p, i) => (
+            <Row key={i} onRemove={() => setCP((c) => ({ ...c, pasos: { ...c.pasos, items: c.pasos.items.filter((_, idx) => idx !== i) } }))}>
+              <TextField size="small" label="Título" value={p.title} onChange={(e) => setCP((c) => ({ ...c, pasos: { ...c.pasos, items: c.pasos.items.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x) } }))} fullWidth />
+              <TextField size="small" label="Descripción" value={p.description} onChange={(e) => setCP((c) => ({ ...c, pasos: { ...c.pasos, items: c.pasos.items.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x) } }))} fullWidth multiline rows={2} />
+            </Row>
+          ))}
+          <AddBtn onClick={() => setCP((c) => ({ ...c, pasos: { ...c.pasos, items: [...c.pasos.items, { title: "Nuevo", description: "" }] } }))} />
+        </Section>
+
+        <Section title="Convocatoria — rechazo, comisiones y compromisos">
+          <StrList label="08 · Causales de rechazo" items={cp.rechazo.items} onChange={(v) => setCP((c) => ({ ...c, rechazo: { ...c.rechazo, items: v } }))} />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">09 · Comisiones</Typography></Divider>
+          <TextField size="small" label="Nota comisiones" value={cp.comisiones.note} onChange={(e) => setCP((c) => ({ ...c, comisiones: { ...c.comisiones, note: e.target.value } }))} fullWidth multiline rows={2} />
+          {cp.comisiones.items.map((m, i) => (
+            <Row key={i} onRemove={() => setCP((c) => ({ ...c, comisiones: { ...c.comisiones, items: c.comisiones.items.filter((_, idx) => idx !== i) } }))}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <TextField size="small" label="Etiqueta" value={m.tag} onChange={(e) => setCP((c) => ({ ...c, comisiones: { ...c.comisiones, items: c.comisiones.items.map((x, idx) => idx === i ? { ...x, tag: e.target.value } : x) } }))} sx={{ minWidth: 160 }} />
+                <TextField size="small" label="Texto" value={m.text} onChange={(e) => setCP((c) => ({ ...c, comisiones: { ...c.comisiones, items: c.comisiones.items.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x) } }))} fullWidth />
+              </Stack>
+            </Row>
+          ))}
+          <AddBtn onClick={() => setCP((c) => ({ ...c, comisiones: { ...c.comisiones, items: [...c.comisiones.items, { tag: "Comisión adicional", text: "" }] } }))} />
+          <Divider textAlign="left"><Typography variant="caption" color="text.secondary">10 · Compromisos</Typography></Divider>
+          <StrList label={cp.compromisos.artistaTitle} items={cp.compromisos.artista} onChange={(v) => setCP((c) => ({ ...c, compromisos: { ...c.compromisos, artista: v } }))} />
+          <StrList label={cp.compromisos.feriaTitle} items={cp.compromisos.feria} onChange={(v) => setCP((c) => ({ ...c, compromisos: { ...c.compromisos, feria: v } }))} />
         </Section>
 
         {/* Boletín */}
