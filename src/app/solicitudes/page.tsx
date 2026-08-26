@@ -894,6 +894,7 @@ export default function SolicitudesPage() {
   const [cfgForm, setCfgForm] = React.useState({
     name: "", fee: 0, status: "open" as ConvocatoriaStatus,
     startDate: "", endDate: "", maxArtworksPerArtist: 3,
+    priceMin: 800000, priceMax: 2350000, maxImages: 15,
   });
 
   const loadConvForm = (c: Convocatoria) => {
@@ -905,6 +906,9 @@ export default function SolicitudesPage() {
       startDate: (c.startDate || "").slice(0, 10),
       endDate: (c.endDate || "").slice(0, 10),
       maxArtworksPerArtist: c.maxArtworksPerArtist ?? 3,
+      priceMin: c.requirements?.priceMin ?? 800000,
+      priceMax: c.requirements?.priceMax ?? 2350000,
+      maxImages: c.requirements?.maxImages ?? 15,
     });
   };
 
@@ -935,6 +939,11 @@ export default function SolicitudesPage() {
         startDate: cfgForm.startDate,
         endDate: cfgForm.endDate,
         maxArtworksPerArtist: Number(cfgForm.maxArtworksPerArtist),
+        requirements: {
+          priceMin: Number(cfgForm.priceMin),
+          priceMax: Number(cfgForm.priceMax),
+          maxImages: Number(cfgForm.maxImages),
+        },
       });
       setToast({ open: true, msg: "Convocatoria actualizada", sev: "success" });
       setCfgOpen(false);
@@ -1419,6 +1428,28 @@ export default function SolicitudesPage() {
                   onChange={(e) => setCfgForm((f) => ({ ...f, endDate: e.target.value }))}
                 />
               </Stack>
+
+              <Divider textAlign="left"><Typography variant="caption" color="text.secondary">Requisitos de las obras (por convocatoria)</Typography></Divider>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  size="small" label="Precio mínimo (COP)" type="number" fullWidth
+                  value={cfgForm.priceMin}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, priceMin: Number(e.target.value) }))}
+                />
+                <TextField
+                  size="small" label="Precio máximo (COP)" type="number" fullWidth
+                  value={cfgForm.priceMax}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, priceMax: Number(e.target.value) }))}
+                />
+                <TextField
+                  size="small" label="Máx. imágenes / obras" type="number" fullWidth
+                  value={cfgForm.maxImages}
+                  onChange={(e) => setCfgForm((f) => ({ ...f, maxImages: Number(e.target.value) }))}
+                />
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                El formulario de postulación aplica estos límites automáticamente.
+              </Typography>
 
               {cfgError && <Alert severity="error" sx={{ borderRadius: 2 }}>{cfgError}</Alert>}
             </Stack>

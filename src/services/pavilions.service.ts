@@ -21,10 +21,11 @@ export interface PavilionDoc {
   minArtworkPrice?: number;
   maxArtworkPrice?: number;
   mainImage?: string;
+  sponsor?: { name?: string; logo?: string; url?: string };
   order?: number;
   active?: boolean;
   meta?: Record<string, any>;
-  artists?: string[]; 
+  artists?: string[];
   artistInfo?: ArtistInfo[]; // NUEVO
   createdAt?: string;
   updatedAt?: string;
@@ -44,6 +45,7 @@ export interface CreatePavilionDto {
   active?: boolean;
   meta?: Record<string, any>;
   artists?: string[];
+  sponsor?: { name?: string; logo?: string; url?: string };
 }
 
 /* ========= Helpers ========= */

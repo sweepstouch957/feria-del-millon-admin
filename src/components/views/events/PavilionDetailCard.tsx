@@ -152,6 +152,27 @@ export default function PavilionDetailCard({
             fullWidth
           />
         </Stack>
+
+        <Typography variant="caption" fontWeight={700} color="text.secondary">
+          Patrocinador del pabellón (opcional)
+        </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="Nombre del patrocinador" size="small" fullWidth
+            value={pavilionForm.sponsorName ?? ""}
+            onChange={(e) => onFieldChange("sponsorName", e.target.value)}
+          />
+          <TextField
+            label="Logo (URL)" size="small" fullWidth
+            value={pavilionForm.sponsorLogo ?? ""}
+            onChange={(e) => onFieldChange("sponsorLogo", e.target.value)}
+          />
+          <TextField
+            label="Enlace (URL)" size="small" fullWidth
+            value={pavilionForm.sponsorUrl ?? ""}
+            onChange={(e) => onFieldChange("sponsorUrl", e.target.value)}
+          />
+        </Stack>
       </CardContent>
       <CardActions sx={{ justifyContent: "flex-end", px: 3, pb: 2 }}>
         <Button

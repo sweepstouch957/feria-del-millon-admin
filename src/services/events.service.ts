@@ -227,10 +227,20 @@ export interface Convocatoria {
   status: ConvocatoriaStatus;
   description?: string;
   maxArtworksPerArtist?: number;
+  allowedTechniqueIds?: string[];
+  requirements?: ConvocatoriaRequirements;
   termsUrl?: string;
   websiteUrl?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+// Requisitos configurables por convocatoria (cambian cada año).
+export interface ConvocatoriaRequirements {
+  maxImages?: number;
+  priceMin?: number;
+  priceMax?: number;
+  documents?: { cv?: boolean; profilePhoto?: boolean; bio?: boolean; projectReview?: boolean; montage?: boolean; detail?: boolean };
 }
 
 // GET /event/convocatorias
@@ -247,7 +257,7 @@ export const updateConvocatoria = async (
   payload: Partial<
     Pick<
       Convocatoria,
-      "name" | "description" | "startDate" | "endDate" | "fee" | "currency" | "status" | "maxArtworksPerArtist" | "termsUrl" | "websiteUrl"
+      "name" | "description" | "startDate" | "endDate" | "fee" | "currency" | "status" | "maxArtworksPerArtist" | "allowedTechniqueIds" | "requirements" | "termsUrl" | "websiteUrl"
     >
   >
 ): Promise<Convocatoria> => {

@@ -24,6 +24,9 @@ export type PavilionFormState = {
   active?: boolean;
   minArtworkPrice?: number;
   maxArtworkPrice?: number;
+  sponsorName?: string;
+  sponsorLogo?: string;
+  sponsorUrl?: string;
 };
 
 const toPavilionFormState = (p: PavilionDoc): PavilionFormState => ({
@@ -34,6 +37,9 @@ const toPavilionFormState = (p: PavilionDoc): PavilionFormState => ({
   active: p.active ?? true,
   minArtworkPrice: p.minArtworkPrice,
   maxArtworkPrice: p.maxArtworkPrice,
+  sponsorName: p.sponsor?.name ?? "",
+  sponsorLogo: p.sponsor?.logo ?? "",
+  sponsorUrl: p.sponsor?.url ?? "",
 });
 
 export function usePavilionsManager(selectedEventId: string | null) {
@@ -132,6 +138,11 @@ export function usePavilionsManager(selectedEventId: string | null) {
       active: pavilionForm.active,
       minArtworkPrice: pavilionForm.minArtworkPrice,
       maxArtworkPrice: pavilionForm.maxArtworkPrice,
+      sponsor: {
+        name: pavilionForm.sponsorName || "",
+        logo: pavilionForm.sponsorLogo || "",
+        url: pavilionForm.sponsorUrl || "",
+      },
     };
 
     await updatePavilionMutation.mutateAsync({
