@@ -6,7 +6,7 @@ import {
 } from "@mui/material";
 import {
   Save as SaveIcon, RotateCcw as ResetIcon, Palette as PaletteIcon,
-  ChevronUp, ChevronDown, Eye, EyeOff,
+  ChevronUp, ChevronDown, Eye, EyeOff, Plus, Trash2, Menu as MenuIcon,
 } from "lucide-react";
 import {
   getSiteConfig, updateSiteConfig, SITE_DEFAULTS, SECTION_LABELS,
@@ -94,6 +94,25 @@ export default function PersonalizacionPage() {
       return { ...c, sections: { ...c.sections, order } };
     });
 
+  // Navbar: editar / mostrar-ocultar / habilitar / reordenar / agregar / quitar
+  const setNavItem = (i: number, k: "label" | "href", v: string) =>
+    setCfg((c) => (c ? { ...c, nav: { items: c.nav.items.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)) } } : c));
+  const toggleNav = (i: number, k: "visible" | "enabled") =>
+    setCfg((c) => (c ? { ...c, nav: { items: c.nav.items.map((it, idx) => (idx === i ? { ...it, [k]: !it[k] } : it)) } } : c));
+  const moveNav = (i: number, dir: -1 | 1) =>
+    setCfg((c) => {
+      if (!c) return c;
+      const items = [...c.nav.items];
+      const j = i + dir;
+      if (j < 0 || j >= items.length) return c;
+      [items[i], items[j]] = [items[j], items[i]];
+      return { ...c, nav: { items } };
+    });
+  const addNav = () =>
+    setCfg((c) => (c ? { ...c, nav: { items: [...c.nav.items, { label: "Nueva", href: "/", visible: true, enabled: true }] } } : c));
+  const removeNav = (i: number) =>
+    setCfg((c) => (c ? { ...c, nav: { items: c.nav.items.filter((_, idx) => idx !== i) } } : c));
+
   const handleSave = async () => {
     if (!cfg) return;
     setSaving(true);
@@ -130,7 +149,7 @@ export default function PersonalizacionPage() {
     return <Box sx={{ p: 6, display: "flex", justifyContent: "center" }}><CircularProgress /></Box>;
   }
 
-  const { theme, content, sections } = cfg;
+  const { theme, content, sections, nav } = cfg;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
@@ -244,6 +263,49 @@ export default function PersonalizacionPage() {
               </Stack>
             ))}
           </Stack>
+        </Section>
+
+        {/* Navbar — pestañas configurables */}
+        <Section title="Navbar — pestañas del menú">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <MenuIcon size={16} />
+            <Typography variant="caption" color="text.secondary">
+              <b>Mostrar</b> = aparece en el menú. <b>Habilitada</b> = clickable (apagada = se ve en gris como “Próximamente”). Reordena con las flechas.
+            </Typography>
+          </Stack>
+          <Stack spacing={1}>
+            {nav.items.map((it, i) => (
+              <Box key={i} sx={{ p: 1.25, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
+                  <Stack>
+                    <IconButton size="small" disabled={i === 0} onClick={() => moveNav(i, -1)}><ChevronUp size={15} /></IconButton>
+                    <IconButton size="small" disabled={i === nav.items.length - 1} onClick={() => moveNav(i, 1)}><ChevronDown size={15} /></IconButton>
+                  </Stack>
+                  <TextField size="small" label="Texto" value={it.label} onChange={(e) => setNavItem(i, "label", e.target.value)} sx={{ minWidth: 140 }} />
+                  <TextField size="small" label="Ruta (href)" value={it.href} onChange={(e) => setNavItem(i, "href", e.target.value)} fullWidth placeholder="/catalogo" />
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Tooltip title={it.visible ? "Se muestra" : "Oculta"}>
+                      <Stack alignItems="center" spacing={0}>
+                        {it.visible ? <Eye size={15} /> : <EyeOff size={15} color="#94a3b8" />}
+                        <Switch checked={it.visible} onChange={() => toggleNav(i, "visible")} size="small" />
+                        <Typography variant="caption" color="text.secondary">Mostrar</Typography>
+                      </Stack>
+                    </Tooltip>
+                    <Stack alignItems="center" spacing={0}>
+                      <Switch checked={it.enabled} onChange={() => toggleNav(i, "enabled")} size="small" color="success" />
+                      <Typography variant="caption" color="text.secondary">Habilitada</Typography>
+                    </Stack>
+                    <Tooltip title="Quitar pestaña">
+                      <IconButton size="small" color="error" onClick={() => removeNav(i)}><Trash2 size={15} /></IconButton>
+                    </Tooltip>
+                  </Stack>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+          <Button size="small" variant="outlined" startIcon={<Plus size={15} />} onClick={addNav} sx={{ textTransform: "none", alignSelf: "flex-start" }}>
+            Agregar pestaña
+          </Button>
         </Section>
 
         {/* Hero */}

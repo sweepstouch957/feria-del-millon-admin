@@ -43,30 +43,51 @@ export interface SiteContent {
   social: { instagram: string; facebook: string; whatsapp: string; youtube: string };
 }
 
+// Navbar configurable: cada pestaña puede mostrarse/ocultarse y habilitarse.
+export interface NavItem {
+  label: string;
+  href: string;
+  visible: boolean;
+  enabled: boolean;
+}
+
+export const DEFAULT_NAV: NavItem[] = [
+  { label: "Inicio", href: "/", visible: true, enabled: true },
+  { label: "Catálogo", href: "/catalogo", visible: true, enabled: true },
+  { label: "Tickets", href: "/tickets", visible: true, enabled: true },
+  { label: "Artistas", href: "/artistas", visible: true, enabled: true },
+  { label: "Convocatoria", href: "/convocatoria", visible: true, enabled: true },
+  { label: "Sobre Nosotros", href: "/sobre-nosotros", visible: true, enabled: true },
+];
+
+// Secciones del landing v2 (deben coincidir con el ecommerce).
 export type SectionKey =
-  | "eventInfo"
-  | "pavilions"
+  | "about"
   | "featured"
   | "techniques"
-  | "stats"
-  | "contact";
+  | "sedes"
+  | "programs"
+  | "convocatoria"
+  | "newsletter";
 
 export const SECTION_KEYS: SectionKey[] = [
-  "eventInfo",
-  "pavilions",
+  "about",
   "featured",
   "techniques",
-  "stats",
-  "contact",
+  "sedes",
+  "programs",
+  "convocatoria",
+  "newsletter",
 ];
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
-  eventInfo: "Info del evento",
-  pavilions: "Pabellones",
+  about: "La feria (intro + stats)",
   featured: "Obras destacadas",
   techniques: "Técnicas",
-  stats: "Estadísticas",
-  contact: "Contacto",
+  sedes: "Sedes",
+  programs: "Programas",
+  convocatoria: "Convocatoria",
+  newsletter: "Boletín",
 };
 
 export interface SiteSections {
@@ -78,6 +99,10 @@ export interface SiteConfig {
   theme: SiteTheme;
   content: SiteContent;
   sections: SiteSections;
+  nav: { items: NavItem[] };
+  // Bloques del landing v2 (copys de about/sedes/programs/convocatoria/etc).
+  // Passthrough: se conserva tal cual para no perderlo al guardar.
+  landing?: Record<string, unknown>;
 }
 
 export const SITE_DEFAULTS: SiteConfig = {
@@ -143,15 +168,18 @@ export const SITE_DEFAULTS: SiteConfig = {
     },
     social: { instagram: "", facebook: "", whatsapp: "", youtube: "" },
   },
+  nav: { items: [...DEFAULT_NAV] },
+  landing: {},
   sections: {
     order: [...SECTION_KEYS],
     visible: {
-      eventInfo: true,
-      pavilions: true,
+      about: true,
       featured: true,
       techniques: true,
-      stats: true,
-      contact: true,
+      sedes: true,
+      programs: true,
+      convocatoria: true,
+      newsletter: true,
     },
   },
 };
@@ -160,12 +188,25 @@ export function mergeSiteConfig(raw: any): SiteConfig {
   const t = raw?.theme || {};
   const c = raw?.content || {};
   const s = raw?.sections || {};
+  const n = raw?.nav || {};
   const D = SITE_DEFAULTS;
 
   const order: SectionKey[] = Array.isArray(s.order)
     ? ([...s.order.filter((k: any) => SECTION_KEYS.includes(k)),
         ...SECTION_KEYS.filter((k) => !s.order.includes(k))] as SectionKey[])
     : [...SECTION_KEYS];
+
+  const navItems: NavItem[] =
+    Array.isArray(n.items) && n.items.length > 0
+      ? n.items
+          .filter((i: any) => i && typeof i.href === "string" && typeof i.label === "string")
+          .map((i: any) => ({
+            label: String(i.label),
+            href: String(i.href),
+            visible: i.visible ?? true,
+            enabled: i.enabled ?? true,
+          }))
+      : [...DEFAULT_NAV];
 
   return {
     theme: { ...D.theme, ...t },
@@ -184,6 +225,9 @@ export function mergeSiteConfig(raw: any): SiteConfig {
       contact: { ...D.content.contact, ...(c.contact || {}) },
       social: { ...D.content.social, ...(c.social || {}) },
     },
+    nav: { items: navItems },
+    // Passthrough: preservamos el bloque landing v2 sin tocarlo.
+    landing: raw?.landing && typeof raw.landing === "object" ? raw.landing : {},
     sections: {
       order,
       visible: { ...D.sections.visible, ...(s.visible || {}) },
