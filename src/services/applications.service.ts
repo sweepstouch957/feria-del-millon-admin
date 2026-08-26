@@ -76,11 +76,6 @@ export const listApplications = async (params: ApplicationListParams = {}): Prom
   return data;
 };
 
-export const getApplicationById = async (id: string): Promise<ArtistApplication> => {
-  const { data } = await apiClient.get(`/applications/applications/${id}`, { headers: ADMIN_HEADERS });
-  return data.doc;
-};
-
 export const reviewApplication = async (
   id: string,
   decision: "accepted" | "rejected",

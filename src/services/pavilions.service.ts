@@ -56,19 +56,6 @@ const normalizeId = <T extends { id?: string; _id?: string }>(obj: T) => ({
 
 /* ========= Endpoints ========= */
 
-// POST /events/:eventId/pavilions
-export const createPavilion = async (
-  eventId: string,
-  payload: CreatePavilionDto
-) => {
-  const { data } = await apiClient.post<PavilionDoc>(
-    `/event/events/${encodeURIComponent(eventId)}/pavilions`,
-    payload,
-    { withCredentials: true }
-  );
-  return normalizeId(data);
-};
-
 // GET /events/:eventId/pavilions
 export const listPavilions = async (eventId: string) => {
   const { data } = await apiClient.get<PavilionDoc[]>(
@@ -76,17 +63,6 @@ export const listPavilions = async (eventId: string) => {
     { withCredentials: true }
   );
   return data.map(normalizeId);
-};
-
-// GET /events/:eventId/pavilions/:slug
-export const getPavillionBySlug = async (eventId: string, slug: string) => {
-  const { data } = await apiClient.get<PavilionDoc>(
-    `/event/events/${encodeURIComponent(
-      eventId
-    )}/pavilions/${encodeURIComponent(slug)}`,
-    { withCredentials: true }
-  );
-  return normalizeId(data);
 };
 
 /* ========= Tipos: Pabellones por Usuario ========= */

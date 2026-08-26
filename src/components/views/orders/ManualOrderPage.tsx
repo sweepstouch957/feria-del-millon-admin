@@ -21,6 +21,7 @@
     } from "@mui/material";
     import { useForm } from "react-hook-form";
     import { toast } from "sonner";
+    import { formatCOP } from "@/utils/money";
 
     import {
         createOrder,
@@ -108,11 +109,7 @@
 
         const formatMoney = (amount?: number, currency: string = "COP") => {
             if (typeof amount !== "number") return "";
-            return new Intl.NumberFormat("es-CO", {
-                style: "currency",
-                currency,
-                maximumFractionDigits: 0,
-            }).format(amount);
+            return formatCOP(amount, { currency });
         };
 
         const handleSelectArtwork = (row: ArtworkRow) => {

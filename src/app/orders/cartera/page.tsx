@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  Box, Card, CardContent, Typography, Stack, Chip, Button, Divider,
+  Box, Card, CardContent, Typography, Stack, Chip, Button,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, Snackbar, Alert, LinearProgress,
@@ -10,9 +10,10 @@ import {
 import { Wallet, Plus, RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listOrders, registerAbono, type OrderDoc } from "@services/orders.service";
+import { formatCOP } from "@/utils/money";
+import { formatDate } from "@/utils/date";
 
-const money = (n?: number) =>
-  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", currencyDisplay: "code", maximumFractionDigits: 0 }).format(Number(n || 0));
+const money = (n?: number) => formatCOP(n, { code: true });
 
 const METHODS = [
   { value: "cash", label: "Efectivo" },
@@ -127,7 +128,7 @@ export default function CarteraPage() {
                           <Typography fontWeight={800} color={bal > 0 ? "#b45309" : "#16a34a"}>{money(bal)}</Typography>
                         </TableCell>
                         <TableCell>
-                          {o.layaway?.dueDate ? new Date(o.layaway.dueDate).toLocaleDateString("es-CO") : "—"}
+                          {formatDate(o.layaway?.dueDate)}
                         </TableCell>
                         <TableCell align="right">
                           <Button size="small" variant="contained" disableElevation startIcon={<Plus size={14} />}

@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { formatDate } from "@/utils/date";
 import { useTheme } from "@mui/material/styles";
 import {
   Box, Card, CardContent, Stack, TextField, InputAdornment,
@@ -388,7 +389,7 @@ function ApplicationDetailDialog({
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 1.5 }}>
                 <MetaCard icon={<DollarSign size={16} />} label="Pago" value={app.isPaid ? "Confirmado" : "Pendiente"} color={app.isPaid ? "#16a34a" : "#d97706"} />
                 <MetaCard icon={<ImageIcon size={16} />} label="Obras cargadas" value={`${app.artworkImages?.length || 0} / 15`} />
-                <MetaCard icon={<CalendarIcon size={16} />} label="Enviada" value={app.submittedAt ? new Date(app.submittedAt).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" }) : "—"} />
+                <MetaCard icon={<CalendarIcon size={16} />} label="Enviada" value={formatDate(app.submittedAt, { year: "numeric", month: "short", day: "numeric" })} />
                 <MetaCard icon={<MapPinIcon size={16} />} label="Ciudad" value={artist?.city || "—"} />
               </Box>
 
@@ -1061,7 +1062,7 @@ export default function SolicitudesPage() {
     },
     {
       field: "submittedAt", headerName: "Enviada", width: 120,
-      renderCell: (p) => p.row?.submittedAt ? new Date(p.row.submittedAt).toLocaleDateString("es-CO") : "—",
+      renderCell: (p) => formatDate(p.row?.submittedAt),
     },
     {
       field: "actions", headerName: "Acciones", width: 100, sortable: false, align: "center", headerAlign: "center",

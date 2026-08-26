@@ -132,29 +132,6 @@ export async function getUserById(id: string): Promise<UserDTO> {
   };
 }
 
-// Crear usuario (admin)
-export interface CreateUserPayload {
-  email: string;
-  password?: string; // si no envías, el backend puede autogenerar
-  firstName?: string;
-  lastName?: string;
-  mobile?: string;
-  city?: string;
-  roles?: Roles;
-  active?: boolean;
-  [k: string]: any;
-}
-export async function createUser(
-  payload: CreateUserPayload
-): Promise<{ id: string; email: string }> {
-  const { data } = await apiClient.post<{ id: string; email: string }>(
-    BASE,
-    payload,
-    { withCredentials: true }
-  );
-  return data;
-}
-
 // Actualizar usuario (admin) — sin tocar passwordHash
 export interface UpdateUserPayload {
   firstName?: string;
@@ -188,33 +165,3 @@ export async function updateUser(
   };
 }
 
-// Activar/desactivar usuario rápidamente
-export async function setUserActive(
-  id: string,
-  active: boolean
-): Promise<UserDTO> {
-  return updateUser(id, { active });
-}
-
-// Eliminar usuario (si tu backend lo permite)
-export async function deleteUser(id: string): Promise<{ ok: boolean }> {
-  const { data } = await apiClient.delete<{ ok: boolean }>(`${BASE}/${id}`, {
-    withCredentials: true,
-  });
-  return data;
-}
-
-
-export async function searchArtists(opts: { q?: string; limit?: number } = {}): Promise<UserDTO[]> {
-  const { q, limit = 30 } = opts;
-
-  const res = await listUsers({
-    q,
-    roles: ["artista"],
-    limit,
-    sortBy: "firstName",
-    sortDir: "asc",
-  });
-
-  return res.users;
-}

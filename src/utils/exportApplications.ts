@@ -4,35 +4,9 @@
  * en español/es-CO usa por defecto → abre directo en columnas, sin warnings).
  */
 import { listApplications, type ArtistApplication } from "@services/applications.service";
+import { formatDate } from "@/utils/date";
 
 export type Segment = "paid_submitted" | "paid_not_submitted" | "not_paid" | "all";
-
-export const SEGMENTS: {
-  key: Segment;
-  label: string;
-  desc: string;
-}[] = [
-  {
-    key: "paid_submitted",
-    label: "Pagaron y enviaron propuesta",
-    desc: "Inscritos que pagaron la inscripción y ya enviaron su postulación.",
-  },
-  {
-    key: "paid_not_submitted",
-    label: "Pagaron pero no enviaron",
-    desc: "Pagaron la inscripción pero aún no completaron/enviaron su propuesta.",
-  },
-  {
-    key: "not_paid",
-    label: "No han pagado",
-    desc: "Se registraron pero aún no pagan la inscripción.",
-  },
-  {
-    key: "all",
-    label: "Todos los inscritos",
-    desc: "Listado completo, sin filtrar.",
-  },
-];
 
 const STATUS_LABEL: Record<string, string> = {
   pending_payment: "Pago pendiente",
@@ -92,7 +66,7 @@ function fmtDate(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" });
+  return formatDate(d, { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
 // Escapa un campo para CSV: envuelve en comillas si contiene ; " o salto de línea.

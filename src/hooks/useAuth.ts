@@ -1,9 +1,7 @@
 import {
   useQuery,
-  useInfiniteQuery,
   keepPreviousData,
   type UseQueryOptions,
-  type UseInfiniteQueryOptions,
 } from "@tanstack/react-query";
 import {
   listUsers,
@@ -72,45 +70,4 @@ export function useUsers(
     gcTime: 5 * 60_000,
     ...options,
   });
-}
-
-/* =========================
-   useInfiniteUsers (scroll)
-   ========================= */
-export function useInfiniteUsers(
-  params: Omit<UsersSearchParams, "page">,
-  options?: UseInfiniteQueryOptions<
-    UsersSearchResponse,
-    unknown,
-    UsersSearchResponse
-  >
-) {
-  const base: UsersSearchParams = {
-    limit: 20,
-    sortBy: "createdAt",
-    sortDir: "desc",
-    ...params,
-  };
-
-  const q:any = useInfiniteQuery({
-    queryKey: makeUsersKey("infinite", base),
-    queryFn: ({ pageParam }) => {
-      const page = typeof pageParam === "number" ? pageParam : 1;
-      return listUsers({ ...base, page });
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const next = (lastPage.page ?? 1) + 1;
-      return lastPage.totalPages && next <= lastPage.totalPages
-        ? next
-        : undefined;
-    },
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
-    ...options,
-  });
-
-  
-  const users = q.data?.pages.flatMap((p:any) => p.users ?? []) ?? [];
-  return { ...q, users };
 }

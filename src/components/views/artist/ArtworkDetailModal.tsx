@@ -16,6 +16,7 @@ import {
 import { X, Share2, QrCode, Plus, Minus, RefreshCw } from "lucide-react";
 import type { ArtworkDetailResponse } from "@services/artworks.service";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { formatCOP } from "@/utils/money";
 
 export default function ArtworkDetailModal({
   id,
@@ -44,13 +45,7 @@ export default function ArtworkDetailModal({
   }, [open]);
 
   const formatMoney = (n?: number, currency: string = "COP") =>
-    typeof n === "number"
-      ? new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency,
-        minimumFractionDigits: 0,
-      }).format(n)
-      : "—";
+    typeof n === "number" ? formatCOP(n, { currency }) : "—";
 
   const share = async () => {
     if (!id) return;

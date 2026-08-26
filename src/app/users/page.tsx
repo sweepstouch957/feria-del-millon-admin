@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { formatDate } from "@/utils/date";
 import {
   Box, Stack, Typography, TextField, InputAdornment, IconButton,
   Select, MenuItem, FormControl, InputLabel, Chip, Button, Tooltip,
@@ -56,8 +57,7 @@ function hashColor(str = "") {
 }
 
 function fmtDate(s?: string | null, withTime = false) {
-  if (!s) return "—";
-  return new Date(s).toLocaleDateString("es-CO", {
+  return formatDate(s, {
     year: "numeric", month: "short", day: "numeric",
     ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
   });

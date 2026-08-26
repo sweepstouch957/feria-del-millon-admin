@@ -17,13 +17,13 @@ import {
 import { listApplications, type ApplicationListResponse } from "@/services/applications.service";
 import { listUsers, type UsersSearchResponse } from "@/services/user.service";
 import { listOrders, type OrderDoc } from "@/services/orders.service";
+import { formatCOP } from "@/utils/money";
 
 /* ── constants ── */
 const GREEN       = "#22c55e";
 const APP_FEE_COP = 40_000;
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
+const fmt = (n: number) => formatCOP(n);
 
 const fmtShort = (n: number) => {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;

@@ -10,6 +10,7 @@ import { useTheme } from "@mui/material/styles";
 import { Search, MapPin, CheckCircle2, XCircle, Globe } from "lucide-react";
 import { useCities } from "@/hooks/useCities";
 import type { CityDoc } from "@/services/city.service";
+import { formatDate } from "@/utils/date";
 
 const GREEN = "#22c55e";
 
@@ -88,7 +89,7 @@ export default function CitiesPage() {
       width: 150,
       renderCell: ({ value }) => value
         ? <Typography sx={{ fontSize: 12, color: "text.disabled" }}>
-            {new Date(value).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+            {formatDate(value, { day: "2-digit", month: "short", year: "numeric" })}
           </Typography>
         : <Typography sx={{ fontSize: 12, color: "text.disabled" }}>—</Typography>,
     },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatCOP } from "@/utils/money";
 import {
   Alert,
   Card,
@@ -249,11 +250,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                       </Stack>
 
                       <Typography variant="h6" fontWeight={800} sx={{ mb: 0.5 }}>
-                        {Intl.NumberFormat("es-CO", {
-                          style: "currency",
-                          currency: "COP",
-                          maximumFractionDigits: 0,
-                        }).format(day.price)}
+                        {formatCOP(day.price)}
                       </Typography>
 
                       <Typography variant="caption" color="text.secondary">

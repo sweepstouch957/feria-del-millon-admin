@@ -41,18 +41,13 @@ import { useArtworkDetail } from "@/hooks/useArtworkDetail";
 import { patchArtwork } from "@services/artworks.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadCampaignImage } from "@services/upload.service";
+import { formatCOP } from "@/utils/money";
 
 /* =========================
    Helpers
 ========================= */
 const formatPrice = (price?: number, currency = "COP") =>
-  price == null
-    ? "—"
-    : new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 0,
-      }).format(price);
+  price == null ? "—" : formatCOP(price, { currency });
 
 /** Lee File -> HTMLImageElement */
 async function fileToImage(file: File): Promise<HTMLImageElement> {

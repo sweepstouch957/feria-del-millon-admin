@@ -9,9 +9,9 @@ import { QrCode, Printer, RefreshCw } from "lucide-react";
 import QRCode from "qrcode";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useEvents } from "@/hooks/useEvents";
+import { formatCOP } from "@/utils/money";
 
-const money = (n?: number, currency = "COP") =>
-  new Intl.NumberFormat("es-CO", { style: "currency", currency, currencyDisplay: "code", maximumFractionDigits: 0 }).format(Number(n || 0));
+const money = (n?: number, currency = "COP") => formatCOP(n, { code: true, currency });
 
 const DEFAULT_SHOP =
   (process.env.NEXT_PUBLIC_SHOP_URL as string | undefined) || "https://feriadelmillon.com";
@@ -108,7 +108,6 @@ export default function ArtworksQrPage() {
             return (
               <div key={id} className="qr-label">
                 {qr ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={qr} alt={`QR ${a.title}`} width={150} height={150} />
                 ) : (
                   <div style={{ width: 150, height: 150, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 11 }}>generando…</div>

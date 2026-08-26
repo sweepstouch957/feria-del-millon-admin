@@ -9,9 +9,9 @@ import { BarChart3, Download, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getApplicationStats } from "@services/applications.service";
 import { listOrders, type OrderDoc } from "@services/orders.service";
+import { formatCOP } from "@/utils/money";
 
-const money = (n?: number) =>
-  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", currencyDisplay: "code", maximumFractionDigits: 0 }).format(Number(n || 0));
+const money = (n?: number) => formatCOP(n, { code: true });
 
 const STATUS_LABEL: Record<string, string> = {
   pending_payment: "Sin pagar inscripción",

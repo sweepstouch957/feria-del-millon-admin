@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { Refresh as RefreshIcon } from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
+import { formatCOP } from "@/utils/money";
 
 import { getTickets, type Ticket } from "@services/ticket.service";
 
@@ -104,11 +105,7 @@ export function TicketsTable({ eventId }: { eventId: string }) {
                       />
                     </TableCell>
                     <TableCell align="right">
-                      {Intl.NumberFormat("es-CO", {
-                        style: "currency",
-                        currency: t.currency || "COP",
-                        maximumFractionDigits: 0,
-                      }).format(t.price)}
+                      {formatCOP(t.price, { currency: t.currency || "COP" })}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -48,16 +48,10 @@ import { useTechniques } from "@/hooks/useTechniques";
 import { useEvents } from "@/hooks/useEvents";
 import { usePavilions } from "@/hooks/usePavilions";
 import { setCatalogReveal } from "@services/events.service";
+import { formatCOP } from "@/utils/money";
 
 const formatPrice = (price?: number, currency = "COP") =>
-  price == null
-    ? "—"
-    : new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency,
-        currencyDisplay: "code", // muestra "COP 1.000.000"
-        maximumFractionDigits: 0,
-      }).format(price);
+  price == null ? "—" : formatCOP(price, { code: true, currency });
 
 export default function ArtworksCursorPage() {
   const [q, setQ] = useState("");

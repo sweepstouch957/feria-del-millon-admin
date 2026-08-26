@@ -275,17 +275,3 @@ export const patchArtwork = async (
   );
   return { ok: data.ok, doc: normalizeId(data.doc) as ArtworkDoc };
 };
-
-/**
- * (Opcional legacy) GET /catalogs/artworks/:idOrSlug
- * Si mantienes soporte por slug, deja este helper; de lo contrario usa getArtworkById.
- */
-export const getArtworkByIdOrSlug = async (
-  idOrSlug: string
-): Promise<ArtworkDoc> => {
-  const { data } = await apiClient.get<ArtworkDoc>(
-    `/catalogs/artworks/${encodeURIComponent(idOrSlug)}`,
-    { withCredentials: true }
-  );
-  return normalizeId(data);
-};

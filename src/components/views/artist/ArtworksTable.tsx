@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { ExternalLink, Edit3, Share2, Loader2, QrCode } from "lucide-react";
 import { ArtworkRow } from "@/hooks/useArtworksCursor";
+import { formatCOP } from "@/utils/money";
 
 export default function ArtworksTable({
   rows,
@@ -44,13 +45,7 @@ export default function ArtworksTable({
   const theme = useTheme();
 
   const formatMoney = (n?: number, currency: string = "COP") =>
-    typeof n === "number"
-      ? new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency,
-        minimumFractionDigits: 0,
-      }).format(n)
-      : "—";
+    typeof n === "number" ? formatCOP(n, { currency }) : "—";
 
   const doShare = async (id: string, title: string) => {
     const url = `${window.location.origin}/obra/${encodeURIComponent(id)}`;
