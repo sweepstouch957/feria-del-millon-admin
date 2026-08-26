@@ -27,6 +27,8 @@ import {
   IconButton,
   Tooltip,
   Paper,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -45,6 +47,7 @@ import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useTechniques } from "@/hooks/useTechniques";
 import { useEvents } from "@/hooks/useEvents";
 import { usePavilions } from "@/hooks/usePavilions";
+import { setCatalogReveal } from "@services/events.service";
 
 const formatPrice = (price?: number, currency = "COP") =>
   price == null
@@ -76,7 +79,23 @@ export default function ArtworksCursorPage() {
     loadMore,
     isFetchingNextPage,
     refetch,
-  } = useArtworksCursor({ q, event, pavilion, technique, limit:24 });
+  } = useArtworksCursor({ q, event, pavilion, technique, limit: 24, includeHidden: 1 });
+
+  // Interruptor global: revelar el catálogo (muestra las obras "ocultas hasta el evento").
+  const selectedEvent: any = (eventsQuery.data ?? []).find(
+    (ev: any) => (ev.id || ev._id) === event
+  );
+  const [revealBusy, setRevealBusy] = useState(false);
+  const toggleReveal = async (checked: boolean) => {
+    if (!event) return;
+    setRevealBusy(true);
+    try {
+      await setCatalogReveal(event, checked);
+      await eventsQuery.refetch?.();
+    } finally {
+      setRevealBusy(false);
+    }
+  };
 
   const totalArtworks = totalLabel;
   const totalArtists = new Set(
@@ -181,14 +200,32 @@ export default function ArtworksCursorPage() {
             </Stack>
           }
           action={
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon size={16} />}
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              Actualizar
-            </Button>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              {selectedEvent && (
+                <Tooltip title="Al activarlo, las obras marcadas “ocultas hasta el evento” se muestran en el catálogo público ya mismo.">
+                  <FormControlLabel
+                    sx={{ mr: 0 }}
+                    control={
+                      <Switch
+                        color="success"
+                        checked={!!selectedEvent.catalogRevealed}
+                        disabled={revealBusy}
+                        onChange={(e) => toggleReveal(e.target.checked)}
+                      />
+                    }
+                    label={<Typography variant="caption" fontWeight={700}>Catálogo revelado</Typography>}
+                  />
+                </Tooltip>
+              )}
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon size={16} />}
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                Actualizar
+              </Button>
+            </Stack>
           }
           sx={{
             background:

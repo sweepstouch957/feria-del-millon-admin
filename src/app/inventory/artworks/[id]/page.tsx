@@ -18,6 +18,8 @@ import {
   Tooltip,
   Snackbar,
   LinearProgress,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -169,6 +171,7 @@ export default function ArtworkDetailPage() {
     status: "",
     description: "",
     image: "",
+    hiddenUntilEvent: false,
   });
 
   // Inicializa form con doc
@@ -180,6 +183,7 @@ export default function ArtworkDetailPage() {
       status: art.status ?? "",
       description: art.description ?? "",
       image: art.image ?? "",
+      hiddenUntilEvent: !!art.hiddenUntilEvent,
     });
     setLocalPreview(null);
   }, [art?.id]); // eslint-disable-line
@@ -193,6 +197,7 @@ export default function ArtworkDetailPage() {
         description: form.description ?? art?.description,
         status: form.status || art?.status,
         image: form.image || art?.image,
+        hiddenUntilEvent: form.hiddenUntilEvent,
       };
       const res = await patchArtwork(id, payload);
       return res;
@@ -637,6 +642,17 @@ export default function ArtworkDetailPage() {
                       <option value="archived">Archivado</option>
                     </TextField>
                   </Stack>
+
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        color="warning"
+                        checked={form.hiddenUntilEvent}
+                        onChange={(e) => setForm((f) => ({ ...f, hiddenUntilEvent: e.target.checked }))}
+                      />
+                    }
+                    label="Ocultar en el catálogo hasta el día del evento"
+                  />
 
                   <Stack direction="row" spacing={2} justifyContent="flex-end">
                     <Button

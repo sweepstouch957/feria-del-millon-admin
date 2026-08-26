@@ -26,6 +26,7 @@ export interface ArtworkDoc {
   channel?: "event" | "online";
   defaultChannel?: "event" | "online";
   status?: ArtworkStatus; // "published" filtra en list
+  hiddenUntilEvent?: boolean; // true = oculta hasta revelar el catálogo
   meta?: any;
   createdAt?: string;
   updatedAt?: string;
@@ -80,6 +81,7 @@ export interface CursorListParams {
   minPrice?: number;
   maxPrice?: number;
   hasImage?: boolean;
+  includeHidden?: boolean | number | string; // 1 = incluir obras hiddenUntilEvent (staff)
 
   // Paginación & orden
   limit?: number; // default 24 (máx 60)
@@ -150,6 +152,7 @@ export type PatchArtworkDto = Partial<{
   technique: string;
   tags: string[];
   status: ArtworkStatus;
+  hiddenUntilEvent: boolean;
   allowOnlineAfterEvent: boolean;
   defaultChannel: "event" | "online";
   fulfillmentBy: string;

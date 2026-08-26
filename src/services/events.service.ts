@@ -194,6 +194,17 @@ export const updateEvent = async (
   return normalizeId(data);
 };
 
+// Interruptor global del catálogo (PATCH /event/events/:eventId/catalog-reveal, staff)
+// revealed=true muestra las obras marcadas "oculta hasta el evento" sin esperar validFrom.
+export const setCatalogReveal = async (eventId: string, revealed: boolean) => {
+  const { data } = await apiClient.patch<{ ok: boolean; catalogRevealed: boolean }>(
+    `/event/events/${encodeURIComponent(eventId)}/catalog-reveal`,
+    { revealed },
+    { withCredentials: true }
+  );
+  return data;
+};
+
 /* ========= Convocatorias ========= */
 export type ConvocatoriaStatus =
   | "draft"

@@ -30,6 +30,7 @@ export type ArtworksCursorFilters = {
   technique?: string;
   limit?: number;
   artist?: string;
+  includeHidden?: boolean | number | string;
 };
 
 export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
@@ -41,6 +42,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       technique: filters.technique || undefined,
       limit: filters.limit ?? 24,
       artist: filters.artist || undefined,
+      includeHidden: filters.includeHidden || undefined,
     }),
     [
       filters.q,
@@ -49,6 +51,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       filters.technique,
       filters.limit,
       filters.artist,
+      filters.includeHidden,
     ]
   );
 
