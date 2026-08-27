@@ -239,7 +239,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                         alignItems="center"
                         mb={1}
                       >
-                        <Typography fontWeight={700} fontSize={15}>
+                        <Typography fontWeight={500} fontSize={15}>
                           {day.display}
                         </Typography>
                         <Chip
@@ -249,7 +249,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                         />
                       </Stack>
 
-                      <Typography variant="h6" fontWeight={800} sx={{ mb: 0.5 }}>
+                      <Typography variant="h6" fontWeight={500} sx={{ mb: 0.5 }}>
                         {formatCOP(day.price)}
                       </Typography>
 
@@ -316,7 +316,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
         <DialogContent dividers>
           {editState.day && (
             <Stack spacing={2} mt={0.5}>
-              <Typography variant="body2" fontWeight={600}>
+              <Typography variant="body2" fontWeight={500}>
                 {editState.day.display}
               </Typography>
 

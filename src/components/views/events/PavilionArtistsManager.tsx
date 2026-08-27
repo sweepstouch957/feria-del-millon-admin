@@ -210,7 +210,7 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                         : "background.default",
             }}
         >
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            <Typography variant="subtitle1" fontWeight={500} gutterBottom>
                 Artistas del pabellón
             </Typography>
 
@@ -292,7 +292,7 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
                 <DialogContent dividers>
                     {detailArtist && (
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                            <Typography variant="subtitle1" fontWeight={600}>
+                            <Typography variant="subtitle1" fontWeight={500}>
                                 {detailArtist.firstName || detailArtist.lastName
                                     ? `${detailArtist.firstName ?? ""} ${detailArtist.lastName ?? ""}`.trim()
                                     : detailArtist.label}

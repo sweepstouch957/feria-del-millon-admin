@@ -63,7 +63,7 @@ export default function ArtworksQrPage() {
           <QrCode size={20} />
         </Box>
         <Box flex={1}>
-          <Typography fontWeight={900} fontSize={20}>QR de obras (para imprimir)</Typography>
+          <Typography fontWeight={500} fontSize={20}>QR de obras (para imprimir)</Typography>
           <Typography variant="caption" color="text.secondary">
             Cada QR lleva a la ficha de la obra en la tienda → compra en línea (antes, durante y después de la feria).
           </Typography>
@@ -122,7 +122,7 @@ export default function ArtworksQrPage() {
         </Box>
       )}
 
-      <style jsx global>{`
+      <style>{`
         .qr-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));

@@ -206,7 +206,7 @@ function MetaCard({ icon, label, value, color }: { icon: React.ReactNode; label:
       <Box sx={{ color: dk ? "#6B6862" : "#8E8A80", mt: 0.3 }}>{icon}</Box>
       <Box>
         <Typography variant="caption" sx={{ color: dk ? "#6B6862" : "#615E58", textTransform: "uppercase", fontSize: 10, fontWeight: 500, letterSpacing: .5 }}>{label}</Typography>
-        <Typography fontWeight={700} fontSize={14} sx={{ color: color || (dk ? "#F7F6F2" : "#26241F") }}>{value}</Typography>
+        <Typography fontWeight={500} fontSize={14} sx={{ color: color || (dk ? "#F7F6F2" : "#26241F") }}>{value}</Typography>
       </Box>
     </Box>
   );
@@ -349,7 +349,7 @@ function ApplicationDetailDialog({
               </Avatar>
             )}
             <Box flex={1}>
-              <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: "-0.5px" }}>
+              <Typography variant="h5" fontWeight={500} sx={{ letterSpacing: "-0.5px" }}>
                 {artist?.firstName} {artist?.lastName}
               </Typography>
               <Stack direction="row" spacing={2.5} flexWrap="wrap" sx={{ mt: 0.5, opacity: 0.9 }}>
@@ -398,7 +398,7 @@ function ApplicationDetailDialog({
               {/* Bio */}
               {app.bio && (
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={800} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={500} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <UserIcon size={16} /> Biografía del artista
                   </Typography>
                   <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#F7F6F2", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#DEDBD2'}`, borderRadius: 0, p: 2.5 }}>
@@ -410,7 +410,7 @@ function ApplicationDetailDialog({
               {/* Project review */}
               {app.projectReview && (
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={800} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={500} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PaletteIcon size={16} /> Reseña del proyecto
                   </Typography>
                   <Box sx={{ background: dk ? "rgba(74,222,128,0.05)" : "#EEF5F1", border: `1px solid ${dk ? 'rgba(74,222,128,0.15)' : '#D7E8DF'}`, borderRadius: 0, p: 2.5 }}>
@@ -423,14 +423,14 @@ function ApplicationDetailDialog({
               {(artist as any)?.instagram && (
                 <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                   <InstagramIcon size={16} />
-                  <Typography variant="body2" fontWeight={600}>{(artist as any).instagram}</Typography>
+                  <Typography variant="body2" fontWeight={500}>{(artist as any).instagram}</Typography>
                 </Stack>
               )}
 
               {/* Admin notes */}
               {app.adminNotes && (
                 <Box sx={{ background: dk ? "rgba(14,165,233,0.08)" : "#f0f9ff", border: `1px solid ${dk ? 'rgba(14,165,233,0.2)' : '#bae6fd'}`, borderRadius: 0, p: 2 }}>
-                  <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#38bdf8' : '#0369a1', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                  <Typography variant="caption" fontWeight={500} sx={{ color: dk ? '#38bdf8' : '#0369a1', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     <NoteIcon size={14} /> NOTA DEL CURADOR
                   </Typography>
                   <Typography variant="body2" color="text.primary">{app.adminNotes}</Typography>
@@ -438,7 +438,7 @@ function ApplicationDetailDialog({
               )}
               {app.rejectionReason && (
                 <Box sx={{ background: dk ? "rgba(239,68,68,0.08)" : "#F7EDE9", border: `1px solid ${dk ? 'rgba(239,68,68,0.2)' : '#D79683'}`, borderRadius: 0, p: 2 }}>
-                  <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#f87171' : '#9E3B22', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                  <Typography variant="caption" fontWeight={500} sx={{ color: dk ? '#f87171' : '#9E3B22', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     <XCircleIcon size={14} /> RAZÓN DE RECHAZO
                   </Typography>
                   <Typography variant="body2" color="text.primary">{app.rejectionReason}</Typography>
@@ -454,14 +454,14 @@ function ApplicationDetailDialog({
               <Box>
                 <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={2}>
                   <PaletteIcon size={18} />
-                  <Typography variant="subtitle1" fontWeight={800}>Obras del proyecto</Typography>
+                  <Typography variant="subtitle1" fontWeight={500}>Obras del proyecto</Typography>
                   <Chip label={`${app.artworkImages?.length || 0} obras`} size="small" sx={{ fontWeight: 500, fontSize: 11, bgcolor: dk ? 'rgba(74,222,128,0.12)' : '#EEF5F1', color: dk ? '#3FA46E' : '#3FA46E' }} />
                 </Stack>
 
                 {(!app.artworkImages || app.artworkImages.length === 0) ? (
                   <Box sx={{ textAlign: "center", py: 6, borderRadius: 0, border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2' }}>
                     <ImageIcon size={40} color={dk ? '#55524C' : '#d1d5db'} />
-                    <Typography color="text.secondary" mt={1.5} fontWeight={600}>Sin obras cargadas</Typography>
+                    <Typography color="text.secondary" mt={1.5} fontWeight={500}>Sin obras cargadas</Typography>
                   </Box>
                 ) : (
                   <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 2 }}>
@@ -493,14 +493,14 @@ function ApplicationDetailDialog({
                           </Box>
                         </Box>
                         <Box sx={{ p: 1.5 }}>
-                          <Typography variant="subtitle2" noWrap fontWeight={700} fontSize={13} color="text.primary">{img.title || `Obra ${i + 1}`}</Typography>
+                          <Typography variant="subtitle2" noWrap fontWeight={500} fontSize={13} color="text.primary">{img.title || `Obra ${i + 1}`}</Typography>
                           <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
                             {img.technique && <Chip label={img.technique} size="small" variant="outlined" sx={{ fontSize: 10, height: 20, fontWeight: 500 }} />}
                             {img.dimensions && <Typography variant="caption" color="text.secondary">{img.dimensions}</Typography>}
                             {img.year && <Typography variant="caption" color="text.secondary">· {img.year}</Typography>}
                           </Stack>
                           {img.price && (
-                            <Typography variant="body2" fontWeight={800} sx={{ color: '#3FA46E', mt: 0.5 }}>
+                            <Typography variant="body2" fontWeight={500} sx={{ color: '#3FA46E', mt: 0.5 }}>
                               ${img.price?.toLocaleString()} {img.currency || "COP"}
                             </Typography>
                           )}
@@ -519,7 +519,7 @@ function ApplicationDetailDialog({
                 <Box>
                   <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={1.5}>
                     <EyeIcon size={16} />
-                    <Typography variant="subtitle2" fontWeight={800}>Imagen de detalle</Typography>
+                    <Typography variant="subtitle2" fontWeight={500}>Imagen de detalle</Typography>
                   </Stack>
                   {app.detailImageUrl ? (
                     <Box
@@ -552,7 +552,7 @@ function ApplicationDetailDialog({
                       border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2',
                     }}>
                       <ImageIcon size={32} color={dk ? '#55524C' : '#d1d5db'} />
-                      <Typography variant="caption" color="text.secondary" mt={1} fontWeight={600}>No cargada</Typography>
+                      <Typography variant="caption" color="text.secondary" mt={1} fontWeight={500}>No cargada</Typography>
                     </Box>
                   )}
                 </Box>
@@ -561,7 +561,7 @@ function ApplicationDetailDialog({
                 <Box>
                   <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={1.5}>
                     <FileIcon size={16} />
-                    <Typography variant="subtitle2" fontWeight={800}>Plano de montaje</Typography>
+                    <Typography variant="subtitle2" fontWeight={500}>Plano de montaje</Typography>
                   </Stack>
                   {app.montageImageUrl ? (
                     <Box
@@ -594,7 +594,7 @@ function ApplicationDetailDialog({
                       border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2',
                     }}>
                       <FileIcon size={32} color={dk ? '#55524C' : '#d1d5db'} />
-                      <Typography variant="caption" color="text.secondary" mt={1} fontWeight={600}>No cargado</Typography>
+                      <Typography variant="caption" color="text.secondary" mt={1} fontWeight={500}>No cargado</Typography>
                     </Box>
                   )}
                 </Box>
@@ -615,7 +615,7 @@ function ApplicationDetailDialog({
           {/* Review panel */}
           {reviewing && (
             <Box sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#F7F6F2", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, borderRadius: 0 }}>
-              <Typography variant="subtitle2" fontWeight={800} mb={2} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="subtitle2" fontWeight={500} mb={2} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <ScaleIcon size={16} /> Emitir resolución
               </Typography>
               <Stack spacing={2}>
@@ -716,7 +716,7 @@ function ApplicationDetailDialog({
             <Trash2Icon size={18} color="#B4472A" />
           </Box>
           <Box>
-            <Typography fontWeight={900} fontSize={16}>Eliminar solicitud</Typography>
+            <Typography fontWeight={500} fontSize={16}>Eliminar solicitud</Typography>
             <Typography variant="caption" color="text.secondary">Esta acción no se puede deshacer</Typography>
           </Box>
         </DialogTitle>
@@ -758,7 +758,7 @@ function ApplicationDetailDialog({
             <RevisionIcon size={18} color="#C9902B" />
           </Box>
           <Box>
-            <Typography fontWeight={900} fontSize={16}>Invitar a editar postulación</Typography>
+            <Typography fontWeight={500} fontSize={16}>Invitar a editar postulación</Typography>
             <Typography variant="caption" color="text.secondary">El artista recibirá un correo y podrá corregir y reenviar</Typography>
           </Box>
         </DialogTitle>
@@ -815,7 +815,7 @@ function DocLink({ label, url, icon, type }: { label: string; url?: string; icon
     }}>
       <Box sx={{ display: "flex", color: url ? "text.secondary" : "text.disabled" }}>{icon}</Box>
       <Box flex={1}>
-        <Typography variant="subtitle2" fontWeight={700} color="text.primary">{label}</Typography>
+        <Typography variant="subtitle2" fontWeight={500} color="text.primary">{label}</Typography>
         {url ? (
           <Typography variant="caption">
             <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#3FA46E', textDecoration: "none", fontWeight: 500 }}>
@@ -1027,7 +1027,7 @@ export default function SolicitudesPage() {
               </Avatar>
             )}
             <Box>
-              <Typography variant="body2" fontWeight={700} fontSize={13}>{a?.firstName} {a?.lastName}</Typography>
+              <Typography variant="body2" fontWeight={500} fontSize={13}>{a?.firstName} {a?.lastName}</Typography>
             </Box>
           </Stack>
         );
@@ -1108,7 +1108,7 @@ export default function SolicitudesPage() {
         gap={1.5}
         mb={2}
       >
-        <Typography variant="h6" fontWeight={800}>
+        <Typography variant="h6" fontWeight={500}>
           Solicitudes
         </Typography>
         <SendResolutionButton />
@@ -1381,7 +1381,7 @@ export default function SolicitudesPage() {
             <SettingsIcon size={20} />
           </Box>
           <Box>
-            <Typography fontWeight={900} fontSize={17}>Configurar convocatoria</Typography>
+            <Typography fontWeight={500} fontSize={17}>Configurar convocatoria</Typography>
             <Typography variant="caption" color="text.secondary">Ábrela, ciérrala o ajusta sus datos</Typography>
           </Box>
         </DialogTitle>
@@ -1426,7 +1426,7 @@ export default function SolicitudesPage() {
                   <Box sx={{ color: cfgForm.status === "open" ? "#3FA46E" : "#9E3B22", display: "flex" }}>
                     {cfgForm.status === "open" ? <UnlockIcon size={18} /> : <LockIcon size={18} />}
                   </Box>
-                  <Typography fontWeight={800} fontSize={14}>
+                  <Typography fontWeight={500} fontSize={14}>
                     {cfgForm.status === "open" ? "Convocatoria abierta" : "Convocatoria cerrada"}
                   </Typography>
                 </Stack>
@@ -1542,7 +1542,7 @@ export default function SolicitudesPage() {
             <SheetIcon size={20} />
           </Box>
           <Box>
-            <Typography fontWeight={900} fontSize={17}>Exportar inscritos a Excel</Typography>
+            <Typography fontWeight={500} fontSize={17}>Exportar inscritos a Excel</Typography>
             <Typography variant="caption" color="text.secondary">Elige qué grupo quieres descargar</Typography>
           </Box>
         </DialogTitle>
@@ -1585,7 +1585,7 @@ export default function SolicitudesPage() {
                       {opt.icon}
                     </Box>
                     <Box flex={1} minWidth={0}>
-                      <Typography fontWeight={700} fontSize={14}>{opt.label}</Typography>
+                      <Typography fontWeight={500} fontSize={14}>{opt.label}</Typography>
                       <Typography variant="caption" color="text.secondary">{opt.desc}</Typography>
                     </Box>
                     <Typography sx={{ fontWeight: 500, fontSize: 15, color: selected ? opt.color : "text.secondary", minWidth: 32, textAlign: "right" }}>

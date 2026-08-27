@@ -18,7 +18,7 @@ import { Upload as UploadIcon, X as XIcon } from "lucide-react";
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <Box>
-      <Typography variant="caption" fontWeight={700} sx={{ color: "text.secondary", display: "block", mb: 0.75 }}>{label}</Typography>
+      <Typography variant="caption" fontWeight={500} sx={{ color: "text.secondary", display: "block", mb: 0.75 }}>{label}</Typography>
       <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
         <Box component="input" type="color" value={value}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
@@ -33,7 +33,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <Card sx={{ borderRadius: 0 }}>
       <CardContent>
-        <Typography fontWeight={800} fontSize={15} mb={2}>{title}</Typography>
+        <Typography fontWeight={500} fontSize={15} mb={2}>{title}</Typography>
         <Stack spacing={2}>{children}</Stack>
       </CardContent>
     </Card>
@@ -51,7 +51,7 @@ function StrList({
   const rm = (i: number) => onChange(items.filter((_, idx) => idx !== i));
   return (
     <Box>
-      <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>{label}</Typography>
+      <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>{label}</Typography>
       <Stack spacing={1}>
         {items.map((v, i) => (
           <Stack key={i} direction="row" flexWrap="wrap" spacing={1} alignItems="flex-start">
@@ -202,7 +202,7 @@ export default function PersonalizacionPage() {
           <PaletteIcon size={20} />
         </Box>
         <Box flex={1}>
-          <Typography fontWeight={900} fontSize={20}>Personalización del sitio</Typography>
+          <Typography fontWeight={500} fontSize={20}>Personalización del sitio</Typography>
           <Typography variant="caption" color="text.secondary">Colores, textos, imágenes y secciones del landing</Typography>
         </Box>
         <Tooltip title="Restaurar valores por defecto">
@@ -224,7 +224,7 @@ export default function PersonalizacionPage() {
           </Stack>
           {/* Logo */}
           <Box>
-            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
+            <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
               Logo (opcional — vacío = ícono por defecto)
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }}>
@@ -275,7 +275,7 @@ export default function PersonalizacionPage() {
           </Box>
           <Divider />
           <Box>
-            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>Vista previa</Typography>
+            <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 1 }}>Vista previa</Typography>
             <Box sx={{ borderRadius: 0, overflow: "hidden", border: "1px solid", borderColor: "divider", background: theme.panel ?? "#0B0B0A", p: 3, textAlign: "center" }}>
               <Typography sx={{ fontFamily: "Jost, sans-serif", fontWeight: 200, fontSize: 34, textTransform: "uppercase", color: theme.onDark ?? "#F5F4EF", lineHeight: 1 }}>
                 Feria <span style={{ color: theme.accent }}>del</span> <b style={{ fontWeight: 500 }}>Millón</b>
@@ -308,7 +308,7 @@ export default function PersonalizacionPage() {
                   <IconButton size="small" disabled={i === 0} onClick={() => moveSection(i, -1)}><ChevronUp size={16} /></IconButton>
                   <IconButton size="small" disabled={i === sections.order.length - 1} onClick={() => moveSection(i, 1)}><ChevronDown size={16} /></IconButton>
                 </Stack>
-                <Typography flex={1} fontWeight={700} fontSize={14} sx={{ opacity: sections.visible[k] ? 1 : 0.5 }}>
+                <Typography flex={1} fontWeight={500} fontSize={14} sx={{ opacity: sections.visible[k] ? 1 : 0.5 }}>
                   {SECTION_LABELS[k]}
                 </Typography>
                 {sections.visible[k] ? <Eye size={16} /> : <EyeOff size={16} color="#8E8A80" />}
@@ -372,7 +372,7 @@ export default function PersonalizacionPage() {
 
           {/* Imagen de fondo: subir o pegar URL. Vacío = usar gradiente. */}
           <Box>
-            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
+            <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
               Imagen de fondo del hero (opcional — vacío = gradiente)
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }}>
@@ -410,7 +410,7 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* ═══ LANDING v2 — bloques editables ═══ */}
-        <Divider textAlign="left"><Typography variant="overline" fontWeight={800} color="text.secondary">Contenido del landing</Typography></Divider>
+        <Divider textAlign="left"><Typography variant="overline" fontWeight={500} color="text.secondary">Contenido del landing</Typography></Divider>
 
         {/* Hero — barra y datos */}
         <Section title="Portada — barra superior y datos">
@@ -534,7 +534,7 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* ═══ PÁGINA DE CONVOCATORIA (bases) ═══ */}
-        <Divider textAlign="left"><Typography variant="overline" fontWeight={800} color="text.secondary">Página de convocatoria</Typography></Divider>
+        <Divider textAlign="left"><Typography variant="overline" fontWeight={500} color="text.secondary">Página de convocatoria</Typography></Divider>
 
         <Section title="Convocatoria — portada">
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -594,7 +594,7 @@ export default function PersonalizacionPage() {
         <Section title="Convocatoria — quién participa / requisitos">
           {(["participantes", "requisitos"] as const).map((key) => (
             <Box key={key} sx={{ p: 1.25, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
-              <Typography variant="caption" fontWeight={700} color="text.secondary">{key === "participantes" ? "04 · Quién participa" : "05 · Requisitos del proyecto"}</Typography>
+              <Typography variant="caption" fontWeight={500} color="text.secondary">{key === "participantes" ? "04 · Quién participa" : "05 · Requisitos del proyecto"}</Typography>
               <StrList label={cp[key].noTitle} items={cp[key].no} onChange={(v) => setCP((c) => ({ ...c, [key]: { ...c[key], no: v } }))} />
               <StrList label={cp[key].siTitle} items={cp[key].si} onChange={(v) => setCP((c) => ({ ...c, [key]: { ...c[key], si: v } }))} />
             </Box>

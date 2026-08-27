@@ -52,7 +52,7 @@ export default function EventsManagerPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" fontWeight={700} mb={1}>
+      <Typography variant="h4" fontWeight={500} mb={1}>
         Gestión de Eventos &amp; Pabellones
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>

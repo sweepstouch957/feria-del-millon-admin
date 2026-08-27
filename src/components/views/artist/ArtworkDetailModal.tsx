@@ -95,7 +95,7 @@ export default function ArtworkDetailModal({
             borderColor: "divider",
           }}
         >
-          <Typography variant="subtitle1" fontWeight={600}>
+          <Typography variant="subtitle1" fontWeight={500}>
             Detalle de la obra
           </Typography>
           <IconButton onClick={onClose} size="small" aria-label="Cerrar">
@@ -250,7 +250,7 @@ export default function ArtworkDetailModal({
                     fontSize: 14,
                   }}
                 >
-                  <Typography component="dt" fontWeight={600}>
+                  <Typography component="dt" fontWeight={500}>
                     Técnica:
                   </Typography>
                   <Typography component="dd" color="text.secondary">
@@ -259,28 +259,28 @@ export default function ArtworkDetailModal({
                       "—"}
                   </Typography>
 
-                  <Typography component="dt" fontWeight={600}>
+                  <Typography component="dt" fontWeight={500}>
                     Pabellón:
                   </Typography>
                   <Typography component="dd" color="text.secondary">
                     {data.doc.pavilionInfo?.name || "—"}
                   </Typography>
 
-                  <Typography component="dt" fontWeight={600}>
+                  <Typography component="dt" fontWeight={500}>
                     Precio:
                   </Typography>
                   <Typography component="dd" color="text.secondary">
                     {formatMoney(data.doc.price, data.doc.currency)}
                   </Typography>
 
-                  <Typography component="dt" fontWeight={600}>
+                  <Typography component="dt" fontWeight={500}>
                     Año:
                   </Typography>
                   <Typography component="dd" color="text.secondary">
                     {data.doc.year || "—"}
                   </Typography>
 
-                  <Typography component="dt" fontWeight={600}>
+                  <Typography component="dt" fontWeight={500}>
                     TagId:
                   </Typography>
                   <Typography component="dd" color="text.secondary">

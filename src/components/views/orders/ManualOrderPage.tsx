@@ -246,7 +246,7 @@
 
         return (
             <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h5" fontWeight={800} mb={1}>
+                <Typography variant="h5" fontWeight={500} mb={1}>
                     Venta manual / POS
                 </Typography>
 

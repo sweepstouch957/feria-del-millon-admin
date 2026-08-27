@@ -64,7 +64,7 @@ export default function CarteraPage() {
           <Wallet size={20} />
         </Box>
         <Box flex={1}>
-          <Typography fontWeight={900} fontSize={20}>Cartera — Fiado / Abonos</Typography>
+          <Typography fontWeight={500} fontSize={20}>Cartera — Fiado / Abonos</Typography>
           <Typography variant="caption" color="text.secondary">Obras apartadas con saldo pendiente. Registra abonos hasta saldar.</Typography>
         </Box>
         <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => refetch()} disabled={isFetching} sx={{ textTransform: "none" }}>
@@ -75,11 +75,11 @@ export default function CarteraPage() {
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
         <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
           <Typography variant="caption" color="text.secondary">Cuentas por cobrar</Typography>
-          <Typography fontWeight={900} fontSize={26}>{orders.length}</Typography>
+          <Typography fontWeight={500} fontSize={26}>{orders.length}</Typography>
         </CardContent></Card>
         <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
           <Typography variant="caption" color="text.secondary">Saldo total pendiente</Typography>
-          <Typography fontWeight={900} fontSize={26} color="#3FA46E">{money(totalCartera)}</Typography>
+          <Typography fontWeight={500} fontSize={26} color="#3FA46E">{money(totalCartera)}</Typography>
         </CardContent></Card>
       </Stack>
 
@@ -152,7 +152,7 @@ export default function CarteraPage() {
                     return (
                       <TableRow key={o.id} hover>
                         <TableCell>
-                          <Typography fontWeight={700} fontSize={13}>{o.buyer?.name || "—"}</Typography>
+                          <Typography fontWeight={500} fontSize={13}>{o.buyer?.name || "—"}</Typography>
                           <Typography variant="caption" color="text.secondary">{o.buyer?.email || o.buyer?.phone || ""}</Typography>
                         </TableCell>
                         <TableCell>
@@ -164,7 +164,7 @@ export default function CarteraPage() {
                           <Chip size="small" label={`${pct}%`} sx={{ ml: 0.5, height: 18, fontSize: 10 }} />
                         </TableCell>
                         <TableCell align="right">
-                          <Typography fontWeight={800} color={bal > 0 ? "#b45309" : "#3FA46E"}>{money(bal)}</Typography>
+                          <Typography fontWeight={500} color={bal > 0 ? "#b45309" : "#3FA46E"}>{money(bal)}</Typography>
                         </TableCell>
                         <TableCell>
                           {formatDate(o.layaway?.dueDate)}

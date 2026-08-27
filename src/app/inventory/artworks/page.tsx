@@ -163,7 +163,7 @@ export default function ArtworksCursorPage() {
                   {item.icon}
                 </Box>
                 <Box>
-                  <Typography variant="h6" fontWeight={700}>
+                  <Typography variant="h6" fontWeight={500}>
                     {item.value}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -189,7 +189,7 @@ export default function ArtworksCursorPage() {
         <CardHeader
           title={
             <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-              <Typography variant="h5" fontWeight={800}>
+              <Typography variant="h5" fontWeight={500}>
                 Obras
               </Typography>
               <Chip label={`${totalLabel} cargadas`} size="small" />
@@ -209,7 +209,7 @@ export default function ArtworksCursorPage() {
                         onChange={(e) => toggleReveal(e.target.checked)}
                       />
                     }
-                    label={<Typography variant="caption" fontWeight={700}>Catálogo revelado</Typography>}
+                    label={<Typography variant="caption" fontWeight={500}>Catálogo revelado</Typography>}
                   />
                 </Tooltip>
               )}
@@ -394,7 +394,7 @@ export default function ArtworksCursorPage() {
                         }}
                       >
                         <Typography
-                          fontWeight={600}
+                          fontWeight={500}
                           sx={{ "&:hover": { color: "primary.main" } }}
                         >
                           {art.title}

@@ -71,7 +71,7 @@ export default function PavilionDetailCard({
         }}
       >
         <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
-          <Typography variant="subtitle1" fontWeight={600}>
+          <Typography variant="subtitle1" fontWeight={500}>
             {pavilionForm.name}
           </Typography>
           <Chip
@@ -153,7 +153,7 @@ export default function PavilionDetailCard({
           />
         </Stack>
 
-        <Typography variant="caption" fontWeight={700} color="text.secondary">
+        <Typography variant="caption" fontWeight={500} color="text.secondary">
           Patrocinador del pabellón (opcional)
         </Typography>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

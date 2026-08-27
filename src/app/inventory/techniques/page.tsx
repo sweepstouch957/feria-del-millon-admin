@@ -183,7 +183,7 @@ export default function TechniquesPage() {
         <Box>
           <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={0.5}>
             <Palette size={28} />
-            <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: "-0.5px" }}>
+            <Typography variant="h5" fontWeight={500} sx={{ letterSpacing: "-0.5px" }}>
               Técnicas artísticas
             </Typography>
           </Stack>
@@ -204,16 +204,16 @@ export default function TechniquesPage() {
       {/* Stats */}
       <Stack direction="row" flexWrap="wrap" spacing={2} mb={3}>
         <Box sx={{ background: "#EEF5F1", border: "1px solid #D7E8DF", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="#3FA46E" sx={{ textTransform: "uppercase", fontSize: 10 }}>Activas</Typography>
-          <Typography variant="h5" fontWeight={900} color="#3FA46E">{activeCount}</Typography>
+          <Typography variant="caption" fontWeight={500} color="#3FA46E" sx={{ textTransform: "uppercase", fontSize: 10 }}>Activas</Typography>
+          <Typography variant="h5" fontWeight={500} color="#3FA46E">{activeCount}</Typography>
         </Box>
         <Box sx={{ background: "#F7EDE9", border: "1px solid #fecaca", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="#9E3B22" sx={{ textTransform: "uppercase", fontSize: 10 }}>Inactivas</Typography>
-          <Typography variant="h5" fontWeight={900} color="#9E3B22">{inactiveCount}</Typography>
+          <Typography variant="caption" fontWeight={500} color="#9E3B22" sx={{ textTransform: "uppercase", fontSize: 10 }}>Inactivas</Typography>
+          <Typography variant="h5" fontWeight={500} color="#9E3B22">{inactiveCount}</Typography>
         </Box>
         <Box sx={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="#0369a1" sx={{ textTransform: "uppercase", fontSize: 10 }}>Total</Typography>
-          <Typography variant="h5" fontWeight={900} color="#0369a1">{techniques.length}</Typography>
+          <Typography variant="caption" fontWeight={500} color="#0369a1" sx={{ textTransform: "uppercase", fontSize: 10 }}>Total</Typography>
+          <Typography variant="h5" fontWeight={500} color="#0369a1">{techniques.length}</Typography>
         </Box>
       </Stack>
 
@@ -275,12 +275,12 @@ export default function TechniquesPage() {
                   <Typography variant="body2" color="text.secondary" fontSize={12} sx={{ display: { xs: "none", md: "block" } }}>{i + 1}</Typography>
                   <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                     <Palette size={16} color={t.active ? "#7c3aed" : "#9ca3af"} />
-                    <Typography fontWeight={700} fontSize={14}>{t.name}</Typography>
+                    <Typography fontWeight={500} fontSize={14}>{t.name}</Typography>
                   </Stack>
                   <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: 12, color: "#8E8A80" }}>
                     {t.slug || "—"}
                   </Typography>
-                  <Typography variant="body2" textAlign="center" fontWeight={600}>{t.order ?? 0}</Typography>
+                  <Typography variant="body2" textAlign="center" fontWeight={500}>{t.order ?? 0}</Typography>
                   <Box sx={{ textAlign: "center" }}>
                     <Chip
                       size="small"

@@ -32,7 +32,7 @@ function KpiCard({ label, value, color }: { label: string; value: React.ReactNod
   return (
     <Card sx={{ borderRadius: 0, flex: 1, minWidth: 150 }}><CardContent>
       <Typography variant="caption" color="text.secondary">{label}</Typography>
-      <Typography fontWeight={900} fontSize={24} color={color}>{value}</Typography>
+      <Typography fontWeight={500} fontSize={24} color={color}>{value}</Typography>
     </CardContent></Card>
   );
 }
@@ -96,7 +96,7 @@ export default function ReportesPage() {
           <BarChart3 size={20} />
         </Box>
         <Box flex={1}>
-          <Typography fontWeight={900} fontSize={20}>Reportes</Typography>
+          <Typography fontWeight={500} fontSize={20}>Reportes</Typography>
           <Typography variant="caption" color="text.secondary">Solicitudes, ventas (caja vs línea) y cartera de fiado.</Typography>
         </Box>
         <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => { appsQ.refetch(); ordersQ.refetch(); }} sx={{ textTransform: "none" }}>Actualizar</Button>
@@ -110,7 +110,7 @@ export default function ReportesPage() {
         <Stack spacing={3}>
           {/* Solicitudes */}
           <Box>
-            <Typography fontWeight={800} fontSize={15} mb={1.5}>Solicitudes</Typography>
+            <Typography fontWeight={500} fontSize={15} mb={1.5}>Solicitudes</Typography>
             <Stack direction="row" flexWrap="wrap" gap={2} mb={2}>
               <KpiCard label="Total solicitudes" value={apps?.total ?? 0} />
               <KpiCard label="Inscripción pagada" value={apps?.paid ?? 0} color="#3FA46E" />
@@ -133,7 +133,7 @@ export default function ReportesPage() {
 
           {/* Ventas */}
           <Box>
-            <Typography fontWeight={800} fontSize={15} mb={1.5}>Ventas de obras</Typography>
+            <Typography fontWeight={500} fontSize={15} mb={1.5}>Ventas de obras</Typography>
             <Stack direction="row" flexWrap="wrap" gap={2}>
               <KpiCard label="Órdenes pagadas" value={paidOrders.length} />
               <KpiCard label="Ingresos totales" value={money(revenue)} color="#3FA46E" />
@@ -146,7 +146,7 @@ export default function ReportesPage() {
 
           {/* Cartera */}
           <Box>
-            <Typography fontWeight={800} fontSize={15} mb={1.5}>Cartera (fiado)</Typography>
+            <Typography fontWeight={500} fontSize={15} mb={1.5}>Cartera (fiado)</Typography>
             <Stack direction="row" flexWrap="wrap" gap={2}>
               <KpiCard label="Obras apartadas" value={partialOrders.length} />
               <KpiCard label="Abonado" value={money(carteraAbonado)} />

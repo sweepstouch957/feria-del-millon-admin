@@ -296,7 +296,7 @@ export default function ArtworkDetailPage() {
         <CardHeader
           title={
             <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
-              <Typography variant="h5" fontWeight={800}>
+              <Typography variant="h5" fontWeight={500}>
                 Gestión de Obra
               </Typography>
               <Chip
@@ -422,7 +422,7 @@ export default function ArtworkDetailPage() {
                       justifyContent="space-between"
                       spacing={1}
                     >
-                      <Typography fontWeight={700}>QR público</Typography>
+                      <Typography fontWeight={500}>QR público</Typography>
                       <Stack direction="row" flexWrap="wrap" spacing={1}>
                         <Button
                           size="small"
@@ -487,7 +487,7 @@ export default function ArtworkDetailPage() {
                 {/* Título y descripción */}
                 <Stack spacing={1}>
                   <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-                    <Typography variant="h4" fontWeight={900}>
+                    <Typography variant="h4" fontWeight={500}>
                       {art.title}
                     </Typography>
                     <Tooltip title="Copiar slug">
@@ -512,7 +512,7 @@ export default function ArtworkDetailPage() {
                 <Stack spacing={1.5}>
                   <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <ArtistIcon size={18} />
-                    <Typography fontWeight={600}>
+                    <Typography fontWeight={500}>
                       {art.artistInfo
                         ? `${art.artistInfo.firstName} ${art.artistInfo.lastName}`
                         : "—"}
@@ -535,7 +535,7 @@ export default function ArtworkDetailPage() {
 
                   <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <PriceIcon size={18} />
-                    <Typography fontWeight={800} variant="h6">
+                    <Typography fontWeight={500} variant="h6">
                       {formatPrice(art.price, art.currency || "COP")}
                     </Typography>
                   </Stack>
@@ -582,7 +582,7 @@ export default function ArtworkDetailPage() {
                 <Divider />
 
                 {/* Edición rápida */}
-                <Typography variant="h6" fontWeight={800}>
+                <Typography variant="h6" fontWeight={500}>
                   Edición rápida
                 </Typography>
                 <Stack spacing={2} sx={{ maxWidth: 720 }}>

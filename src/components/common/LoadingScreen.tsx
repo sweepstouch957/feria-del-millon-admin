@@ -29,7 +29,7 @@ export default function LoadingScreen({
         <Paper elevation={3} sx={{ p: 3, borderRadius: 0 }}>
           <Stack alignItems="center" spacing={2}>
             <CircularProgress size={48} />
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h6" fontWeight={500}>
               {label}
             </Typography>
             <Typography

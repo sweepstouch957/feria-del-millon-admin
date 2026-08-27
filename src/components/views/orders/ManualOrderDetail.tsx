@@ -154,7 +154,7 @@ export const ManualOrderDetail: React.FC<ManualOrderDetailProps> = ({
 
               {/* Texto a la derecha */}
               <Stack spacing={1.5} sx={{ flex: 1 }}>
-                <Typography variant="subtitle1" fontWeight={700}>
+                <Typography variant="subtitle1" fontWeight={500}>
                   {detailTitle}
                 </Typography>
 

@@ -25,7 +25,7 @@ export default function QrValidatorPage() {
         spacing={2}
       >
         <Box>
-          <Typography variant="h4" fontWeight={700} mb={0.5}>
+          <Typography variant="h4" fontWeight={500} mb={0.5}>
             Validador de entradas
           </Typography>
           <Typography variant="body2" color="text.secondary">

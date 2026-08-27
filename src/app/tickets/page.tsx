@@ -10,7 +10,7 @@ export default function TicketsAdminPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
-      <Typography variant="h4" fontWeight={700} mb={0.5}>
+      <Typography variant="h4" fontWeight={500} mb={0.5}>
         Gestión de boletos
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>

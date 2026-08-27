@@ -312,7 +312,7 @@ export function QrValidationPanel() {
               <CheckCircleIcon
                 sx={{ fontSize: 52, color: "#3FA46E", mb: 1 }}
               />
-              <Typography variant="h5" fontWeight={700} gutterBottom>
+              <Typography variant="h5" fontWeight={500} gutterBottom>
                 Acceso permitido
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
