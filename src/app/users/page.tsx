@@ -17,13 +17,15 @@ import {
   Search, RefreshCcw, Pencil, Eye, Save, X, Users,
   Mail, Phone, MapPin, Instagram, Facebook, Globe, Calendar,
   CheckCircle2, XCircle, Shield, Clock, User as UserIcon,
+  UserPlus, Copy, KeyRound,
 } from "lucide-react";
 
 import { useUsers, useDebouncedValue } from "@/hooks/useAuth";
 import { useCities } from "@/hooks/useCities";
 import {
-  getUserById, updateUser,
+  getUserById, updateUser, createUser,
   type UsersSearchParams, type UserDTO, type Roles as RolesMap,
+  type CreateUserPayload,
 } from "@services/user.service";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -562,6 +564,135 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
   );
 }
 
+// ── CreateUserDialog (crear cajera / usuario con contraseña temporal) ─────────
+const EMPTY_NEW_USER: CreateUserPayload = { email: "", password: "", firstName: "", lastName: "", roles: { cajero: true } };
+function CreateUserDialog({ open, onClose, onCreated }: {
+  open: boolean; onClose: () => void; onCreated: () => void;
+}) {
+  const [form,    setForm]    = React.useState<CreateUserPayload>(EMPTY_NEW_USER);
+  const [saving,  setSaving]  = React.useState(false);
+  const [created, setCreated] = React.useState<{ email: string; password: string } | null>(null);
+  const [toast,   setToast]   = React.useState({ open: false, msg: "", sev: "success" as "success"|"error" });
+
+  React.useEffect(() => { if (open) { setForm(EMPTY_NEW_USER); setCreated(null); } }, [open]);
+
+  const genPassword = () => {
+    const rnd = () => Math.random().toString(36).slice(-4);
+    setForm(f => ({ ...f, password: rnd() + rnd().toUpperCase() + Math.floor(Math.random() * 90 + 10) }));
+  };
+  const toggleRole = (key: keyof RolesMap) =>
+    setForm(f => ({ ...f, roles: { ...(f.roles || {}), [key]: !f.roles?.[key] } }));
+
+  const canSave = Boolean(form.email.trim()) && (form.password?.length ?? 0) >= 6 && !saving;
+
+  const handleCreate = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      await createUser({ ...form, email: form.email.trim() });
+      setCreated({ email: form.email.trim(), password: form.password });
+      setToast({ open: true, msg: "Cuenta creada", sev: "success" });
+      onCreated();
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error al crear la cuenta", sev: "error" });
+    } finally { setSaving(false); }
+  };
+
+  const copyCreds = () => {
+    if (created) navigator.clipboard?.writeText(`Email: ${created.email}\nContraseña: ${created.password}`);
+    setToast({ open: true, msg: "Credenciales copiadas", sev: "success" });
+  };
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
+        PaperProps={{ sx: { bgcolor: "#0a0a0a", borderRadius: 3, overflow: "hidden", border: `1px solid ${BR}`, boxShadow: "0 32px 96px rgba(0,0,0,0.85)" } }}>
+        <Box sx={{ height: 3.5, background: `linear-gradient(90deg, ${G} 0%, ${alpha(G, 0.2)} 100%)` }} />
+        <Box sx={{ p: 3, pb: 1.5, bgcolor: S1 }}>
+          <Stack direction="row" alignItems="center" gap={1.25}>
+            <UserPlus size={20} color={G} />
+            <Typography sx={{ fontWeight: 900, fontSize: 18, color: "#EDEDED", letterSpacing: -0.4 }}>Nueva cajera</Typography>
+          </Stack>
+          <Typography sx={{ fontSize: 12, color: TM, mt: 0.5 }}>
+            Crea la cuenta con una contraseña temporal y pásasela a la cajera para que inicie sesión.
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ p: 2.5, bgcolor: "#0a0a0a" }}>
+          {created ? (
+            <Stack spacing={1.5} sx={{ pt: 0.5 }}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: alpha(G, 0.06), border: `1px solid ${alpha(G, 0.25)}` }}>
+                <Typography sx={{ fontSize: 12, color: G, fontWeight: 800, mb: 1 }}>✓ Cuenta creada — guardá estas credenciales</Typography>
+                <Typography sx={{ fontSize: 13, color: "#EDEDED", fontFamily: "monospace" }}>Email: {created.email}</Typography>
+                <Typography sx={{ fontSize: 13, color: "#EDEDED", fontFamily: "monospace" }}>Contraseña: {created.password}</Typography>
+              </Box>
+              <Button startIcon={<Copy size={15} />} onClick={copyCreds}
+                sx={{ bgcolor: alpha(G, 0.1), color: G, fontWeight: 700, fontSize: 13, border: `1px solid ${alpha(G, 0.25)}`, borderRadius: 2, "&:hover": { bgcolor: alpha(G, 0.18) } }}>
+                Copiar credenciales
+              </Button>
+            </Stack>
+          ) : (
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                <TextField label="Nombre" size="small" fullWidth value={form.firstName ?? ""} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
+                <TextField label="Apellido" size="small" fullWidth value={form.lastName ?? ""} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
+              </Stack>
+              <TextField label="Email *" size="small" type="email" fullWidth value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              <TextField
+                label="Contraseña temporal *" size="small" fullWidth value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                helperText="Mínimo 6 caracteres"
+                InputProps={{
+                  endAdornment: (
+                    <Button size="small" onClick={genPassword} startIcon={<KeyRound size={13} />}
+                      sx={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: G, minWidth: 0, "&:hover": { bgcolor: alpha(G, 0.1) } }}>
+                      Generar
+                    </Button>
+                  ),
+                }}
+              />
+              <Box>
+                <Typography sx={{ fontSize: 11, color: TM, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>Roles</Typography>
+                <Stack direction="row" gap={0.75} flexWrap="wrap">
+                  {ROLES.map(r => (
+                    <Chip key={r.key} label={r.label} size="small" onClick={() => toggleRole(r.key)}
+                      sx={{
+                        cursor: "pointer", fontWeight: 700, fontSize: 11,
+                        bgcolor: form.roles?.[r.key] ? alpha(r.color, 0.15) : alpha("#fff", 0.03),
+                        color:   form.roles?.[r.key] ? r.color : TM,
+                        border: `1px solid ${form.roles?.[r.key] ? alpha(r.color, 0.4) : BR}`,
+                      }} />
+                  ))}
+                </Stack>
+              </Box>
+            </Stack>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, bgcolor: S1, borderTop: `1px solid ${BR}`, gap: 1 }}>
+          {created ? (
+            <Button onClick={onClose} sx={{ bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2, px: 2.5, "&:hover": { bgcolor: GD } }}>Listo</Button>
+          ) : (
+            <>
+              <Button onClick={onClose} sx={{ color: TM, fontWeight: 600, fontSize: 13, borderRadius: 2 }}>Cancelar</Button>
+              <Box flex={1} />
+              <Button onClick={handleCreate} disabled={!canSave}
+                startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <UserPlus size={15} />}
+                sx={{ bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2, px: 2.5, "&:hover": { bgcolor: GD }, "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) } }}>
+                {saving ? "Creando…" : "Crear cajera"}
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast(t => ({ ...t, open: false }))}>
+        <Alert severity={toast.sev} variant="filled">{toast.msg}</Alert>
+      </Snackbar>
+    </>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function UsersPage() {
   const theme    = useTheme();
@@ -601,6 +732,9 @@ export default function UsersPage() {
   const openModal = (id: string, mode: "view"|"edit" = "view") => {
     setModalUserId(id); setModalInitMode(mode); setModalOpen(true);
   };
+
+  // Crear cajera / usuario
+  const [createOpen, setCreateOpen] = React.useState(false);
 
   const rows = React.useMemo(
     () => (data?.users ?? []).map(u => ({ ...u, id: u.id ?? (u as any)._id })),
@@ -720,14 +854,26 @@ export default function UsersPage() {
             Gestión de cuentas, roles y permisos del sistema
           </Typography>
         </Box>
-        <Tooltip title="Actualizar">
-          <IconButton onClick={() => refetch()} sx={{
-            bgcolor: alpha("#fff", 0.04), border: `1px solid ${BR}`,
-            "&:hover": { bgcolor: alpha(G, 0.08), borderColor: alpha(G, 0.3), color: G },
-          }}>
-            <RefreshCcw size={18} />
-          </IconButton>
-        </Tooltip>
+        <Stack direction="row" gap={1} alignItems="center">
+          <Button
+            onClick={() => setCreateOpen(true)}
+            startIcon={<UserPlus size={16} />}
+            sx={{
+              bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2, px: 2,
+              "&:hover": { bgcolor: GD },
+            }}
+          >
+            Nueva cajera
+          </Button>
+          <Tooltip title="Actualizar">
+            <IconButton onClick={() => refetch()} sx={{
+              bgcolor: alpha("#fff", 0.04), border: `1px solid ${BR}`,
+              "&:hover": { bgcolor: alpha(G, 0.08), borderColor: alpha(G, 0.3), color: G },
+            }}>
+              <RefreshCcw size={18} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       </Stack>
 
       {/* ── Stats ──────────────────────────────────────────────────────────── */}
@@ -969,6 +1115,13 @@ export default function UsersPage() {
         userId={modalUserId}
         initialMode={modalInitMode}
         onRefresh={refetch}
+      />
+
+      {/* ── Crear cajera / usuario ─────────────────────────────────────────── */}
+      <CreateUserDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={refetch}
       />
     </Box>
   );

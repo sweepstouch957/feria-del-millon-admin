@@ -165,3 +165,28 @@ export async function updateUser(
   };
 }
 
+// Crear usuario (admin) — SOLO superuser. Contraseña temporal manual + roles
+// asignables (cajero, staff, etc.). POST /auth/users.
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  mobile?: string;
+  city?: string;
+  roles?: Roles;
+}
+export async function createUser(payload: CreateUserPayload): Promise<UserDTO> {
+  const { data } = await apiClient.post<{ user?: UserDTO } & UserDTO>(
+    BASE,
+    payload,
+    { withCredentials: true }
+  );
+  const u: any = (data as any).user || data;
+  return {
+    ...u,
+    id: u.id ?? u._id ?? u.id,
+    roles: u.roles ?? {},
+  };
+}
+
