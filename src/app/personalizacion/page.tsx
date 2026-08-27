@@ -22,7 +22,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
       <Stack direction="row" spacing={1} alignItems="center">
         <Box component="input" type="color" value={value}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-          sx={{ width: 44, height: 40, p: 0, border: "1px solid", borderColor: "divider", borderRadius: 1.5, cursor: "pointer", background: "none" }} />
+          sx={{ width: 44, height: 40, p: 0, border: "1px solid", borderColor: "divider", borderRadius: 0, cursor: "pointer", background: "none" }} />
         <TextField size="small" value={value} onChange={(e) => onChange(e.target.value)} sx={{ width: 120 }} />
       </Stack>
     </Box>
@@ -31,7 +31,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card sx={{ borderRadius: 3 }}>
+    <Card sx={{ borderRadius: 0 }}>
       <CardContent>
         <Typography fontWeight={800} fontSize={15} mb={2}>{title}</Typography>
         <Stack spacing={2}>{children}</Stack>
@@ -68,7 +68,7 @@ function StrList({
 // Contenedor de fila para listas de objetos (con quitar)
 function Row({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
   return (
-    <Box sx={{ p: 1.25, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+    <Box sx={{ p: 1.25, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
       <Stack direction="row" spacing={1} alignItems="flex-start">
         <Box flex={1}><Stack spacing={1}>{children}</Stack></Box>
         <IconButton size="small" color="error" onClick={onRemove}><Trash2 size={15} /></IconButton>
@@ -198,7 +198,7 @@ export default function PersonalizacionPage() {
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(34,197,94,0.14)", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(34,197,94,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <PaletteIcon size={20} />
         </Box>
         <Box flex={1}>
@@ -210,7 +210,7 @@ export default function PersonalizacionPage() {
         </Tooltip>
         <Button variant="contained" disableElevation onClick={handleSave} disabled={saving}
           startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <SaveIcon size={16} />}
-          sx={{ fontWeight: 700, textTransform: "none", boxShadow: "none", bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d", boxShadow: "none" } }}>
+          sx={{ fontWeight: 500, textTransform: "none", boxShadow: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C", boxShadow: "none" } }}>
           {saving ? "Guardando…" : "Guardar"}
         </Button>
       </Stack>
@@ -229,7 +229,7 @@ export default function PersonalizacionPage() {
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }}>
               {content.brand.logo ? (
-                <Box sx={{ position: "relative", width: 56, height: 56, borderRadius: 1.5, overflow: "hidden", border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+                <Box sx={{ position: "relative", width: 56, height: 56, borderRadius: 0, overflow: "hidden", border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
                   <Box component="img" src={content.brand.logo} alt="logo" sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <IconButton size="small" onClick={() => setBrand("logo", "")}
                     sx={{ position: "absolute", top: 1, right: 1, bgcolor: "rgba(0,0,0,0.6)", color: "#fff", "&:hover": { bgcolor: "rgba(0,0,0,0.8)" } }}>
@@ -237,7 +237,7 @@ export default function PersonalizacionPage() {
                   </IconButton>
                 </Box>
               ) : (
-                <Box sx={{ width: 56, height: 56, borderRadius: 1.5, border: "1px dashed", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center", color: "text.disabled", flexShrink: 0 }}>
+                <Box sx={{ width: 56, height: 56, borderRadius: 0, border: "1px dashed", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center", color: "text.disabled", flexShrink: 0 }}>
                   <PaletteIcon size={18} />
                 </Box>
               )}
@@ -276,7 +276,7 @@ export default function PersonalizacionPage() {
           <Divider />
           <Box>
             <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>Vista previa</Typography>
-            <Box sx={{ borderRadius: 2, overflow: "hidden", border: "1px solid", borderColor: "divider", background: theme.panel ?? "#0B0B0A", p: 3, textAlign: "center" }}>
+            <Box sx={{ borderRadius: 0, overflow: "hidden", border: "1px solid", borderColor: "divider", background: theme.panel ?? "#0B0B0A", p: 3, textAlign: "center" }}>
               <Typography sx={{ fontFamily: "Jost, sans-serif", fontWeight: 200, fontSize: 34, textTransform: "uppercase", color: theme.onDark ?? "#F5F4EF", lineHeight: 1 }}>
                 Feria <span style={{ color: theme.accent }}>del</span> <b style={{ fontWeight: 500 }}>Millón</b>
               </Typography>
@@ -287,7 +287,7 @@ export default function PersonalizacionPage() {
                 ["Verde", theme.accent], ["Verde profundo", theme.greenDeep ?? "#14513C"],
               ].map(([lbl, col]) => (
                 <Box key={lbl} sx={{ textAlign: "center" }}>
-                  <Box sx={{ width: 44, height: 32, borderRadius: 1, border: "1px solid", borderColor: "divider", background: col }} />
+                  <Box sx={{ width: 44, height: 32, borderRadius: 0, border: "1px solid", borderColor: "divider", background: col }} />
                   <Typography variant="caption" sx={{ fontSize: 9, color: "text.secondary" }}>{lbl}</Typography>
                 </Box>
               ))}
@@ -303,7 +303,7 @@ export default function PersonalizacionPage() {
           <Stack spacing={1}>
             {sections.order.map((k, i) => (
               <Stack key={k} direction="row" alignItems="center" spacing={1}
-                sx={{ p: 1, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+                sx={{ p: 1, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
                 <Stack>
                   <IconButton size="small" disabled={i === 0} onClick={() => moveSection(i, -1)}><ChevronUp size={16} /></IconButton>
                   <IconButton size="small" disabled={i === sections.order.length - 1} onClick={() => moveSection(i, 1)}><ChevronDown size={16} /></IconButton>
@@ -311,7 +311,7 @@ export default function PersonalizacionPage() {
                 <Typography flex={1} fontWeight={700} fontSize={14} sx={{ opacity: sections.visible[k] ? 1 : 0.5 }}>
                   {SECTION_LABELS[k]}
                 </Typography>
-                {sections.visible[k] ? <Eye size={16} /> : <EyeOff size={16} color="#94a3b8" />}
+                {sections.visible[k] ? <Eye size={16} /> : <EyeOff size={16} color="#8E8A80" />}
                 <Switch checked={sections.visible[k]} onChange={() => toggleVisible(k)} size="small" />
               </Stack>
             ))}
@@ -328,7 +328,7 @@ export default function PersonalizacionPage() {
           </Stack>
           <Stack spacing={1}>
             {nav.items.map((it, i) => (
-              <Box key={i} sx={{ p: 1.25, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+              <Box key={i} sx={{ p: 1.25, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                   <Stack>
                     <IconButton size="small" disabled={i === 0} onClick={() => moveNav(i, -1)}><ChevronUp size={15} /></IconButton>
@@ -339,7 +339,7 @@ export default function PersonalizacionPage() {
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Tooltip title={it.visible ? "Se muestra" : "Oculta"}>
                       <Stack alignItems="center" spacing={0}>
-                        {it.visible ? <Eye size={15} /> : <EyeOff size={15} color="#94a3b8" />}
+                        {it.visible ? <Eye size={15} /> : <EyeOff size={15} color="#8E8A80" />}
                         <Switch checked={it.visible} onChange={() => toggleNav(i, "visible")} size="small" />
                         <Typography variant="caption" color="text.secondary">Mostrar</Typography>
                       </Stack>
@@ -377,7 +377,7 @@ export default function PersonalizacionPage() {
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }}>
               {content.hero.image ? (
-                <Box sx={{ position: "relative", width: 120, height: 68, borderRadius: 1.5, overflow: "hidden", border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+                <Box sx={{ position: "relative", width: 120, height: 68, borderRadius: 0, overflow: "hidden", border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
                   <Box component="img" src={content.hero.image} alt="hero" sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <IconButton size="small" onClick={() => setHero("image", "")}
                     sx={{ position: "absolute", top: 2, right: 2, bgcolor: "rgba(0,0,0,0.6)", color: "#fff", "&:hover": { bgcolor: "rgba(0,0,0,0.8)" } }}>
@@ -385,7 +385,7 @@ export default function PersonalizacionPage() {
                   </IconButton>
                 </Box>
               ) : (
-                <Box sx={{ width: 120, height: 68, borderRadius: 1.5, border: "1px dashed", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center", color: "text.disabled", flexShrink: 0 }}>
+                <Box sx={{ width: 120, height: 68, borderRadius: 0, border: "1px dashed", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center", color: "text.disabled", flexShrink: 0 }}>
                   <Typography variant="caption">Sin imagen</Typography>
                 </Box>
               )}
@@ -593,7 +593,7 @@ export default function PersonalizacionPage() {
 
         <Section title="Convocatoria — quién participa / requisitos">
           {(["participantes", "requisitos"] as const).map((key) => (
-            <Box key={key} sx={{ p: 1.25, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+            <Box key={key} sx={{ p: 1.25, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
               <Typography variant="caption" fontWeight={700} color="text.secondary">{key === "participantes" ? "04 · Quién participa" : "05 · Requisitos del proyecto"}</Typography>
               <StrList label={cp[key].noTitle} items={cp[key].no} onChange={(v) => setCP((c) => ({ ...c, [key]: { ...c[key], no: v } }))} />
               <StrList label={cp[key].siTitle} items={cp[key].si} onChange={(v) => setCP((c) => ({ ...c, [key]: { ...c[key], si: v } }))} />

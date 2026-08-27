@@ -78,7 +78,7 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
   return (
     <Card
       sx={{
-        borderRadius: 3,
+        borderRadius: 0,
         border: "1px solid rgba(0,0,0,0.04)",
       }}
     >
@@ -87,7 +87,7 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
         sx={{
           pb: 1,
           "& .MuiCardHeader-title": {
-            fontWeight: 700,
+            fontWeight: 500,
             fontSize: 16,
           },
         }}

@@ -63,8 +63,8 @@ function TechniqueFormDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-      <DialogTitle sx={{ fontWeight: 800, pb: 0 }}>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 0 } }}>
+      <DialogTitle sx={{ fontWeight: 500, pb: 0 }}>
         {existing ? "Editar técnica" : "Nueva técnica"}
       </DialogTitle>
       <DialogContent sx={{ pt: "16px !important" }}>
@@ -110,8 +110,8 @@ function ConfirmDeleteDialog({
   open, name, onClose, onConfirm, loading,
 }: { open: boolean; name: string; onClose: () => void; onConfirm: () => void; loading: boolean }) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-      <DialogTitle sx={{ fontWeight: 800 }}>¿Eliminar técnica?</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 0 } }}>
+      <DialogTitle sx={{ fontWeight: 500 }}>¿Eliminar técnica?</DialogTitle>
       <DialogContent>
         <Typography>
           Estás a punto de eliminar <strong>&ldquo;{name}&rdquo;</strong>. Esta acción no se puede deshacer.
@@ -195,7 +195,7 @@ export default function TechniquesPage() {
           variant="contained"
           startIcon={<Plus size={18} />}
           onClick={() => { setEditing(null); setFormOpen(true); }}
-          sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+          sx={{ textTransform: "none", fontWeight: 500, borderRadius: 0 }}
         >
           Nueva técnica
         </Button>
@@ -203,22 +203,22 @@ export default function TechniquesPage() {
 
       {/* Stats */}
       <Stack direction="row" spacing={2} mb={3}>
-        <Box sx={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 2, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="#16a34a" sx={{ textTransform: "uppercase", fontSize: 10 }}>Activas</Typography>
-          <Typography variant="h5" fontWeight={900} color="#16a34a">{activeCount}</Typography>
+        <Box sx={{ background: "#EEF5F1", border: "1px solid #D7E8DF", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
+          <Typography variant="caption" fontWeight={700} color="#3FA46E" sx={{ textTransform: "uppercase", fontSize: 10 }}>Activas</Typography>
+          <Typography variant="h5" fontWeight={900} color="#3FA46E">{activeCount}</Typography>
         </Box>
-        <Box sx={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 2, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="#dc2626" sx={{ textTransform: "uppercase", fontSize: 10 }}>Inactivas</Typography>
-          <Typography variant="h5" fontWeight={900} color="#dc2626">{inactiveCount}</Typography>
+        <Box sx={{ background: "#F7EDE9", border: "1px solid #fecaca", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
+          <Typography variant="caption" fontWeight={700} color="#9E3B22" sx={{ textTransform: "uppercase", fontSize: 10 }}>Inactivas</Typography>
+          <Typography variant="h5" fontWeight={900} color="#9E3B22">{inactiveCount}</Typography>
         </Box>
-        <Box sx={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 2, px: 3, py: 1.5, flex: 1 }}>
+        <Box sx={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
           <Typography variant="caption" fontWeight={700} color="#0369a1" sx={{ textTransform: "uppercase", fontSize: 10 }}>Total</Typography>
           <Typography variant="h5" fontWeight={900} color="#0369a1">{techniques.length}</Typography>
         </Box>
       </Stack>
 
       {/* Table */}
-      <Card sx={{ borderRadius: 3, boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
+      <Card sx={{ borderRadius: 0, boxShadow: "none" }}>
         <CardContent sx={{ p: 0 }}>
           {isLoading ? (
             <Box sx={{ p: 6, textAlign: "center", color: "text.secondary" }}>Cargando técnicas…</Box>
@@ -240,9 +240,9 @@ export default function TechniquesPage() {
                 display: "grid",
                 gridTemplateColumns: "40px 1fr 150px 80px 80px 120px",
                 gap: 1, px: 2.5, py: 1.5,
-                background: "#f8fafc",
-                borderBottom: "1px solid #e2e8f0",
-                fontSize: 11, fontWeight: 700, color: "#64748b",
+                background: "#F7F6F2",
+                borderBottom: "1px solid #DEDBD2",
+                fontSize: 11, fontWeight: 500, color: "#615E58",
                 textTransform: "uppercase", letterSpacing: ".5px",
               }}>
                 <span>#</span>
@@ -261,9 +261,9 @@ export default function TechniquesPage() {
                     gridTemplateColumns: "40px 1fr 150px 80px 80px 120px",
                     gap: 1, px: 2.5, py: 1.5,
                     alignItems: "center",
-                    borderBottom: "1px solid #f1f5f9",
+                    borderBottom: "1px solid #F0EEE7",
                     transition: "background .15s",
-                    "&:hover": { background: "#f8fafc" },
+                    "&:hover": { background: "#F7F6F2" },
                     opacity: t.active ? 1 : 0.5,
                   }}
                 >
@@ -272,7 +272,7 @@ export default function TechniquesPage() {
                     <Palette size={16} color={t.active ? "#7c3aed" : "#9ca3af"} />
                     <Typography fontWeight={700} fontSize={14}>{t.name}</Typography>
                   </Stack>
-                  <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: 12, color: "#94a3b8" }}>
+                  <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: 12, color: "#8E8A80" }}>
                     {t.slug || "—"}
                   </Typography>
                   <Typography variant="body2" textAlign="center" fontWeight={600}>{t.order ?? 0}</Typography>
@@ -282,14 +282,14 @@ export default function TechniquesPage() {
                       label={t.active ? "Activa" : "Inactiva"}
                       color={t.active ? "success" : "default"}
                       variant={t.active ? "filled" : "outlined"}
-                      sx={{ fontSize: 10, fontWeight: 700, cursor: "pointer" }}
+                      sx={{ fontSize: 10, fontWeight: 500, cursor: "pointer" }}
                       onClick={() => toggleMut.mutate(t.id)}
                     />
                   </Box>
                   <Stack direction="row" justifyContent="center" spacing={0.5}>
                     <Tooltip title={t.active ? "Desactivar" : "Activar"}>
                       <IconButton size="small" onClick={() => toggleMut.mutate(t.id)}>
-                        {t.active ? <ToggleRight size={16} color="#16a34a" /> : <ToggleLeft size={16} color="#9ca3af" />}
+                        {t.active ? <ToggleRight size={16} color="#3FA46E" /> : <ToggleLeft size={16} color="#9ca3af" />}
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Editar">

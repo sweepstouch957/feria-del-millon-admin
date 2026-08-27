@@ -35,7 +35,7 @@ export default function PavilionsTableCard({
     );
 
     return (
-        <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <Card variant="outlined" sx={{ borderRadius: 0 }}>
             <CardHeader
                 title="Pabellones"
                 subheader={
@@ -81,7 +81,7 @@ export default function PavilionsTableCard({
                         sx={{
                             mt: 1,
                             p: 1.5,
-                            borderRadius: 2,
+                            borderRadius: 0,
                             border: "1px dashed",
                             borderColor: "divider",
                             bgcolor: (theme) =>
@@ -110,7 +110,7 @@ export default function PavilionsTableCard({
                                     <Typography
                                         variant="caption"
                                         color="text.secondary"
-                                        sx={{ fontWeight: 600, mb: 0.5, display: "block" }}
+                                        sx={{ fontWeight: 500, mb: 0.5, display: "block" }}
                                     >
                                         {pavilion.name}
                                     </Typography>

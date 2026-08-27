@@ -88,7 +88,7 @@ const LanguageSwitcher: React.FC = () => {
             }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5 }}>{language.tag}</span>
+              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: 0.5 }}>{language.tag}</span>
             </ListItemIcon>
             <ListItemText primary={language.name} />
           </MenuItem>

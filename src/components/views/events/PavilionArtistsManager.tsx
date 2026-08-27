@@ -201,7 +201,7 @@ export default function PavilionArtistsManager({ eventId, pavilion }: Props) {
             sx={{
                 mt: 2,
                 p: 2,
-                borderRadius: 2,
+                borderRadius: 0,
                 border: "1px solid",
                 borderColor: "divider",
                 bgcolor: (theme) =>

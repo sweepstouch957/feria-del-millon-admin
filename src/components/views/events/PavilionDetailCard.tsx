@@ -36,7 +36,7 @@ export default function PavilionDetailCard({
 }: Props) {
   if (!pavilionForm) {
     return (
-      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+      <Card variant="outlined" sx={{ borderRadius: 0 }}>
         <CardHeader
           title="Detalle de pabellón"
           subheader="Selecciona un pabellón en la tabla para editarlo"
@@ -57,7 +57,7 @@ export default function PavilionDetailCard({
   };
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 3 }}>
+    <Card variant="outlined" sx={{ borderRadius: 0 }}>
       <CardHeader
         title="Detalle de pabellón"
         subheader="Edita la información del pabellón seleccionado"

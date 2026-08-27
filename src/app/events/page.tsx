@@ -98,7 +98,7 @@ export default function EventsManagerPage() {
           />
 
           {/* Gestión de artistas del pabellón */}
-          <Card variant="outlined" sx={{ borderRadius: 3, mt: 2 }}>
+          <Card variant="outlined" sx={{ borderRadius: 0, mt: 2 }}>
             <CardHeader
               title="Artistas del pabellón"
               subheader={

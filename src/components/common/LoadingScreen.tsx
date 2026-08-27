@@ -25,8 +25,8 @@ export default function LoadingScreen({
       }}
     >
       <Box sx={{ width: 360, maxWidth: "90vw" }}>
-        <LinearProgress sx={{ mb: 3, borderRadius: 2 }} />
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+        <LinearProgress sx={{ mb: 3, borderRadius: 0 }} />
+        <Paper elevation={3} sx={{ p: 3, borderRadius: 0 }}>
           <Stack alignItems="center" spacing={2}>
             <CircularProgress size={48} />
             <Typography variant="h6" fontWeight={700}>

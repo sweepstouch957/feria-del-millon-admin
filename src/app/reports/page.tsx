@@ -188,17 +188,17 @@ export default function ReportsPage() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-                    <TableCell sx={{ fontWeight: 600, color: '#112E51' }}>
+                    <TableCell sx={{ fontWeight: 500, color: '#112E51' }}>
                       {mode === 'week'
                         ? 'Day'
                         : mode === 'month'
                         ? 'Month'
                         : 'Year'}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#112E51' }}>
+                    <TableCell sx={{ fontWeight: 500, color: '#112E51' }}>
                       Total
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#112E51' }}>
+                    <TableCell sx={{ fontWeight: 500, color: '#112E51' }}>
                       Points Total
                     </TableCell>
                   </TableRow>

@@ -289,7 +289,7 @@ export default function ArtworkDetailPage() {
         sx={{
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 3,
+          borderRadius: 0,
           overflow: "hidden",
         }}
       >
@@ -327,7 +327,7 @@ export default function ArtworkDetailPage() {
             <Box
               sx={{
                 flex: { xs: "1 1 auto", md: "0 0 420px" }, // responsive
-                borderRadius: 2,
+                borderRadius: 0,
                 overflow: "hidden",
                 position: "relative",
                 bgcolor: "background.default",
@@ -462,7 +462,7 @@ export default function ArtworkDetailPage() {
                           width: "100%",
                           maxWidth: 340, // se adapta en móvil
                           height: "auto",
-                          borderRadius: 1.5,
+                          borderRadius: 0,
                           border: "1px solid",
                           borderColor: "divider",
                         }}

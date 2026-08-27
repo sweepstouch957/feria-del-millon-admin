@@ -52,7 +52,7 @@ export default function EventInfoCard({
   isSaving,
 }: Props) {
   return (
-    <Card variant="outlined" sx={{ borderRadius: 3, overflow: "hidden" }}>
+    <Card variant="outlined" sx={{ borderRadius: 0, overflow: "hidden" }}>
       <CardHeader
         title="Evento"
         subheader="Información general del evento"

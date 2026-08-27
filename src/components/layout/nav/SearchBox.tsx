@@ -41,17 +41,17 @@ const SearchBox = ({ placeholder }: Props) => {
           justifyContent: "center",
         }}
       >
-        <SearchIcon sx={{ color: isDark ? "#71717a" : "#9e9e9e" }} />
+        <SearchIcon sx={{ color: isDark ? "#6B6862" : "#9e9e9e" }} />
       </Box>
       <InputBase
         placeholder={placeholder}
         sx={{
           width: "100%",
-          color: isDark ? "#fafafa" : "inherit",
+          color: isDark ? "#F7F6F2" : "inherit",
           "& .MuiInputBase-input": {
             padding: "10px 14px 10px 40px",
             "&::placeholder": {
-              color: isDark ? "#71717a" : "#9e9e9e",
+              color: isDark ? "#6B6862" : "#9e9e9e",
               opacity: 1,
             },
           },

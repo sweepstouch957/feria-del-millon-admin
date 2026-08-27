@@ -18,18 +18,18 @@ import { useAuth } from "@/provider/authProvider";
 import { getUserById, updateUser, type UserDTO, type Roles as RolesMap } from "@services/user.service";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const G   = "#22c55e";
-const GD  = "#16a34a";
-const S1  = "#111113";
+const G   = "#3FA46E";
+const GD  = "#3FA46E";
+const S1  = "#161614";
 const BR  = "rgba(255,255,255,0.07)";
 const TM  = "rgba(255,255,255,0.38)";
 
 // ── Role config ───────────────────────────────────────────────────────────────
 const ROLES: { key: keyof RolesMap; label: string; color: string }[] = [
-  { key: "superuser", label: "Superuser", color: "#ef4444" },
-  { key: "staff",     label: "Staff",     color: "#a78bfa" },
-  { key: "curador",   label: "Curador",   color: "#60a5fa" },
-  { key: "cajero",    label: "Cajero",    color: "#f59e0b" },
+  { key: "superuser", label: "Superuser", color: "#B4472A" },
+  { key: "staff",     label: "Staff",     color: "#8C6A3F" },
+  { key: "curador",   label: "Curador",   color: "#6B8F7A" },
+  { key: "cajero",    label: "Cajero",    color: "#C9902B" },
   { key: "artista",   label: "Artista",   color: G         },
 ];
 
@@ -43,7 +43,7 @@ function getInitials(u: Partial<UserDTO>) {
 }
 
 function hashColor(str = "") {
-  const p = [G, "#60a5fa", "#a78bfa", "#f59e0b", "#f472b6", "#34d399"];
+  const p = [G, "#6B8F7A", "#8C6A3F", "#C9902B", "#f472b6", "#34d399"];
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % p.length;
   return p[h];
@@ -63,19 +63,19 @@ function Section({
 }: { icon: React.ReactNode; title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <Paper sx={{
-      bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 3,
+      bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 0,
       overflow: "hidden",
     }}>
       <Box sx={{ px: 3, py: 2.25, borderBottom: `1px solid ${BR}`, display: "flex", gap: 1.5, alignItems: "center" }}>
         <Box sx={{
-          width: 34, height: 34, borderRadius: 2,
+          width: 34, height: 34, borderRadius: 0,
           bgcolor: alpha(G, 0.1), color: G,
           display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}>
           {icon}
         </Box>
         <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: 14, color: "#EDEDED", lineHeight: 1.1 }}>{title}</Typography>
+          <Typography sx={{ fontWeight: 500, fontSize: 14, color: "#EDEBE4", lineHeight: 1.1 }}>{title}</Typography>
           {subtitle && <Typography sx={{ fontSize: 11.5, color: TM, mt: 0.1 }}>{subtitle}</Typography>}
         </Box>
       </Box>
@@ -88,13 +88,13 @@ function Section({
 function ActivityRow({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
   return (
     <Stack direction="row" alignItems="center" gap={2} sx={{
-      p: 1.75, borderRadius: 2,
+      p: 1.75, borderRadius: 0,
       bgcolor: alpha("#fff", 0.02), border: `1px solid ${BR}`,
     }}>
       <Box sx={{ color: TM, flexShrink: 0 }}>{icon}</Box>
       <Box>
-        <Typography sx={{ fontSize: 10.5, color: TM, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 13, color: value ? "#EDEDED" : TM, fontWeight: 600, mt: 0.1, fontStyle: value ? "normal" : "italic" }}>
+        <Typography sx={{ fontSize: 10.5, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 13, color: value ? "#EDEBE4" : TM, fontWeight: 500, mt: 0.1, fontStyle: value ? "normal" : "italic" }}>
           {value || "—"}
         </Typography>
       </Box>
@@ -119,7 +119,7 @@ function FField({ label, value, onChange, disabled, placeholder, type, multiline
       } : undefined}
       sx={{
         "& .MuiOutlinedInput-root": {
-          borderRadius: 2, bgcolor: alpha("#fff", 0.025), fontSize: 13,
+          borderRadius: 0, bgcolor: alpha("#fff", 0.025), fontSize: 13,
           "& fieldset": { borderColor: BR },
           "&:hover fieldset": { borderColor: alpha("#fff", 0.18) },
           "&.Mui-focused fieldset": { borderColor: G },
@@ -197,7 +197,7 @@ export default function AccountPage() {
 
   const SkRow = () => (
     <Stack spacing={1.5}>
-      {[1,2].map(i => <Skeleton key={i} height={48} sx={{ borderRadius: 2, bgcolor: alpha("#fff", 0.04) }} />)}
+      {[1,2].map(i => <Skeleton key={i} height={48} sx={{ borderRadius: 0, bgcolor: alpha("#fff", 0.04) }} />)}
     </Stack>
   );
 
@@ -206,10 +206,10 @@ export default function AccountPage() {
 
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <Box sx={{ mb: 4 }}>
-        <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
+        <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
           {t("navigation.account")}
         </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
+        <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
           {t("account.title")}
         </Typography>
         <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
@@ -222,8 +222,8 @@ export default function AccountPage() {
         {/* ── LEFT: Profile card ───────────────────────────────────────── */}
         <Box sx={{ width: { xs: "100%", lg: 300 }, flexShrink: 0, position: { lg: "sticky" }, top: { lg: 24 } }}>
           <Paper sx={{
-            bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 3, overflow: "hidden",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 0, overflow: "hidden",
+            boxShadow: "none",
           }}>
             {/* Green top accent */}
             <Box sx={{ height: 3, background: `linear-gradient(90deg, ${G}, ${alpha(G, 0.1)})` }} />
@@ -247,7 +247,7 @@ export default function AccountPage() {
                         src={!imgError && photoUrl ? photoUrl : undefined}
                         onError={() => setImgError(true)}
                         sx={{
-                          width: 96, height: 96, fontWeight: 900, fontSize: 34,
+                          width: 96, height: 96, fontWeight: 500, fontSize: 34,
                           bgcolor: alpha(ac, 0.14), color: ac,
                           border: `3px solid ${profile.active ? alpha(G, 0.5) : BR}`,
                           boxShadow: profile.active ? `0 0 24px ${alpha(G, 0.2)}` : "none",
@@ -266,7 +266,7 @@ export default function AccountPage() {
                         "&:hover": { opacity: 1 },
                       }}>
                         <Camera size={22} color="#fff" />
-                        <Typography sx={{ fontSize: 9, color: "#fff", fontWeight: 700, mt: 0.3, letterSpacing: 0.3 }}>
+                        <Typography sx={{ fontSize: 9, color: "#fff", fontWeight: 500, mt: 0.3, letterSpacing: 0.3 }}>
                           {t("account.changePhoto")}
                         </Typography>
                       </Box>
@@ -275,7 +275,7 @@ export default function AccountPage() {
                       <Box sx={{
                         position: "absolute", bottom: 4, right: 4,
                         width: 14, height: 14, borderRadius: "50%",
-                        bgcolor: profile.active ? G : "#52525b",
+                        bgcolor: profile.active ? G : "#55524C",
                         border: `2.5px solid ${S1}`,
                         boxShadow: profile.active ? `0 0 8px ${G}` : "none",
                       }} />
@@ -302,7 +302,7 @@ export default function AccountPage() {
                           }}
                           sx={{
                             "& .MuiOutlinedInput-root": {
-                              borderRadius: 2, bgcolor: alpha("#fff", 0.03), fontSize: 12,
+                              borderRadius: 0, bgcolor: alpha("#fff", 0.03), fontSize: 12,
                               "& fieldset": { borderColor: BR },
                               "&.Mui-focused fieldset": { borderColor: G },
                             },
@@ -311,7 +311,7 @@ export default function AccountPage() {
                           }}
                         />
                         {imgError && photoInput && (
-                          <Typography sx={{ fontSize: 10.5, color: "#ef4444", mt: 0.5, pl: 0.5 }}>
+                          <Typography sx={{ fontSize: 10.5, color: "#B4472A", mt: 0.5, pl: 0.5 }}>
                             No se pudo cargar la imagen
                           </Typography>
                         )}
@@ -319,7 +319,7 @@ export default function AccountPage() {
                     )}
 
                     {/* Name & email */}
-                    <Typography sx={{ fontWeight: 900, fontSize: 17, color: "#EDEDED", letterSpacing: -0.3, mt: 1, textAlign: "center", lineHeight: 1.2 }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 17, color: "#EDEBE4", letterSpacing: -0.3, mt: 1, textAlign: "center", lineHeight: 1.2 }}>
                       {fullName || t("account.firstName")}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: TM, mt: 0.4, textAlign: "center", fontFamily: "monospace" }}>
@@ -337,10 +337,10 @@ export default function AccountPage() {
                       }
                       label={profile.active ? t("account.active") : t("account.inactive")}
                       sx={{
-                        fontWeight: 800, fontSize: 10.5, letterSpacing: 0.2,
-                        bgcolor: profile.active ? alpha(G, 0.12) : alpha("#71717a", 0.15),
-                        color:   profile.active ? G : "#71717a",
-                        border: `1px solid ${profile.active ? alpha(G, 0.3) : alpha("#71717a", 0.3)}`,
+                        fontWeight: 500, fontSize: 10.5, letterSpacing: 0.2,
+                        bgcolor: profile.active ? alpha(G, 0.12) : alpha("#6B6862", 0.15),
+                        color:   profile.active ? G : "#6B6862",
+                        border: `1px solid ${profile.active ? alpha(G, 0.3) : alpha("#6B6862", 0.3)}`,
                         "& .MuiChip-icon": { color: "inherit" },
                       }}
                     />
@@ -352,7 +352,7 @@ export default function AccountPage() {
                   <Box>
                     <Stack direction="row" alignItems="center" gap={0.75} mb={1.25}>
                       <Shield size={12} color={TM} />
-                      <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: TM, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                      <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: TM, textTransform: "uppercase", letterSpacing: 0.8 }}>
                         {t("account.roles")}
                       </Typography>
                     </Stack>
@@ -361,11 +361,11 @@ export default function AccountPage() {
                         {activeRoles.map(r => (
                           <Box key={r.key} sx={{
                             display: "flex", alignItems: "center", gap: 1.25, px: 1.5, py: 0.9,
-                            borderRadius: 1.75, bgcolor: alpha(r.color, 0.08),
+                            borderRadius: 0, bgcolor: alpha(r.color, 0.08),
                             border: `1px solid ${alpha(r.color, 0.2)}`,
                           }}>
                             <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: r.color, boxShadow: `0 0 6px ${r.color}`, flexShrink: 0 }} />
-                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.label}</Typography>
+                            <Typography sx={{ fontSize: 12, fontWeight: 500, color: r.color }}>{r.label}</Typography>
                           </Box>
                         ))}
                       </Stack>
@@ -449,7 +449,7 @@ export default function AccountPage() {
                     label={t("account.documentType")}
                     onChange={e => set("documentType")(e.target.value)}
                     sx={{
-                      borderRadius: 2, fontSize: 13, bgcolor: alpha("#fff", 0.025),
+                      borderRadius: 0, fontSize: 13, bgcolor: alpha("#fff", 0.025),
                       "& fieldset": { borderColor: BR },
                       "&:hover fieldset": { borderColor: alpha("#fff", 0.18) },
                       "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G },
@@ -502,7 +502,7 @@ export default function AccountPage() {
                 disabled={saving}
                 startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save size={16} />}
                 sx={{
-                  px: 4, py: 1.25, borderRadius: 2.5, fontWeight: 800, fontSize: 14,
+                  px: 4, py: 1.25, borderRadius: 0, fontWeight: 500, fontSize: 14,
                   bgcolor: G, color: "#000",
                   "&:hover": { bgcolor: GD, boxShadow: `0 4px 20px ${alpha(G, 0.35)}` },
                   "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) },

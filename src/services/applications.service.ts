@@ -148,3 +148,40 @@ export const sendPaymentReminder = async (id: string): Promise<{ ok: boolean }> 
   return data;
 };
 
+
+/* ── Resolución masiva ──────────────────────────────────────────────────
+   Curaduría decide una por una y al cerrar el proceso comunica todo junto.
+   El backend solo escribe a quien ya tiene decisión y no fue avisado, así
+   que repetir el envío no reenvía nada. */
+
+export interface ResolutionSummary {
+  ok: boolean;
+  dryRun?: boolean;
+  total: number;
+  accepted: number;
+  rejected: number;
+  sent?: number;
+  failed?: { id: string; reason: string }[];
+}
+
+export const previewResolutionSend = async (
+  convocatoria?: string
+): Promise<ResolutionSummary> => {
+  const { data } = await apiClient.post(
+    "/applications/applications/resolution/send-all",
+    { convocatoria, dryRun: true },
+    { headers: ADMIN_HEADERS }
+  );
+  return data;
+};
+
+export const sendResolutionToAll = async (
+  convocatoria?: string
+): Promise<ResolutionSummary> => {
+  const { data } = await apiClient.post(
+    "/applications/applications/resolution/send-all",
+    { convocatoria },
+    { headers: ADMIN_HEADERS }
+  );
+  return data;
+};

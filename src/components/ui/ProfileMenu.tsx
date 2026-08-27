@@ -119,8 +119,8 @@ const ProfileMenu: React.FC = () => {
           sx: {
             mt: 1,
             minWidth: 280,
-            borderRadius: 2,
-            boxShadow: "0 6px 24px rgba(0,0,0,0.10)",
+            borderRadius: 0,
+            boxShadow: "none",
           },
         }}
       >
@@ -131,7 +131,7 @@ const ProfileMenu: React.FC = () => {
               {fullName && (
                 <Typography
                   variant="subtitle2"
-                  sx={{ fontWeight: 800, color: "#424242" }}
+                  sx={{ fontWeight: 500, color: "#424242" }}
                 >
                   {fullName}
                 </Typography>

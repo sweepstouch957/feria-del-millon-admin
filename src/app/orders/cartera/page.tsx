@@ -59,7 +59,7 @@ export default function CarteraPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(63,164,110,0.14)", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Wallet size={20} />
         </Box>
         <Box flex={1}>
@@ -72,17 +72,17 @@ export default function CarteraPage() {
       </Stack>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
-        <Card sx={{ borderRadius: 3, flex: 1 }}><CardContent>
+        <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
           <Typography variant="caption" color="text.secondary">Cuentas por cobrar</Typography>
           <Typography fontWeight={900} fontSize={26}>{orders.length}</Typography>
         </CardContent></Card>
-        <Card sx={{ borderRadius: 3, flex: 1 }}><CardContent>
+        <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
           <Typography variant="caption" color="text.secondary">Saldo total pendiente</Typography>
-          <Typography fontWeight={900} fontSize={26} color="#16a34a">{money(totalCartera)}</Typography>
+          <Typography fontWeight={900} fontSize={26} color="#3FA46E">{money(totalCartera)}</Typography>
         </CardContent></Card>
       </Stack>
 
-      <Card sx={{ borderRadius: 3 }}>
+      <Card sx={{ borderRadius: 0 }}>
         {isFetching && <LinearProgress />}
         <CardContent>
           {isLoading ? (
@@ -125,7 +125,7 @@ export default function CarteraPage() {
                           <Chip size="small" label={`${pct}%`} sx={{ ml: 0.5, height: 18, fontSize: 10 }} />
                         </TableCell>
                         <TableCell align="right">
-                          <Typography fontWeight={800} color={bal > 0 ? "#b45309" : "#16a34a"}>{money(bal)}</Typography>
+                          <Typography fontWeight={800} color={bal > 0 ? "#b45309" : "#3FA46E"}>{money(bal)}</Typography>
                         </TableCell>
                         <TableCell>
                           {formatDate(o.layaway?.dueDate)}
@@ -133,7 +133,7 @@ export default function CarteraPage() {
                         <TableCell align="right">
                           <Button size="small" variant="contained" disableElevation startIcon={<Plus size={14} />}
                             onClick={() => openAbono(o)}
-                            sx={{ textTransform: "none", bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}>
+                            sx={{ textTransform: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>
                             Abono
                           </Button>
                         </TableCell>
@@ -163,7 +163,7 @@ export default function CarteraPage() {
             </TextField>
             <TextField label="Nota (opcional)" size="small" fullWidth value={note} onChange={(e) => setNote(e.target.value)} />
             {amount >= Number(target?.layaway?.balanceDue || 0) && amount > 0 && (
-              <Alert severity="success" sx={{ borderRadius: 2 }}>Este abono salda la obra por completo.</Alert>
+              <Alert severity="success" sx={{ borderRadius: 0 }}>Este abono salda la obra por completo.</Alert>
             )}
           </Stack>
         </DialogContent>
@@ -171,7 +171,7 @@ export default function CarteraPage() {
           <Button onClick={() => setTarget(null)}>Cancelar</Button>
           <Button variant="contained" disableElevation disabled={abonoMut.isPending || amount <= 0}
             onClick={() => abonoMut.mutate()}
-            sx={{ bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}>
+            sx={{ bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>
             {abonoMut.isPending ? "Guardando…" : "Registrar"}
           </Button>
         </DialogActions>

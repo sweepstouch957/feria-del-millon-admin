@@ -81,7 +81,7 @@ export default function ArtworkDetailModal({
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: 0,
             overflow: "hidden",
           },
         }}
@@ -139,7 +139,7 @@ export default function ArtworkDetailModal({
                 onClick={() => setPreviewOpen(true)}
                 sx={{
                   position: "relative",
-                  borderRadius: 3,
+                  borderRadius: 0,
                   border: "1px solid",
                   borderColor: "grey.200",
                   bgcolor: "grey.50",
@@ -210,7 +210,7 @@ export default function ArtworkDetailModal({
               <Box sx={{ minWidth: 0 }}>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, wordBreak: "break-word" }}
+                  sx={{ fontWeight: 500, wordBreak: "break-word" }}
                 >
                   {data.doc.title}
                 </Typography>

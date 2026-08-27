@@ -90,7 +90,7 @@ export default function ArtworksTable({
     <Paper
       elevation={0}
       sx={{
-        borderRadius: 3,
+        borderRadius: 0,
         position: "relative",
         overflow: "hidden",
         border: "1px solid",
@@ -112,7 +112,7 @@ export default function ArtworksTable({
       }}
     >
       <Box sx={{ position: "relative", zIndex: 1 }}>
-        <TableContainer sx={{ maxHeight: 560, borderRadius: 3 }}>
+        <TableContainer sx={{ maxHeight: 560, borderRadius: 0 }}>
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
@@ -231,7 +231,7 @@ export default function ArtworksTable({
                           sx={{
                             width: 64,
                             height: 64,
-                            borderRadius: 2,
+                            borderRadius: 0,
                             bgcolor: "grey.100",
                             overflow: "hidden",
                             border: "1px solid",
@@ -254,7 +254,7 @@ export default function ArtworksTable({
                           <Typography
                             variant="subtitle2"
                             sx={{
-                              fontWeight: 700,
+                              fontWeight: 500,
                               whiteSpace: "nowrap",
                               textOverflow: "ellipsis",
                               overflow: "hidden",
@@ -303,7 +303,7 @@ export default function ArtworksTable({
                     <TableCell sx={{ py: 1.5 }}>
                       <Typography
                         variant="body2"
-                        sx={{ fontWeight: 600, color: "text.primary" }}
+                        sx={{ fontWeight: 500, color: "text.primary" }}
                       >
                         {formatMoney(r.price, r.currency)}
                       </Typography>
@@ -399,7 +399,7 @@ export default function ArtworksTable({
               textTransform: "none",
               fontSize: 12,
               px: 2.5,
-              boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+              boxShadow: "none",
               "&:disabled": {
                 boxShadow: "none",
                 opacity: 0.7,

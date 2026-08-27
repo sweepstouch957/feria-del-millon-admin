@@ -24,6 +24,7 @@ import {
   Settings as SettingsIcon, Lock as LockIcon, Unlock as UnlockIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import SendResolutionButton from "@/components/solicitudes/SendResolutionButton";
 import {
   listApplications, getApplicationStats, reviewApplication, requestRevision,
   setUnderReview, markAsPaid, deleteApplication, sendPaymentReminder,
@@ -109,16 +110,16 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
   const handleMouseUp = () => setDragging(false);
   return (
     <Dialog open={open} onClose={onClose} maxWidth={false} PaperProps={{
-      sx: { background: "rgba(0,0,0,0.97)", borderRadius: 3, maxWidth: "95vw", maxHeight: "95vh", m: 1 },
+      sx: { background: "rgba(0,0,0,0.97)", borderRadius: 0, maxWidth: "95vw", maxHeight: "95vh", m: 1 },
     }}>
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
         <Box sx={{ display: "flex", alignItems: "center", p: 2, gap: 2 }}>
-          <Typography variant="h6" sx={{ color: "#fff", flex: 1, fontSize: 16, fontWeight: 800 }}>
+          <Typography variant="h6" sx={{ color: "#fff", flex: 1, fontSize: 16, fontWeight: 500 }}>
             {img.title || `Imagen ${idx + 1}`}
           </Typography>
           <Stack direction="row" spacing={0.5} alignItems="center">
             <IconButton onClick={() => setZoom((z) => Math.max(0.5, z - 0.3))} size="small" sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }} title="Zoom out">−</IconButton>
-            <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</Typography>
+            <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 500, minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</Typography>
             <IconButton onClick={() => setZoom((z) => Math.min(5, z + 0.3))} size="small" sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }} title="Zoom in">+</IconButton>
             <IconButton onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} size="small" sx={{ color: "rgba(255,255,255,0.6)", ml: 0.5, "&:hover": { color: "#fff" } }} title="Reset zoom">⟲</IconButton>
           </Stack>
@@ -148,13 +149,13 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
                 src={resolveImgUrl(img.url)} alt={img.title}
                 draggable={false}
                 style={{
-                  maxHeight: "65vh", maxWidth: "100%", objectFit: "contain", borderRadius: 8,
+                  maxHeight: "65vh", maxWidth: "100%", objectFit: "contain", borderRadius: 0,
                   transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
                   transition: dragging ? 'none' : 'transform 0.2s ease',
                 }}
               />
             ) : (
-              <Box sx={{ width: 400, height: 300, background: "#222", borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Box sx={{ width: 400, height: 300, background: "#222", borderRadius: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ImageIcon size={64} color="rgba(255,255,255,0.2)" />
               </Box>
             )}
@@ -169,10 +170,10 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
 
         <Box sx={{ p: 2, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
           <Stack direction="row" spacing={3} flexWrap="wrap">
-            {img.technique && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Técnica</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{img.technique}</Typography></Box>}
-            {img.dimensions && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Dimensiones</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{img.dimensions}</Typography></Box>}
-            {img.year && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Año</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{img.year}</Typography></Box>}
-            {img.price && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Precio</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>${img.price?.toLocaleString()} {img.currency || "COP"}</Typography></Box>}
+            {img.technique && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Técnica</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>{img.technique}</Typography></Box>}
+            {img.dimensions && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Dimensiones</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>{img.dimensions}</Typography></Box>}
+            {img.year && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Año</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>{img.year}</Typography></Box>}
+            {img.price && <Box><Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Precio</Typography><Typography sx={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>${img.price?.toLocaleString()} {img.currency || "COP"}</Typography></Box>}
           </Stack>
         </Box>
 
@@ -180,8 +181,8 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
           {images.map((im, i) => (
             <Box
               key={i} onClick={() => setIdx(i)}
-              sx={{ width: 64, height: 64, flexShrink: 0, cursor: "pointer", borderRadius: 1, overflow: "hidden",
-                border: i === idx ? "2px solid #4ade80" : "2px solid transparent", opacity: i === idx ? 1 : 0.5, transition: "all .2s",
+              sx={{ width: 64, height: 64, flexShrink: 0, cursor: "pointer", borderRadius: 0, overflow: "hidden",
+                border: i === idx ? "2px solid #3FA46E" : "2px solid transparent", opacity: i === idx ? 1 : 0.5, transition: "all .2s",
                 "&:hover": { opacity: 1 }, background: "#111",
               }}
             >
@@ -200,11 +201,11 @@ function MetaCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   const t = useTheme();
   const dk = t.palette.mode === "dark";
   return (
-    <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#f8fafc", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`, borderRadius: 2, p: 2, minWidth: 140, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-      <Box sx={{ color: dk ? "#71717a" : "#94a3b8", mt: 0.3 }}>{icon}</Box>
+    <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#F7F6F2", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#DEDBD2'}`, borderRadius: 0, p: 2, minWidth: 140, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+      <Box sx={{ color: dk ? "#6B6862" : "#8E8A80", mt: 0.3 }}>{icon}</Box>
       <Box>
-        <Typography variant="caption" sx={{ color: dk ? "#71717a" : "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 700, letterSpacing: .5 }}>{label}</Typography>
-        <Typography fontWeight={700} fontSize={14} sx={{ color: color || (dk ? "#fafafa" : "#1e293b") }}>{value}</Typography>
+        <Typography variant="caption" sx={{ color: dk ? "#6B6862" : "#615E58", textTransform: "uppercase", fontSize: 10, fontWeight: 500, letterSpacing: .5 }}>{label}</Typography>
+        <Typography fontWeight={700} fontSize={14} sx={{ color: color || (dk ? "#F7F6F2" : "#26241F") }}>{value}</Typography>
       </Box>
     </Box>
   );
@@ -334,15 +335,15 @@ function ApplicationDetailDialog({
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{
-        sx: { borderRadius: 3, overflow: "hidden" }
+        sx: { borderRadius: 0, overflow: "hidden" }
       }}>
         {/* Header with profile photo */}
-        <Box sx={{ background: "#0a0a0a", p: 3, pb: 2.5, color: "#fff", borderBottom: "4px solid #4ade80" }}>
+        <Box sx={{ background: "#0B0B0A", p: 3, pb: 2.5, color: "#fff", borderBottom: "4px solid #3FA46E" }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             {app.profilePhotoUrl ? (
-              <Avatar src={app.profilePhotoUrl} sx={{ width: 64, height: 64, border: "3px solid #4ade80", boxShadow: "0 4px 12px rgba(74, 222, 128, 0.2)" }} />
+              <Avatar src={app.profilePhotoUrl} sx={{ width: 64, height: 64, border: "3px solid #3FA46E", boxShadow: "none" }} />
             ) : (
-              <Avatar sx={{ width: 64, height: 64, bgcolor: "#111", color: "#4ade80", fontSize: 24, fontWeight: 800, border: "2px solid #4ade80", boxShadow: "0 4px 12px rgba(74, 222, 128, 0.2)" }}>
+              <Avatar sx={{ width: 64, height: 64, bgcolor: "#111", color: "#3FA46E", fontSize: 24, fontWeight: 500, border: "2px solid #3FA46E", boxShadow: "none" }}>
                 {artist?.firstName?.[0]}{artist?.lastName?.[0]}
               </Avatar>
             )}
@@ -351,30 +352,30 @@ function ApplicationDetailDialog({
                 {artist?.firstName} {artist?.lastName}
               </Typography>
               <Stack direction="row" spacing={2.5} flexWrap="wrap" sx={{ mt: 0.5, opacity: 0.9 }}>
-                {artist?.email && <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#cbd5e1" }}><MailIcon size={14} color="#4ade80" />{artist.email}</Typography>}
-                {artist?.mobile && <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#cbd5e1" }}><PhoneIcon size={14} color="#4ade80" />{artist.mobile}</Typography>}
-                {artist?.city && <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#cbd5e1" }}><MapPinIcon size={14} color="#4ade80" />{artist.city}</Typography>}
+                {artist?.email && <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#C6C2B6" }}><MailIcon size={14} color="#3FA46E" />{artist.email}</Typography>}
+                {artist?.mobile && <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#C6C2B6" }}><PhoneIcon size={14} color="#3FA46E" />{artist.mobile}</Typography>}
+                {artist?.city && <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "#C6C2B6" }}><MapPinIcon size={14} color="#3FA46E" />{artist.city}</Typography>}
               </Stack>
             </Box>
             <Chip
               label={STATUS_CONFIG[app.status]?.label || app.status}
               color={STATUS_CONFIG[app.status]?.color || "default"}
-              sx={{ fontWeight: 800, fontSize: 12, height: 30, px: 0.5, ...(app.status === 'accepted' ? { bgcolor: '#4ade80', color: '#000' } : {}) }}
+              sx={{ fontWeight: 500, fontSize: 12, height: 30, px: 0.5, ...(app.status === 'accepted' ? { bgcolor: '#3FA46E', color: '#000' } : {}) }}
             />
             <IconButton onClick={onClose} sx={{ color: "rgba(255,255,255,0.7)", "&:hover": { color: "#fff", bgcolor: "rgba(255,255,255,0.1)" } }}><XIcon size={20} /></IconButton>
           </Stack>
           {conv && (
-            <Typography variant="body2" sx={{ mt: 2, opacity: 0.8, pl: 10, fontWeight: 600, color: "#cbd5e1" }}>
-              {conv.name} <span style={{ color: '#4ade80', margin: '0 8px' }}>•</span> Inscripción {conv.fee ? `$${conv.fee.toLocaleString()} ${conv.currency || "COP"}` : ""}
+            <Typography variant="body2" sx={{ mt: 2, opacity: 0.8, pl: 10, fontWeight: 500, color: "#C6C2B6" }}>
+              {conv.name} <span style={{ color: '#3FA46E', margin: '0 8px' }}>•</span> Inscripción {conv.fee ? `$${conv.fee.toLocaleString()} ${conv.currency || "COP"}` : ""}
             </Typography>
           )}
         </Box>
 
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{
           px: 3, borderBottom: "1px solid", borderColor: "divider",
-          "& .MuiTabs-indicator": { backgroundColor: "#16a34a", height: 3, borderRadius: "3px 3px 0 0" },
-          "& .MuiTab-root": { textTransform: "none", fontWeight: 700, fontSize: 14, minHeight: 48, color: "#64748b" },
-          "& .MuiTab-root.Mui-selected": { color: "#16a34a" },
+          "& .MuiTabs-indicator": { backgroundColor: "#3FA46E", height: 3, borderRadius: "3px 3px 0 0" },
+          "& .MuiTab-root": { textTransform: "none", fontWeight: 500, fontSize: 14, minHeight: 48, color: "#615E58" },
+          "& .MuiTab-root.Mui-selected": { color: "#3FA46E" },
         }}>
           <Tab icon={<UserIcon size={16} />} label="Perfil y proyecto" iconPosition="start" />
           <Tab icon={<ImageIcon size={16} />} label={`Obras (${app.artworkImages?.length || 0})`} iconPosition="start" />
@@ -387,7 +388,7 @@ function ApplicationDetailDialog({
             <Stack spacing={3}>
               {/* Quick stats */}
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 1.5 }}>
-                <MetaCard icon={<DollarSign size={16} />} label="Pago" value={app.isPaid ? "Confirmado" : "Pendiente"} color={app.isPaid ? "#16a34a" : "#d97706"} />
+                <MetaCard icon={<DollarSign size={16} />} label="Pago" value={app.isPaid ? "Confirmado" : "Pendiente"} color={app.isPaid ? "#3FA46E" : "#A87724"} />
                 <MetaCard icon={<ImageIcon size={16} />} label="Obras cargadas" value={`${app.artworkImages?.length || 0} / 15`} />
                 <MetaCard icon={<CalendarIcon size={16} />} label="Enviada" value={formatDate(app.submittedAt, { year: "numeric", month: "short", day: "numeric" })} />
                 <MetaCard icon={<MapPinIcon size={16} />} label="Ciudad" value={artist?.city || "—"} />
@@ -399,8 +400,8 @@ function ApplicationDetailDialog({
                   <Typography variant="subtitle2" fontWeight={800} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <UserIcon size={16} /> Biografía del artista
                   </Typography>
-                  <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#f8fafc", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`, borderRadius: 2, p: 2.5 }}>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: dk ? "#d4d4d8" : "#475569" }}>{app.bio}</Typography>
+                  <Box sx={{ background: dk ? "rgba(255,255,255,0.04)" : "#F7F6F2", border: `1px solid ${dk ? 'rgba(255,255,255,0.08)' : '#DEDBD2'}`, borderRadius: 0, p: 2.5 }}>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: dk ? "#CFCCC2" : "#4A4842" }}>{app.bio}</Typography>
                   </Box>
                 </Box>
               )}
@@ -411,8 +412,8 @@ function ApplicationDetailDialog({
                   <Typography variant="subtitle2" fontWeight={800} mb={1} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PaletteIcon size={16} /> Reseña del proyecto
                   </Typography>
-                  <Box sx={{ background: dk ? "rgba(74,222,128,0.05)" : "#f0fdf4", border: `1px solid ${dk ? 'rgba(74,222,128,0.15)' : '#bbf7d0'}`, borderRadius: 2, p: 2.5 }}>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: dk ? "#86efac" : "#166534" }}>{app.projectReview}</Typography>
+                  <Box sx={{ background: dk ? "rgba(74,222,128,0.05)" : "#EEF5F1", border: `1px solid ${dk ? 'rgba(74,222,128,0.15)' : '#D7E8DF'}`, borderRadius: 0, p: 2.5 }}>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: dk ? "#7FBF9C" : "#14513C" }}>{app.projectReview}</Typography>
                   </Box>
                 </Box>
               )}
@@ -427,7 +428,7 @@ function ApplicationDetailDialog({
 
               {/* Admin notes */}
               {app.adminNotes && (
-                <Box sx={{ background: dk ? "rgba(14,165,233,0.08)" : "#f0f9ff", border: `1px solid ${dk ? 'rgba(14,165,233,0.2)' : '#bae6fd'}`, borderRadius: 2, p: 2 }}>
+                <Box sx={{ background: dk ? "rgba(14,165,233,0.08)" : "#f0f9ff", border: `1px solid ${dk ? 'rgba(14,165,233,0.2)' : '#bae6fd'}`, borderRadius: 0, p: 2 }}>
                   <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#38bdf8' : '#0369a1', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     <NoteIcon size={14} /> NOTA DEL CURADOR
                   </Typography>
@@ -435,8 +436,8 @@ function ApplicationDetailDialog({
                 </Box>
               )}
               {app.rejectionReason && (
-                <Box sx={{ background: dk ? "rgba(239,68,68,0.08)" : "#fef2f2", border: `1px solid ${dk ? 'rgba(239,68,68,0.2)' : '#fca5a5'}`, borderRadius: 2, p: 2 }}>
-                  <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#f87171' : '#dc2626', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                <Box sx={{ background: dk ? "rgba(239,68,68,0.08)" : "#F7EDE9", border: `1px solid ${dk ? 'rgba(239,68,68,0.2)' : '#D79683'}`, borderRadius: 0, p: 2 }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: dk ? '#f87171' : '#9E3B22', display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     <XCircleIcon size={14} /> RAZÓN DE RECHAZO
                   </Typography>
                   <Typography variant="body2" color="text.primary">{app.rejectionReason}</Typography>
@@ -453,12 +454,12 @@ function ApplicationDetailDialog({
                 <Stack direction="row" alignItems="center" spacing={1} mb={2}>
                   <PaletteIcon size={18} />
                   <Typography variant="subtitle1" fontWeight={800}>Obras del proyecto</Typography>
-                  <Chip label={`${app.artworkImages?.length || 0} obras`} size="small" sx={{ fontWeight: 700, fontSize: 11, bgcolor: dk ? 'rgba(74,222,128,0.12)' : '#f0fdf4', color: dk ? '#4ade80' : '#16a34a' }} />
+                  <Chip label={`${app.artworkImages?.length || 0} obras`} size="small" sx={{ fontWeight: 500, fontSize: 11, bgcolor: dk ? 'rgba(74,222,128,0.12)' : '#EEF5F1', color: dk ? '#3FA46E' : '#3FA46E' }} />
                 </Stack>
 
                 {(!app.artworkImages || app.artworkImages.length === 0) ? (
-                  <Box sx={{ textAlign: "center", py: 6, borderRadius: 3, border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
-                    <ImageIcon size={40} color={dk ? '#52525b' : '#d1d5db'} />
+                  <Box sx={{ textAlign: "center", py: 6, borderRadius: 0, border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2' }}>
+                    <ImageIcon size={40} color={dk ? '#55524C' : '#d1d5db'} />
                     <Typography color="text.secondary" mt={1.5} fontWeight={600}>Sin obras cargadas</Typography>
                   </Box>
                 ) : (
@@ -467,11 +468,11 @@ function ApplicationDetailDialog({
                       <Box
                         key={i} onClick={() => openLightbox(i)}
                         sx={{
-                          cursor: "pointer", borderRadius: 3, overflow: "hidden",
-                          border: dk ? '1.5px solid rgba(255,255,255,0.08)' : '1.5px solid #e5e7eb',
+                          cursor: "pointer", borderRadius: 0, overflow: "hidden",
+                          border: dk ? '1.5px solid rgba(255,255,255,0.08)' : '1.5px solid #E2DFD6',
                           transition: "all .25s cubic-bezier(.4,0,.2,1)",
-                          "&:hover": { borderColor: "#4ade80", transform: "translateY(-3px)", boxShadow: "0 16px 40px rgba(74,222,128,0.15)" },
-                          background: dk ? '#111113' : '#fff',
+                          "&:hover": { borderColor: "#3FA46E", transform: "translateY(-3px)", boxShadow: "none" },
+                          background: dk ? '#161614' : '#fff',
                         }}
                       >
                         <Box sx={{ height: 180, background: dk ? "rgba(255,255,255,0.03)" : "#f8f9fa", position: "relative", overflow: "hidden" }}>
@@ -479,7 +480,7 @@ function ApplicationDetailDialog({
                             <img src={resolveImgUrl(img.url)} alt={img.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .3s" }} />
                           ) : (
                             <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <ImageIcon size={32} color={dk ? '#52525b' : '#9ca3af'} />
+                              <ImageIcon size={32} color={dk ? '#55524C' : '#9ca3af'} />
                             </Box>
                           )}
                           {/* Hover overlay */}
@@ -493,12 +494,12 @@ function ApplicationDetailDialog({
                         <Box sx={{ p: 1.5 }}>
                           <Typography variant="subtitle2" noWrap fontWeight={700} fontSize={13} color="text.primary">{img.title || `Obra ${i + 1}`}</Typography>
                           <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-                            {img.technique && <Chip label={img.technique} size="small" variant="outlined" sx={{ fontSize: 10, height: 20, fontWeight: 600 }} />}
+                            {img.technique && <Chip label={img.technique} size="small" variant="outlined" sx={{ fontSize: 10, height: 20, fontWeight: 500 }} />}
                             {img.dimensions && <Typography variant="caption" color="text.secondary">{img.dimensions}</Typography>}
                             {img.year && <Typography variant="caption" color="text.secondary">· {img.year}</Typography>}
                           </Stack>
                           {img.price && (
-                            <Typography variant="body2" fontWeight={800} sx={{ color: '#22c55e', mt: 0.5 }}>
+                            <Typography variant="body2" fontWeight={800} sx={{ color: '#3FA46E', mt: 0.5 }}>
                               ${img.price?.toLocaleString()} {img.currency || "COP"}
                             </Typography>
                           )}
@@ -526,10 +527,10 @@ function ApplicationDetailDialog({
                         openLightbox(detailIdx);
                       }}
                       sx={{
-                        cursor: "pointer", borderRadius: 3, overflow: "hidden",
-                        border: dk ? '2px solid rgba(255,255,255,0.08)' : '2px solid #e5e7eb',
+                        cursor: "pointer", borderRadius: 0, overflow: "hidden",
+                        border: dk ? '2px solid rgba(255,255,255,0.08)' : '2px solid #E2DFD6',
                         transition: "all .25s", position: "relative",
-                        "&:hover": { borderColor: "#4ade80", boxShadow: `0 12px 36px ${dk ? 'rgba(74,222,128,0.12)' : 'rgba(74,222,128,0.1)'}` },
+                        "&:hover": { borderColor: "#3FA46E", boxShadow: `0 12px 36px ${dk ? 'rgba(74,222,128,0.12)' : 'rgba(74,222,128,0.1)'}` },
                         "&:hover .zoom-overlay": { opacity: 1 },
                       }}
                     >
@@ -540,16 +541,16 @@ function ApplicationDetailDialog({
                       }}>
                         <Stack alignItems="center" spacing={0.5}>
                           <EyeIcon size={24} color="#fff" />
-                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Ver detalle</Typography>
+                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 500 }}>Ver detalle</Typography>
                         </Stack>
                       </Box>
                     </Box>
                   ) : (
                     <Box sx={{
-                      height: 220, borderRadius: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#fafafa',
+                      height: 220, borderRadius: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2',
                     }}>
-                      <ImageIcon size={32} color={dk ? '#52525b' : '#d1d5db'} />
+                      <ImageIcon size={32} color={dk ? '#55524C' : '#d1d5db'} />
                       <Typography variant="caption" color="text.secondary" mt={1} fontWeight={600}>No cargada</Typography>
                     </Box>
                   )}
@@ -568,10 +569,10 @@ function ApplicationDetailDialog({
                         openLightbox(montageIdx);
                       }}
                       sx={{
-                        cursor: "pointer", borderRadius: 3, overflow: "hidden",
-                        border: dk ? '2px solid rgba(255,255,255,0.08)' : '2px solid #e5e7eb',
+                        cursor: "pointer", borderRadius: 0, overflow: "hidden",
+                        border: dk ? '2px solid rgba(255,255,255,0.08)' : '2px solid #E2DFD6',
                         transition: "all .25s", position: "relative",
-                        "&:hover": { borderColor: "#4ade80", boxShadow: `0 12px 36px ${dk ? 'rgba(74,222,128,0.12)' : 'rgba(74,222,128,0.1)'}` },
+                        "&:hover": { borderColor: "#3FA46E", boxShadow: `0 12px 36px ${dk ? 'rgba(74,222,128,0.12)' : 'rgba(74,222,128,0.1)'}` },
                         "&:hover .zoom-overlay": { opacity: 1 },
                       }}
                     >
@@ -582,16 +583,16 @@ function ApplicationDetailDialog({
                       }}>
                         <Stack alignItems="center" spacing={0.5}>
                           <EyeIcon size={24} color="#fff" />
-                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Ver plano</Typography>
+                          <Typography sx={{ color: "#fff", fontSize: 12, fontWeight: 500 }}>Ver plano</Typography>
                         </Stack>
                       </Box>
                     </Box>
                   ) : (
                     <Box sx={{
-                      height: 220, borderRadius: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#fafafa',
+                      height: 220, borderRadius: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      border: `2px dashed ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, background: dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2',
                     }}>
-                      <FileIcon size={32} color={dk ? '#52525b' : '#d1d5db'} />
+                      <FileIcon size={32} color={dk ? '#55524C' : '#d1d5db'} />
                       <Typography variant="caption" color="text.secondary" mt={1} fontWeight={600}>No cargado</Typography>
                     </Box>
                   )}
@@ -612,7 +613,7 @@ function ApplicationDetailDialog({
 
           {/* Review panel */}
           {reviewing && (
-            <Box sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#fafafa", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`, borderRadius: 2.5 }}>
+            <Box sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#F7F6F2", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, borderRadius: 0 }}>
               <Typography variant="subtitle2" fontWeight={800} mb={2} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <ScaleIcon size={16} /> Emitir resolución
               </Typography>
@@ -708,10 +709,10 @@ function ApplicationDetailDialog({
       </Dialog>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 0 } }}>
         <DialogTitle sx={{ pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Trash2Icon size={18} color="#ef4444" />
+          <Box sx={{ width: 36, height: 36, borderRadius: 0, bgcolor: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Trash2Icon size={18} color="#B4472A" />
           </Box>
           <Box>
             <Typography fontWeight={900} fontSize={16}>Eliminar solicitud</Typography>
@@ -750,10 +751,10 @@ function ApplicationDetailDialog({
       </Dialog>
 
       {/* ── Revision request dialog ─────────────────────────────────────── */}
-      <Dialog open={revisionDialogOpen} onClose={() => setRevisionDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={revisionDialogOpen} onClose={() => setRevisionDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 0 } }}>
         <DialogTitle sx={{ pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: "rgba(251,191,36,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <RevisionIcon size={18} color="#fbbf24" />
+          <Box sx={{ width: 36, height: 36, borderRadius: 0, bgcolor: "rgba(251,191,36,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <RevisionIcon size={18} color="#C9902B" />
           </Box>
           <Box>
             <Typography fontWeight={900} fontSize={16}>Invitar a editar postulación</Typography>
@@ -807,16 +808,16 @@ function DocLink({ label, url, icon, type }: { label: string; url?: string; icon
   return (
     <Box sx={{
       display: "flex", alignItems: "center", gap: 2, p: 2,
-      border: "1.5px solid", borderColor: url ? (dk ? 'rgba(255,255,255,0.1)' : '#e2e8f0') : (dk ? 'rgba(255,255,255,0.05)' : '#f1f5f9'),
-      borderRadius: 2.5, background: url ? (dk ? 'rgba(255,255,255,0.03)' : '#fff') : (dk ? 'rgba(255,255,255,0.02)' : '#f8fafc'),
-      transition: "all .2s", "&:hover": url ? { borderColor: '#4ade80', background: dk ? 'rgba(74,222,128,0.05)' : '#f0fdf4' } : {},
+      border: "1.5px solid", borderColor: url ? (dk ? 'rgba(255,255,255,0.1)' : '#DEDBD2') : (dk ? 'rgba(255,255,255,0.05)' : '#F0EEE7'),
+      borderRadius: 0, background: url ? (dk ? 'rgba(255,255,255,0.03)' : '#fff') : (dk ? 'rgba(255,255,255,0.02)' : '#F7F6F2'),
+      transition: "all .2s", "&:hover": url ? { borderColor: '#3FA46E', background: dk ? 'rgba(74,222,128,0.05)' : '#EEF5F1' } : {},
     }}>
       <Box sx={{ display: "flex", color: url ? "text.secondary" : "text.disabled" }}>{icon}</Box>
       <Box flex={1}>
         <Typography variant="subtitle2" fontWeight={700} color="text.primary">{label}</Typography>
         {url ? (
           <Typography variant="caption">
-            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', textDecoration: "none", fontWeight: 600 }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#3FA46E', textDecoration: "none", fontWeight: 500 }}>
               Ver {type || "documento"} ↗
             </a>
           </Typography>
@@ -1042,7 +1043,7 @@ export default function SolicitudesPage() {
           size="small"
           label={STATUS_CONFIG[p.row?.status]?.label || p.row?.status}
           color={STATUS_CONFIG[p.row?.status]?.color || "default"}
-          sx={{ fontWeight: 700, fontSize: 11 }}
+          sx={{ fontWeight: 500, fontSize: 11 }}
         />
       ),
     },
@@ -1084,19 +1085,34 @@ export default function SolicitudesPage() {
   const byStatus = stats?.byStatus || {};
 
   const KPI_CONFIG = [
-    { key: "__total__",        label: "Total",          val: stats?.total ?? 0,                      color: isDark ? '#e2e8f0' : '#1e293b',  bg: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc',  border: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'    },
-    { key: "__paid__",         label: "Pagadas",        val: stats?.paid  ?? 0,                      color: isDark ? '#4ade80' : '#16a34a',  bg: isDark ? 'rgba(34,197,94,0.08)' : '#f0fdf4',    border: isDark ? 'rgba(34,197,94,0.2)' : '#bbf7d0'      },
+    { key: "__total__",        label: "Total",          val: stats?.total ?? 0,                      color: isDark ? '#DEDBD2' : '#26241F',  bg: isDark ? 'rgba(255,255,255,0.04)' : '#F7F6F2',  border: isDark ? 'rgba(255,255,255,0.1)' : '#DEDBD2'    },
+    { key: "__paid__",         label: "Pagadas",        val: stats?.paid  ?? 0,                      color: isDark ? '#3FA46E' : '#3FA46E',  bg: isDark ? 'rgba(34,197,94,0.08)' : '#EEF5F1',    border: isDark ? 'rgba(34,197,94,0.2)' : '#D7E8DF'      },
     { key: "pending_payment",  label: "Sin pago",       val: byStatus["pending_payment"]  ?? 0,      color: isDark ? '#fb923c' : '#c2410c',  bg: isDark ? 'rgba(251,146,60,0.08)' : '#fff7ed',   border: isDark ? 'rgba(251,146,60,0.2)' : '#fed7aa'     },
     { key: "draft",            label: "Borrador",       val: byStatus["draft"]            ?? 0,      color: isDark ? '#818cf8' : '#4338ca',  bg: isDark ? 'rgba(129,140,248,0.08)' : '#eef2ff',  border: isDark ? 'rgba(129,140,248,0.2)' : '#c7d2fe'    },
     { key: "submitted",        label: "Enviadas",       val: byStatus["submitted"]        ?? 0,      color: isDark ? '#38bdf8' : '#0369a1',  bg: isDark ? 'rgba(14,165,233,0.08)' : '#f0f9ff',   border: isDark ? 'rgba(14,165,233,0.2)' : '#bae6fd'     },
-    { key: "under_review",     label: "En revisión",    val: byStatus["under_review"]     ?? 0,      color: isDark ? '#a78bfa' : '#6d28d9',  bg: isDark ? 'rgba(167,139,250,0.08)' : '#f5f3ff',  border: isDark ? 'rgba(167,139,250,0.2)' : '#ddd6fe'    },
-    { key: "revision_requested", label: "Con corrección", val: byStatus["revision_requested"] ?? 0, color: isDark ? '#fbbf24' : '#92400e',  bg: isDark ? 'rgba(251,191,36,0.08)' : '#fef3c7',   border: isDark ? 'rgba(251,191,36,0.2)' : '#fde68a'     },
-    { key: "accepted",         label: "Aceptadas",      val: byStatus["accepted"]         ?? 0,      color: isDark ? '#4ade80' : '#065f46',  bg: isDark ? 'rgba(74,222,128,0.1)' : '#ecfdf5',    border: isDark ? 'rgba(74,222,128,0.25)' : '#6ee7b7'    },
-    { key: "rejected",         label: "Rechazadas",     val: byStatus["rejected"]         ?? 0,      color: isDark ? '#f87171' : '#991b1b',  bg: isDark ? 'rgba(239,68,68,0.08)' : '#fef2f2',    border: isDark ? 'rgba(239,68,68,0.2)' : '#fca5a5'      },
+    { key: "under_review",     label: "En revisión",    val: byStatus["under_review"]     ?? 0,      color: isDark ? '#8C6A3F' : '#6d28d9',  bg: isDark ? 'rgba(167,139,250,0.08)' : '#F4F1EA',  border: isDark ? 'rgba(167,139,250,0.2)' : '#ddd6fe'    },
+    { key: "revision_requested", label: "Con corrección", val: byStatus["revision_requested"] ?? 0, color: isDark ? '#C9902B' : '#92400e',  bg: isDark ? 'rgba(251,191,36,0.08)' : '#F2E8CE',   border: isDark ? 'rgba(251,191,36,0.2)' : '#E4CE94'     },
+    { key: "accepted",         label: "Aceptadas",      val: byStatus["accepted"]         ?? 0,      color: isDark ? '#3FA46E' : '#065f46',  bg: isDark ? 'rgba(74,222,128,0.1)' : '#ecfdf5',    border: isDark ? 'rgba(74,222,128,0.25)' : '#6ee7b7'    },
+    { key: "rejected",         label: "Rechazadas",     val: byStatus["rejected"]         ?? 0,      color: isDark ? '#f87171' : '#991b1b',  bg: isDark ? 'rgba(239,68,68,0.08)' : '#F7EDE9',    border: isDark ? 'rgba(239,68,68,0.2)' : '#D79683'      },
   ];
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
+      {/* Cierre del proceso: comunicar la resolución a todos los decididos */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap={1.5}
+        mb={2}
+      >
+        <Typography variant="h6" fontWeight={800}>
+          Solicitudes
+        </Typography>
+        <SendResolutionButton />
+      </Stack>
+
       {/* Global KPI bar */}
       <Box
         sx={{
@@ -1117,7 +1133,7 @@ export default function SolicitudesPage() {
             sx={{
               background: s.bg,
               border: `1px solid ${s.border}`,
-              borderRadius: 2.5,
+              borderRadius: 0,
               px: 2,
               py: 1.75,
               cursor: (s.key === "__total__" || s.key === "__paid__") ? "default" : "pointer",
@@ -1129,16 +1145,16 @@ export default function SolicitudesPage() {
             }}
           >
             <Typography
-              sx={{ color: s.color, textTransform: "uppercase", fontSize: 9, fontWeight: 800, letterSpacing: .6, mb: 0.5, opacity: 0.75 }}
+              sx={{ color: s.color, textTransform: "uppercase", fontSize: 9, fontWeight: 500, letterSpacing: .6, mb: 0.5, opacity: 0.75 }}
             >{s.label}</Typography>
-            <Typography sx={{ color: s.color, fontWeight: 900, fontSize: 22, lineHeight: 1 }}>
+            <Typography sx={{ color: s.color, fontWeight: 500, fontSize: 22, lineHeight: 1 }}>
               {stats ? s.val : "—"}
             </Typography>
           </Box>
         ))}
       </Box>
 
-      <Card sx={{ borderRadius: 3, boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
+      <Card sx={{ borderRadius: 0, boxShadow: "none" }}>
         <CardContent>
           <Stack spacing={2}>
             {/* Filters */}
@@ -1171,7 +1187,7 @@ export default function SolicitudesPage() {
                 onClick={openConfig}
                 variant="outlined"
                 startIcon={<SettingsIcon size={16} />}
-                sx={{ fontWeight: 700, textTransform: "none", borderRadius: 2 }}
+                sx={{ fontWeight: 500, textTransform: "none", borderRadius: 0 }}
               >
                 Convocatoria
               </Button>
@@ -1181,14 +1197,14 @@ export default function SolicitudesPage() {
                 startIcon={<SheetIcon size={16} />}
                 sx={{
                   color: "#fff",
-                  fontWeight: 700,
+                  fontWeight: 500,
                   px: 2.2,
-                  borderRadius: 2,
+                  borderRadius: 0,
                   textTransform: "none",
-                  bgcolor: "#16a34a",
+                  bgcolor: "#3FA46E",
                   boxShadow: "none",
                   transition: "background .18s",
-                  "&:hover": { bgcolor: "#15803d", boxShadow: "none" },
+                  "&:hover": { bgcolor: "#14513C", boxShadow: "none" },
                 }}
               >
                 Exportar Excel
@@ -1215,15 +1231,15 @@ export default function SolicitudesPage() {
                 onClose={() => { if (!remSending) setRemConfirm(null); }}
                 maxWidth="xs"
                 fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}
+                PaperProps={{ sx: { borderRadius: 0 } }}
               >
-                <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 800 }}>
+                <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 500 }}>
                   <Box
                     sx={{
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
+                      width: 42, height: 42, borderRadius: 0, flexShrink: 0,
                       background: remConfirm === "payment" ? "rgba(251,146,60,0.14)" : "rgba(96,165,250,0.14)",
-                      color: remConfirm === "payment" ? "#fb923c" : "#60a5fa",
+                      color: remConfirm === "payment" ? "#fb923c" : "#6B8F7A",
                     }}
                   >
                     {remConfirm === "payment" ? <HourglassIcon size={20} /> : <PaletteIcon size={20} />}
@@ -1240,7 +1256,7 @@ export default function SolicitudesPage() {
                       a subir sus obras y enviar la postulación (el enlace los lleva a su paso actual del formulario).</>
                     )}
                   </Typography>
-                  <Alert severity="info" sx={{ fontSize: 12.5, py: 0.25, borderRadius: 2 }}>
+                  <Alert severity="info" sx={{ fontSize: 12.5, py: 0.25, borderRadius: 0 }}>
                     Se envía máximo 1 correo cada 72 h por artista — quienes recibieron uno recientemente se omiten automáticamente.
                   </Alert>
                 </DialogContent>
@@ -1279,19 +1295,19 @@ export default function SolicitudesPage() {
                 rowHeight={64}
                 columnHeaderHeight={48}
                 sx={{
-                  borderRadius: 2.5,
-                  border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                  borderRadius: 0,
+                  border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #DEDBD2',
                   fontSize: 13,
                   "& .MuiDataGrid-columnHeaders": {
-                    background: isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                    borderBottom: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #e2e8f0',
+                    background: isDark ? 'rgba(255,255,255,0.03)' : '#F7F6F2',
+                    borderBottom: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #DEDBD2',
                   },
                   "& .MuiDataGrid-columnHeaderTitle": {
-                    fontWeight: 700,
+                    fontWeight: 500,
                     fontSize: 12,
                     textTransform: "uppercase",
                     letterSpacing: ".3px",
-                    color: isDark ? '#71717a' : '#64748b',
+                    color: isDark ? '#6B6862' : '#615E58',
                   },
                   "& .MuiDataGrid-row": {
                     transition: "background .15s",
@@ -1299,12 +1315,12 @@ export default function SolicitudesPage() {
                     "&:hover": { background: isDark ? 'rgba(74,222,128,0.05) !important' : '#f0f4ff !important' },
                   },
                   "& .MuiDataGrid-cell": {
-                    borderBottom: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid #f1f5f9',
+                    borderBottom: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid #F0EEE7',
                     display: "flex",
                     alignItems: "center",
                   },
                   "& .MuiDataGrid-footerContainer": {
-                    borderTop: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #e2e8f0',
+                    borderTop: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #DEDBD2',
                   },
                 }}
               />
@@ -1319,13 +1335,13 @@ export default function SolicitudesPage() {
         onClose={() => !cfgSaving && setCfgOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: { borderRadius: 0 } }}
       >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 900, pb: 1 }}>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 500, pb: 1 }}>
           <Box sx={{
             display: "flex", alignItems: "center", justifyContent: "center",
-            width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
-            background: "rgba(100,116,139,0.14)", color: isDark ? "#cbd5e1" : "#475569",
+            width: 42, height: 42, borderRadius: 0, flexShrink: 0,
+            background: "rgba(100,116,139,0.14)", color: isDark ? "#C6C2B6" : "#4A4842",
           }}>
             <SettingsIcon size={20} />
           </Box>
@@ -1342,9 +1358,9 @@ export default function SolicitudesPage() {
               <Typography variant="body2" color="text.secondary">Cargando…</Typography>
             </Box>
           ) : cfgError && !convs ? (
-            <Alert severity="error" sx={{ borderRadius: 2 }}>{cfgError}</Alert>
+            <Alert severity="error" sx={{ borderRadius: 0 }}>{cfgError}</Alert>
           ) : !convs || convs.length === 0 ? (
-            <Alert severity="info" sx={{ borderRadius: 2 }}>No hay convocatorias creadas.</Alert>
+            <Alert severity="info" sx={{ borderRadius: 0 }}>No hay convocatorias creadas.</Alert>
           ) : (
             <Stack spacing={2} sx={{ mt: 0.5 }}>
               {convs.length > 1 && (
@@ -1367,12 +1383,12 @@ export default function SolicitudesPage() {
 
               {/* Estado — el control principal */}
               <Box sx={{
-                borderRadius: 2.5, p: 2,
+                borderRadius: 0, p: 2,
                 border: `1.5px solid ${cfgForm.status === "open" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.3)"}`,
                 background: cfgForm.status === "open" ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.05)",
               }}>
                 <Stack direction="row" alignItems="center" spacing={1} mb={1.25}>
-                  <Box sx={{ color: cfgForm.status === "open" ? "#16a34a" : "#dc2626", display: "flex" }}>
+                  <Box sx={{ color: cfgForm.status === "open" ? "#3FA46E" : "#9E3B22", display: "flex" }}>
                     {cfgForm.status === "open" ? <UnlockIcon size={18} /> : <LockIcon size={18} />}
                   </Box>
                   <Typography fontWeight={800} fontSize={14}>
@@ -1452,7 +1468,7 @@ export default function SolicitudesPage() {
                 El formulario de postulación aplica estos límites automáticamente.
               </Typography>
 
-              {cfgError && <Alert severity="error" sx={{ borderRadius: 2 }}>{cfgError}</Alert>}
+              {cfgError && <Alert severity="error" sx={{ borderRadius: 0 }}>{cfgError}</Alert>}
             </Stack>
           )}
         </DialogContent>
@@ -1467,7 +1483,7 @@ export default function SolicitudesPage() {
             onClick={handleSaveConfig}
             disabled={cfgSaving || cfgLoading || !cfgId}
             startIcon={cfgSaving ? <CircularProgress size={14} color="inherit" /> : undefined}
-            sx={{ fontWeight: 700, textTransform: "none", boxShadow: "none", bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d", boxShadow: "none" } }}
+            sx={{ fontWeight: 500, textTransform: "none", boxShadow: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C", boxShadow: "none" } }}
           >
             {cfgSaving ? "Guardando…" : "Guardar cambios"}
           </Button>
@@ -1480,13 +1496,13 @@ export default function SolicitudesPage() {
         onClose={() => !exportLoading && setExportOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: { borderRadius: 0 } }}
       >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 900, pb: 1 }}>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, fontWeight: 500, pb: 1 }}>
           <Box sx={{
             display: "flex", alignItems: "center", justifyContent: "center",
-            width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
-            background: "rgba(34,197,94,0.14)", color: "#16a34a",
+            width: 42, height: 42, borderRadius: 0, flexShrink: 0,
+            background: "rgba(34,197,94,0.14)", color: "#3FA46E",
           }}>
             <SheetIcon size={20} />
           </Box>
@@ -1503,14 +1519,14 @@ export default function SolicitudesPage() {
               <Typography variant="body2" color="text.secondary">Cargando inscritos…</Typography>
             </Box>
           ) : exportError ? (
-            <Alert severity="error" sx={{ borderRadius: 2 }}>{exportError}</Alert>
+            <Alert severity="error" sx={{ borderRadius: 0 }}>{exportError}</Alert>
           ) : (
             <Stack spacing={1.25} sx={{ mt: 0.5 }}>
               {([
-                { key: "paid_submitted",     label: "Pagaron y enviaron propuesta", desc: "Pagaron la inscripción y ya enviaron su postulación.", icon: <CheckCircleIcon size={18} />, color: "#16a34a", bg: "rgba(34,197,94,0.1)" },
+                { key: "paid_submitted",     label: "Pagaron y enviaron propuesta", desc: "Pagaron la inscripción y ya enviaron su postulación.", icon: <CheckCircleIcon size={18} />, color: "#3FA46E", bg: "rgba(34,197,94,0.1)" },
                 { key: "paid_not_submitted", label: "Pagaron pero no enviaron",      desc: "Pagaron pero aún no completaron/enviaron su propuesta.", icon: <CardIcon size={18} />,        color: "#0369a1", bg: "rgba(14,165,233,0.1)" },
                 { key: "not_paid",           label: "No han pagado",                 desc: "Se registraron pero aún no pagan la inscripción.",       icon: <HourglassIcon size={18} />,    color: "#c2410c", bg: "rgba(251,146,60,0.1)" },
-                { key: "all",                label: "Todos los inscritos",           desc: "Listado completo, sin filtrar.",                          icon: <UserIcon size={18} />,         color: "#475569", bg: "rgba(100,116,139,0.1)" },
+                { key: "all",                label: "Todos los inscritos",           desc: "Listado completo, sin filtrar.",                          icon: <UserIcon size={18} />,         color: "#4A4842", bg: "rgba(100,116,139,0.1)" },
               ] as const).map((opt) => {
                 const selected = exportSeg === opt.key;
                 const count = exportCounts ? exportCounts[opt.key as Segment] : 0;
@@ -1520,15 +1536,15 @@ export default function SolicitudesPage() {
                     onClick={() => setExportSeg(opt.key as Segment)}
                     sx={{
                       display: "flex", alignItems: "center", gap: 1.5, p: 1.75, cursor: "pointer",
-                      borderRadius: 2.5, transition: "border-color .15s, background .15s",
+                      borderRadius: 0, transition: "border-color .15s, background .15s",
                       border: `1.5px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.08)" : "#e8ebef")}`,
                       background: selected ? opt.bg : "transparent",
-                      "&:hover": { borderColor: selected ? opt.color : (isDark ? "rgba(255,255,255,0.18)" : "#cbd5e1") },
+                      "&:hover": { borderColor: selected ? opt.color : (isDark ? "rgba(255,255,255,0.18)" : "#C6C2B6") },
                     }}
                   >
                     <Box sx={{
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 38, height: 38, borderRadius: 2, flexShrink: 0,
+                      width: 38, height: 38, borderRadius: 0, flexShrink: 0,
                       background: opt.bg, color: opt.color,
                     }}>
                       {opt.icon}
@@ -1537,13 +1553,13 @@ export default function SolicitudesPage() {
                       <Typography fontWeight={700} fontSize={14}>{opt.label}</Typography>
                       <Typography variant="caption" color="text.secondary">{opt.desc}</Typography>
                     </Box>
-                    <Typography sx={{ fontWeight: 800, fontSize: 15, color: selected ? opt.color : "text.secondary", minWidth: 32, textAlign: "right" }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 15, color: selected ? opt.color : "text.secondary", minWidth: 32, textAlign: "right" }}>
                       {count}
                     </Typography>
                     <Box sx={{
                       width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      border: `2px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.2)" : "#cbd5e1")}`,
+                      border: `2px solid ${selected ? opt.color : (isDark ? "rgba(255,255,255,0.2)" : "#C6C2B6")}`,
                       background: selected ? opt.color : "transparent",
                       transition: "all .15s",
                     }}>
@@ -1567,9 +1583,9 @@ export default function SolicitudesPage() {
             disabled={exportLoading || !!exportError || !exportCounts || (exportCounts?.[exportSeg] ?? 0) === 0}
             startIcon={<DownloadIcon size={16} />}
             sx={{
-              fontWeight: 700, textTransform: "none", boxShadow: "none",
-              bgcolor: "#16a34a",
-              "&:hover": { bgcolor: "#15803d", boxShadow: "none" },
+              fontWeight: 500, textTransform: "none", boxShadow: "none",
+              bgcolor: "#3FA46E",
+              "&:hover": { bgcolor: "#14513C", boxShadow: "none" },
             }}
           >
             Descargar Excel{exportCounts ? ` (${exportCounts[exportSeg]})` : ""}

@@ -32,7 +32,7 @@ export function TicketsTable({ eventId }: { eventId: string }) {
   return (
     <Card
       sx={{
-        borderRadius: 4,
+        borderRadius: 0,
         border: "1px solid",
         borderColor: "divider",
       }}

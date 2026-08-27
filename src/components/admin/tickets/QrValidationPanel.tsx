@@ -163,7 +163,7 @@ export function QrValidationPanel() {
       {/* Card principal */}
       <Card
         sx={{
-          borderRadius: 4,
+          borderRadius: 0,
           border: "1px solid",
           borderColor: "divider",
         }}
@@ -300,7 +300,7 @@ export function QrValidationPanel() {
               sx={{
                 bgcolor: "#022c22",
                 color: "#ecfdf5",
-                borderRadius: 4,
+                borderRadius: 0,
                 px: 4,
                 py: 3,
                 maxWidth: 420,
@@ -310,7 +310,7 @@ export function QrValidationPanel() {
               }}
             >
               <CheckCircleIcon
-                sx={{ fontSize: 52, color: "#22c55e", mb: 1 }}
+                sx={{ fontSize: 52, color: "#3FA46E", mb: 1 }}
               />
               <Typography variant="h5" fontWeight={700} gutterBottom>
                 Acceso permitido
@@ -323,7 +323,7 @@ export function QrValidationPanel() {
                 <Typography
                   variant="h6"
                   mt={2}
-                  sx={{ letterSpacing: 2, fontWeight: 800 }}
+                  sx={{ letterSpacing: 2, fontWeight: 500 }}
                 >
                   {lastResult.shortCode}
                 </Typography>

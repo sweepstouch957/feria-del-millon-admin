@@ -396,7 +396,7 @@ export default function CreateEditArtworkModal({
             <Box
               sx={{
                 width: "100%",
-                borderRadius: 2,
+                borderRadius: 0,
                 border: "1px solid",
                 borderColor: "divider",
                 bgcolor: "grey.50",

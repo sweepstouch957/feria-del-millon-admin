@@ -18,9 +18,11 @@ import { listApplications, type ApplicationListResponse } from "@/services/appli
 import { listUsers, type UsersSearchResponse } from "@/services/user.service";
 import { listOrders, type OrderDoc } from "@/services/orders.service";
 import { formatCOP } from "@/utils/money";
+import { FDM } from "@/app/theme";
 
 /* ── constants ── */
-const GREEN       = "#22c55e";
+// Colores de marca: los mismos que el theme y el sitio público.
+const GREEN       = FDM.green;
 const APP_FEE_COP = 40_000;
 
 const fmt = (n: number) => formatCOP(n);
@@ -32,12 +34,12 @@ const fmtShort = (n: number) => {
 };
 
 const STATUS_CFG = [
-  { key: "pending_payment", label: "Pago pendiente", color: "#f59e0b" },
+  { key: "pending_payment", label: "Pago pendiente", color: "#C9902B" },
   { key: "draft",           label: "Borrador",        color: "#6b7280" },
-  { key: "submitted",       label: "Enviada",         color: "#60a5fa" },
-  { key: "under_review",    label: "En revisión",     color: "#a78bfa" },
+  { key: "submitted",       label: "Enviada",         color: FDM.greenDeep },
+  { key: "under_review",    label: "En revisión",     color: "#8C6A3F" },
   { key: "accepted",        label: "Aceptada",        color: GREEN     },
-  { key: "rejected",        label: "Rechazada",       color: "#ef4444" },
+  { key: "rejected",        label: "Rechazada",       color: "#B4472A" },
 ] as const;
 
 const METHOD_LABELS: Record<string, string> = {
@@ -46,18 +48,18 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 const NAV_ITEMS = [
-  { label: "Solicitudes", sub: "Revisar postulaciones", href: "/solicitudes", color: "#60a5fa", icon: ClipboardList },
-  { label: "Usuarios",    sub: "Gestionar cuentas",    href: "/users",       color: "#a78bfa", icon: Users        },
-  { label: "Tickets",     sub: "Venta y validación",   href: "/tickets",     color: "#f59e0b", icon: Ticket       },
+  { label: "Solicitudes", sub: "Revisar postulaciones", href: "/solicitudes", color: FDM.greenDeep, icon: ClipboardList },
+  { label: "Usuarios",    sub: "Gestionar cuentas",    href: "/users",       color: "#8C6A3F", icon: Users        },
+  { label: "Tickets",     sub: "Venta y validación",   href: "/tickets",     color: "#C9902B", icon: Ticket       },
   { label: "Artistas",    sub: "Portafolios y obras",  href: "/users",       color: GREEN,     icon: Palette      },
 ];
 
 /* ── shared card style ── */
 const card = (dark: boolean) => ({
-  p: 2.5, borderRadius: 3,
-  bgcolor: dark ? "#111113" : "#ffffff",
+  p: 2.5, borderRadius: 0,
+  bgcolor: dark ? "#161614" : "#F7F6F2",
   border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-  boxShadow: dark ? "0 4px 28px rgba(0,0,0,.45)" : "0 2px 14px rgba(0,0,0,.06)",
+  boxShadow: "none",
 });
 
 /* ══════════════════════════════════════════════════════════════════ */
@@ -122,10 +124,10 @@ export default function HomeClient() {
       {/* Header */}
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" mb={3}>
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
             Panel de control
           </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
             Feria del Millón
           </Typography>
         </Box>
@@ -133,14 +135,14 @@ export default function HomeClient() {
           <Chip
             label="En vivo"
             size="small"
-            sx={{ bgcolor: alpha(GREEN, 0.1), color: GREEN, fontWeight: 700, border: `1px solid ${alpha(GREEN, 0.3)}`, fontSize: 11 }}
+            sx={{ bgcolor: alpha(GREEN, 0.1), color: GREEN, fontWeight: 500, border: `1px solid ${alpha(GREEN, 0.3)}`, fontSize: 11 }}
           />
         )}
       </Stack>
 
       {loading && (
         <LinearProgress sx={{
-          mb: 3, borderRadius: 1, height: 3,
+          mb: 3, borderRadius: 0, height: 3,
           bgcolor: alpha(GREEN, 0.1),
           "& .MuiLinearProgress-bar": { bgcolor: GREEN },
         }} />
@@ -160,21 +162,21 @@ export default function HomeClient() {
           value={loading ? null : String(totalApps)}
           sub={`${acceptedCount} aceptadas · ${inProcess} en proceso`}
           icon={<FileText size={18} />}
-          accent="#60a5fa" dark={dark}
+          accent={FDM.greenDeep} dark={dark}
         />
         <KpiCard
           label="Artistas"
           value={loading ? null : String(totalArtists)}
           sub={`${paidApps} con pago confirmado`}
           icon={<Palette size={18} />}
-          accent="#a78bfa" dark={dark}
+          accent="#8C6A3F" dark={dark}
         />
         <KpiCard
           label="Usuarios"
           value={loading ? null : String(totalUsers)}
           sub="Todos los roles registrados"
           icon={<Users size={18} />}
-          accent="#f59e0b" dark={dark}
+          accent="#C9902B" dark={dark}
         />
       </Box>
 
@@ -183,12 +185,12 @@ export default function HomeClient() {
 
         {/* Applications funnel */}
         <Paper sx={card(dark)}>
-          <Typography sx={{ fontWeight: 800, fontSize: 14, mb: 2.5, color: "text.primary", letterSpacing: -.3 }}>
+          <Typography sx={{ fontWeight: 500, fontSize: 14, mb: 2.5, color: "text.primary", letterSpacing: -.3 }}>
             Solicitudes por estado
           </Typography>
           {loading ? (
             <Stack spacing={1.5}>
-              {STATUS_CFG.map(s => <Skeleton key={s.key} variant="rectangular" height={34} sx={{ borderRadius: 1.5 }} />)}
+              {STATUS_CFG.map(s => <Skeleton key={s.key} variant="rectangular" height={34} sx={{ borderRadius: 0 }} />)}
             </Stack>
           ) : (
             <Stack spacing={1.5}>
@@ -197,20 +199,20 @@ export default function HomeClient() {
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.75}>
                     <Stack direction="row" alignItems="center" gap={1}>
                       <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: s.color, flexShrink: 0 }} />
-                      <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "text.secondary" }}>{s.label}</Typography>
+                      <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.secondary" }}>{s.label}</Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" gap={1}>
                       <Typography sx={{ fontSize: 11, color: "text.disabled" }}>
                         {totalApps > 0 ? `${Math.round((s.count / totalApps) * 100)}%` : "0%"}
                       </Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 800, color: s.color, minWidth: 24, textAlign: "right" }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 500, color: s.color, minWidth: 24, textAlign: "right" }}>
                         {s.count}
                       </Typography>
                     </Stack>
                   </Stack>
-                  <Box sx={{ height: 7, borderRadius: 2, bgcolor: alpha(s.color, 0.1), overflow: "hidden" }}>
+                  <Box sx={{ height: 7, borderRadius: 0, bgcolor: alpha(s.color, 0.1), overflow: "hidden" }}>
                     <Box sx={{
-                      height: "100%", borderRadius: 2, bgcolor: s.color,
+                      height: "100%", borderRadius: 0, bgcolor: s.color,
                       width: totalApps > 0 ? `${(s.count / totalApps) * 100}%` : "0%",
                       transition: "width .7s cubic-bezier(.16,1,.3,1)",
                     }} />
@@ -223,7 +225,7 @@ export default function HomeClient() {
 
         {/* Revenue breakdown */}
         <Paper sx={card(dark)}>
-          <Typography sx={{ fontWeight: 800, fontSize: 14, mb: 2, color: "text.primary", letterSpacing: -.3 }}>
+          <Typography sx={{ fontWeight: 500, fontSize: 14, mb: 2, color: "text.primary", letterSpacing: -.3 }}>
             Ingresos por fuente
           </Typography>
           {loading ? (
@@ -236,9 +238,9 @@ export default function HomeClient() {
               series={[{
                 data: [
                   { id: 0, value: revenueApps,   label: "Inscripciones", color: GREEN    },
-                  { id: 1, value: revenueOrders, label: "Ventas obras",  color: "#60a5fa" },
+                  { id: 1, value: revenueOrders, label: "Ventas obras",  color: FDM.greenDeep },
                 ],
-                innerRadius: 42, paddingAngle: 3, cornerRadius: 4,
+                innerRadius: 42, paddingAngle: 2, cornerRadius: 0,
                 highlightScope: { fade: "global", highlight: "item" },
               }]}
               slotProps={{ legend: { hidden: true } as never }}
@@ -260,13 +262,13 @@ export default function HomeClient() {
             <RevenueRow
               label="Venta de obras"
               amount={revenueOrders}
-              color="#60a5fa"
+              color={FDM.greenDeep}
               badge={`${paidOrders.length ?? 0} órdenes`}
             />
             <Divider sx={{ borderColor: "divider", my: 0.5 }} />
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.primary" }}>Total</Typography>
-              <Typography sx={{ fontSize: 14, fontWeight: 900, color: GREEN }}>{fmt(totalRevenue)}</Typography>
+              <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.primary" }}>Total</Typography>
+              <Typography sx={{ fontSize: 14, fontWeight: 500, color: GREEN }}>{fmt(totalRevenue)}</Typography>
             </Stack>
           </Stack>
         </Paper>
@@ -275,14 +277,14 @@ export default function HomeClient() {
       {/* ── Payment methods chart ── */}
       {(hasMethodData || loading) && (
         <Paper sx={{ ...card(dark), mb: 3 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: 14, mb: 0.5, color: "text.primary", letterSpacing: -.3 }}>
+          <Typography sx={{ fontWeight: 500, fontSize: 14, mb: 0.5, color: "text.primary", letterSpacing: -.3 }}>
             Métodos de pago — ventas de obras
           </Typography>
           <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 2 }}>
             Distribución de ingresos por canal de pago en órdenes pagadas
           </Typography>
           {loading ? (
-            <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 2 }} />
+            <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 0 }} />
           ) : (
             <BarChart
               height={190}
@@ -306,7 +308,7 @@ export default function HomeClient() {
       )}
 
       {/* ── Quick navigation ── */}
-      <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: "text.disabled", textTransform: "uppercase", mb: 1.5 }}>
+      <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: "text.disabled", textTransform: "uppercase", mb: 1.5 }}>
         Acceso rápido
       </Typography>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4,1fr)" }, gap: 1.5 }}>
@@ -331,7 +333,7 @@ function KpiCard({ label, value, sub, icon, accent, dark }: {
         background: alpha(accent, 0.07), pointerEvents: "none",
       }} />
       <Box sx={{
-        width: 36, height: 36, borderRadius: 2, mb: 2,
+        width: 36, height: 36, borderRadius: 0, mb: 2,
         bgcolor: alpha(accent, 0.12), color: accent,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
@@ -340,11 +342,11 @@ function KpiCard({ label, value, sub, icon, accent, dark }: {
       {value === null ? (
         <Skeleton variant="text" width={90} height={44} sx={{ mb: 0.5 }} />
       ) : (
-        <Typography sx={{ fontSize: 32, fontWeight: 900, letterSpacing: -2, color: "text.primary", lineHeight: 1, mb: 0.75 }}>
+        <Typography sx={{ fontSize: 32, fontWeight: 500, letterSpacing: -2, color: "text.primary", lineHeight: 1, mb: 0.75 }}>
           {value}
         </Typography>
       )}
-      <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "text.primary", mb: 0.25 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.primary", mb: 0.25 }}>{label}</Typography>
       <Typography sx={{ fontSize: 11, color: "text.secondary", lineHeight: 1.4 }}>{sub}</Typography>
     </Paper>
   );
@@ -362,10 +364,10 @@ function RevenueRow({ label, amount, color, badge }: {
         </Typography>
         <Chip
           label={badge} size="small"
-          sx={{ height: 16, fontSize: 9, fontWeight: 700, px: 0.5, bgcolor: alpha(color, 0.1), color, flexShrink: 0 }}
+          sx={{ height: 16, fontSize: 9, fontWeight: 500, px: 0.5, bgcolor: alpha(color, 0.1), color, flexShrink: 0 }}
         />
       </Stack>
-      <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "text.primary", whiteSpace: "nowrap" }}>
+      <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.primary", whiteSpace: "nowrap" }}>
         {fmt(amount)}
       </Typography>
     </Stack>
@@ -382,7 +384,7 @@ function NavCard({ label, sub, href, color, icon: Icon, dark }: {
       href={href}
       sx={{
         display: "flex", flexDirection: "column", alignItems: "flex-start",
-        p: 2, borderRadius: 2.5, textAlign: "left", width: "100%",
+        p: 2, borderRadius: 0, textAlign: "left", width: "100%",
         bgcolor: dark ? "rgba(255,255,255,.025)" : "#f9fafb",
         border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
         transition: "all .2s cubic-bezier(.16,1,.3,1)",
@@ -395,12 +397,12 @@ function NavCard({ label, sub, href, color, icon: Icon, dark }: {
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" mb={1}>
-        <Box sx={{ color, display: "flex", p: 0.75, borderRadius: 1.5, bgcolor: alpha(color, 0.1) }}>
+        <Box sx={{ color, display: "flex", p: 0.75, borderRadius: 0, bgcolor: alpha(color, 0.1) }}>
           <Icon size={16} />
         </Box>
         <Box sx={{ color: "text.disabled", display: "flex" }}><ArrowRight size={14} /></Box>
       </Stack>
-      <Typography sx={{ fontSize: 13, fontWeight: 700, color: "text.primary", mb: 0.25 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 13, fontWeight: 500, color: "text.primary", mb: 0.25 }}>{label}</Typography>
       <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{sub}</Typography>
     </ButtonBase>
   );

@@ -59,7 +59,7 @@ export default function ArtworksQrPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3} className="no-print">
-        <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(63,164,110,0.14)", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <QrCode size={20} />
         </Box>
         <Box flex={1}>
@@ -69,12 +69,12 @@ export default function ArtworksQrPage() {
           </Typography>
         </Box>
         <Button variant="contained" disableElevation startIcon={<Printer size={16} />} onClick={() => window.print()}
-          sx={{ textTransform: "none", bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}>
+          sx={{ textTransform: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>
           Imprimir
         </Button>
       </Stack>
 
-      <Card sx={{ borderRadius: 3, mb: 3 }} className="no-print"><CardContent>
+      <Card sx={{ borderRadius: 0, mb: 3 }} className="no-print"><CardContent>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
           <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Evento</InputLabel>
@@ -129,7 +129,7 @@ export default function ArtworksQrPage() {
           gap: 12px;
         }
         .qr-label {
-          border: 1px solid #e5e7eb;
+          border: 1px solid #E2DFD6;
           border-radius: 10px;
           padding: 14px;
           text-align: center;
@@ -139,7 +139,7 @@ export default function ArtworksQrPage() {
         .qr-label img { display: block; margin: 0 auto; }
         .qr-title { font-weight: 800; font-size: 13px; margin-top: 8px; color: #111; }
         .qr-artist { font-size: 11px; color: #666; margin-top: 2px; }
-        .qr-price { font-size: 12px; font-weight: 700; color: #16a34a; margin-top: 4px; }
+        .qr-price { font-size: 12px; font-weight: 700; color: #3FA46E; margin-top: 4px; }
         .qr-id { font-size: 9px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
         @media print {
           .no-print { display: none !important; }

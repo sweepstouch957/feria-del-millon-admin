@@ -12,7 +12,7 @@ import { useCities } from "@/hooks/useCities";
 import type { CityDoc } from "@/services/city.service";
 import { formatDate } from "@/utils/date";
 
-const GREEN = "#22c55e";
+const GREEN = "#3FA46E";
 
 export default function CitiesPage() {
   const theme   = useTheme();
@@ -37,7 +37,7 @@ export default function CitiesPage() {
       headerName: "ID",
       width: 72,
       renderCell: ({ value }) => (
-        <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.disabled", fontFamily: "monospace" }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.disabled", fontFamily: "monospace" }}>
           #{value}
         </Typography>
       ),
@@ -50,14 +50,14 @@ export default function CitiesPage() {
       renderCell: ({ value }) => (
         <Stack direction="row" alignItems="center" gap={1.25} height="100%">
           <Box sx={{
-            width: 28, height: 28, borderRadius: 1.5, flexShrink: 0,
+            width: 28, height: 28, borderRadius: 0, flexShrink: 0,
             bgcolor: alpha(GREEN, 0.1),
             display: "flex", alignItems: "center", justifyContent: "center",
             color: GREEN,
           }}>
             <MapPin size={13} />
           </Box>
-          <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: "text.primary" }}>{value}</Typography>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 500, color: "text.primary" }}>{value}</Typography>
         </Stack>
       ),
     },
@@ -74,10 +74,10 @@ export default function CitiesPage() {
           label={value ? "Activa" : "Inactiva"}
           size="small"
           sx={{
-            fontWeight: 700, fontSize: 11,
-            bgcolor: value ? alpha(GREEN, 0.12) : alpha("#ef4444", 0.1),
-            color:   value ? GREEN             : "#ef4444",
-            border: `1px solid ${value ? alpha(GREEN, 0.3) : alpha("#ef4444", 0.25)}`,
+            fontWeight: 500, fontSize: 11,
+            bgcolor: value ? alpha(GREEN, 0.12) : alpha("#B4472A", 0.1),
+            color:   value ? GREEN             : "#B4472A",
+            border: `1px solid ${value ? alpha(GREEN, 0.3) : alpha("#B4472A", 0.25)}`,
             "& .MuiChip-icon": { color: "inherit" },
           }}
         />
@@ -101,10 +101,10 @@ export default function CitiesPage() {
       {/* Header */}
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" mb={3}>
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
             Inventario
           </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
             Ciudades
           </Typography>
           <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
@@ -118,9 +118,9 @@ export default function CitiesPage() {
             label="Colombia · DANE"
             size="small"
             sx={{
-              bgcolor: alpha("#60a5fa", 0.1), color: "#60a5fa",
-              border: `1px solid ${alpha("#60a5fa", 0.3)}`,
-              fontWeight: 700, fontSize: 11,
+              bgcolor: alpha("#6B8F7A", 0.1), color: "#6B8F7A",
+              border: `1px solid ${alpha("#6B8F7A", 0.3)}`,
+              fontWeight: 500, fontSize: 11,
               "& .MuiChip-icon": { color: "inherit" },
             }}
           />
@@ -130,15 +130,15 @@ export default function CitiesPage() {
       {/* Stat chips */}
       <Stack direction="row" gap={1.5} mb={3} flexWrap="wrap">
         {[
-          { label: "Total",    value: cities.length,  color: "#a78bfa" },
+          { label: "Total",    value: cities.length,  color: "#8C6A3F" },
           { label: "Activas",  value: activeCount,    color: GREEN     },
-          { label: "Inactivas",value: inactiveCount,  color: "#ef4444" },
+          { label: "Inactivas",value: inactiveCount,  color: "#B4472A" },
         ].map(s => (
           <Paper
             key={s.label}
             sx={{
-              px: 2, py: 1.25, borderRadius: 2.5,
-              bgcolor: dark ? "#111113" : "#ffffff",
+              px: 2, py: 1.25, borderRadius: 0,
+              bgcolor: dark ? "#161614" : "#F7F6F2",
               border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
               display: "flex", alignItems: "center", gap: 1.5,
               minWidth: 100,
@@ -147,10 +147,10 @@ export default function CitiesPage() {
             {isLoading
               ? <Skeleton variant="text" width={60} height={28} />
               : <>
-                  <Typography sx={{ fontSize: 22, fontWeight: 900, letterSpacing: -1, color: s.color, lineHeight: 1 }}>
+                  <Typography sx={{ fontSize: 22, fontWeight: 500, letterSpacing: -1, color: s.color, lineHeight: 1 }}>
                     {s.value}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: "text.secondary", fontWeight: 600 }}>
+                  <Typography sx={{ fontSize: 11, color: "text.secondary", fontWeight: 500 }}>
                     {s.label}
                   </Typography>
                 </>
@@ -161,10 +161,10 @@ export default function CitiesPage() {
 
       {/* Search + Table */}
       <Paper sx={{
-        borderRadius: 3,
-        bgcolor: dark ? "#111113" : "#ffffff",
+        borderRadius: 0,
+        bgcolor: dark ? "#161614" : "#F7F6F2",
         border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-        boxShadow: dark ? "0 4px 28px rgba(0,0,0,.45)" : "0 2px 14px rgba(0,0,0,.06)",
+        boxShadow: "none",
         overflow: "hidden",
       }}>
 
@@ -186,7 +186,7 @@ export default function CitiesPage() {
             sx={{
               maxWidth: 340,
               "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
+                borderRadius: 0,
                 bgcolor: dark ? "rgba(255,255,255,.04)" : "#f5f5f5",
                 fontSize: 13.5,
                 "& fieldset": { borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)" },
@@ -216,12 +216,12 @@ export default function CitiesPage() {
           sx={{
             border: "none",
             "& .MuiDataGrid-columnHeaders": {
-              bgcolor: dark ? "rgba(255,255,255,.03)" : "#fafafa",
+              bgcolor: dark ? "rgba(255,255,255,.03)" : "#F7F6F2",
               borderBottom: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
               borderRadius: 0,
             },
             "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: 11, fontWeight: 800, letterSpacing: .06,
+              fontSize: 11, fontWeight: 500, letterSpacing: .06,
               textTransform: "uppercase", color: "text.secondary",
             },
             "& .MuiDataGrid-row": {

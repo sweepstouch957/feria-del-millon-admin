@@ -89,7 +89,7 @@ export default function QRModal({
               sx={{
                 width: "100%",
                 position: "relative",
-                borderRadius: 3,
+                borderRadius: 0,
                 bgcolor: "grey.50",
                 border: "1px solid",
                 borderColor: "grey.200",

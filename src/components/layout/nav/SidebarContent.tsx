@@ -85,7 +85,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
                 const parent = (e.target as HTMLImageElement).parentElement;
                 if (parent)
                   parent.innerHTML =
-                    '<span style="font-weight:900;color:#EDEDED">Feria del Millón</span>';
+                    '<span style="font-weight:900;color:#EDEBE4">Feria del Millón</span>';
               }}
             />
           </Box>
@@ -339,7 +339,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
           sx={{
             color: C.textMuted,
             letterSpacing: 1.2,
-            fontWeight: 800,
+            fontWeight: 500,
             fontSize: 11,
           }}
         >

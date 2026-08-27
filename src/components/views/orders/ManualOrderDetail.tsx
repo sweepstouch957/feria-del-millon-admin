@@ -90,7 +90,7 @@ export const ManualOrderDetail: React.FC<ManualOrderDetailProps> = ({
     <>
       <Card
         sx={{
-          borderRadius: 3,
+          borderRadius: 0,
           border: "1px solid rgba(0,0,0,0.04)",
         }}
       >
@@ -99,7 +99,7 @@ export const ManualOrderDetail: React.FC<ManualOrderDetailProps> = ({
           sx={{
             pb: 1,
             "& .MuiCardHeader-title": {
-              fontWeight: 700,
+              fontWeight: 500,
               fontSize: 16,
             },
           }}
@@ -117,10 +117,10 @@ export const ManualOrderDetail: React.FC<ManualOrderDetailProps> = ({
                   sx={{
                     flexShrink: 0,
                     width: { xs: "100%", sm: 220 },
-                    borderRadius: 2,
+                    borderRadius: 0,
                     overflow: "hidden",
                     position: "relative",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                    boxShadow: "none",
                   }}
                 >
                   <Box

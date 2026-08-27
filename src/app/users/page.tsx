@@ -29,18 +29,18 @@ import {
 } from "@services/user.service";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const G   = "#22c55e";
-const GD  = "#16a34a";
-const S1  = "#111113";
+const G   = "#3FA46E";
+const GD  = "#3FA46E";
+const S1  = "#161614";
 const BR  = "rgba(255,255,255,0.07)";
 const TM  = "rgba(255,255,255,0.38)";
 
 // ── Role config ───────────────────────────────────────────────────────────────
 const ROLES: { key: keyof RolesMap; label: string; desc: string; color: string }[] = [
-  { key: "superuser", label: "Superuser", desc: "Acceso total al sistema",     color: "#ef4444" },
-  { key: "staff",     label: "Staff",     desc: "Gestión operativa",           color: "#a78bfa" },
-  { key: "curador",   label: "Curador",   desc: "Curación y validación obras", color: "#60a5fa" },
-  { key: "cajero",    label: "Cajero",    desc: "Caja y manejo de pagos",      color: "#f59e0b" },
+  { key: "superuser", label: "Superuser", desc: "Acceso total al sistema",     color: "#B4472A" },
+  { key: "staff",     label: "Staff",     desc: "Gestión operativa",           color: "#8C6A3F" },
+  { key: "curador",   label: "Curador",   desc: "Curación y validación obras", color: "#6B8F7A" },
+  { key: "cajero",    label: "Cajero",    desc: "Caja y manejo de pagos",      color: "#C9902B" },
   { key: "artista",   label: "Artista",   desc: "Perfil de artista activo",    color: G         },
 ];
 
@@ -52,7 +52,7 @@ function getInitials(u: Partial<UserDTO>) {
 }
 
 function hashColor(str = "") {
-  const palette = [G, "#60a5fa", "#a78bfa", "#f59e0b", "#f472b6", "#34d399", "#fb923c"];
+  const palette = [G, "#6B8F7A", "#8C6A3F", "#C9902B", "#f472b6", "#34d399", "#fb923c"];
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % palette.length;
   return palette[h];
@@ -71,7 +71,7 @@ function RoleBadge({ roleKey }: { roleKey: keyof RolesMap }) {
   if (!r) return null;
   return (
     <Chip size="small" label={r.label} sx={{
-      height: 19, fontSize: 10, fontWeight: 800, letterSpacing: 0.2,
+      height: 19, fontSize: 10, fontWeight: 500, letterSpacing: 0.2,
       bgcolor: alpha(r.color, 0.12), color: r.color,
       border: `1px solid ${alpha(r.color, 0.28)}`,
       "& .MuiChip-label": { px: 0.9 },
@@ -93,15 +93,15 @@ function RoleChips({ roles }: { roles?: RolesMap }) {
 function StatPill({ label, value, color, loading }: { label: string; value: number; color: string; loading?: boolean }) {
   return (
     <Paper sx={{
-      px: 2, py: 1.25, borderRadius: 2.5,
+      px: 2, py: 1.25, borderRadius: 0,
       bgcolor: S1, border: `1px solid ${BR}`,
       display: "flex", alignItems: "center", gap: 1.5, minWidth: 90,
     }}>
       {loading
-        ? <Skeleton width={52} height={26} sx={{ borderRadius: 1 }} />
+        ? <Skeleton width={52} height={26} sx={{ borderRadius: 0 }} />
         : <>
-            <Typography sx={{ fontSize: 22, fontWeight: 900, letterSpacing: -1, color, lineHeight: 1 }}>{value}</Typography>
-            <Typography sx={{ fontSize: 11, color: TM, fontWeight: 600 }}>{label}</Typography>
+            <Typography sx={{ fontSize: 22, fontWeight: 500, letterSpacing: -1, color, lineHeight: 1 }}>{value}</Typography>
+            <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500 }}>{label}</Typography>
           </>
       }
     </Paper>
@@ -113,13 +113,13 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   if (!value) return null;
   return (
     <Box sx={{
-      display: "flex", alignItems: "center", gap: 2, p: 1.75, borderRadius: 2,
+      display: "flex", alignItems: "center", gap: 2, p: 1.75, borderRadius: 0,
       bgcolor: alpha("#fff", 0.025), border: `1px solid ${BR}`,
     }}>
       <Box sx={{ color: TM, flexShrink: 0 }}>{icon}</Box>
       <Box>
-        <Typography sx={{ fontSize: 10, color: TM, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 13, color: "#EDEDED", fontWeight: 600, mt: 0.2 }}>{value}</Typography>
+        <Typography sx={{ fontSize: 10, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 13, color: "#EDEBE4", fontWeight: 500, mt: 0.2 }}>{value}</Typography>
       </Box>
     </Box>
   );
@@ -135,7 +135,7 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
     <Paper
       onClick={onView}
       sx={{
-        bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 3,
+        bgcolor: S1, border: `1px solid ${BR}`, borderRadius: 0,
         p: 2, cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "all 0.18s ease",
         "&:hover": {
@@ -152,7 +152,7 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
 
       <Stack direction="row" gap={1.5} alignItems="flex-start">
         <Avatar sx={{
-          width: 50, height: 50, flexShrink: 0, fontWeight: 900, fontSize: 17,
+          width: 50, height: 50, flexShrink: 0, fontWeight: 500, fontSize: 17,
           bgcolor: alpha(ac, 0.14), color: ac,
           border: `2.5px solid ${user.active ? alpha(G, 0.45) : BR}`,
           boxShadow: user.active ? `0 0 14px ${alpha(G, 0.2)}` : "none",
@@ -162,12 +162,12 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
 
         <Box flex={1} minWidth={0}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.3}>
-            <Typography noWrap sx={{ fontWeight: 800, fontSize: 14, color: "#EDEDED", lineHeight: 1.2 }}>
+            <Typography noWrap sx={{ fontWeight: 500, fontSize: 14, color: "#EDEBE4", lineHeight: 1.2 }}>
               {fullName}
             </Typography>
             <Box sx={{
               width: 7, height: 7, borderRadius: "50%", flexShrink: 0, ml: 1,
-              bgcolor: user.active ? G : "#52525b",
+              bgcolor: user.active ? G : "#55524C",
               boxShadow: user.active ? `0 0 7px ${G}` : "none",
             }} />
           </Stack>
@@ -192,12 +192,12 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
 
           <Stack direction="row" gap={1} onClick={e => e.stopPropagation()}>
             <Button size="small" startIcon={<Eye size={13} />} onClick={onView} sx={{
-              fontSize: 11, fontWeight: 700, borderRadius: 1.5, px: 1.5, py: 0.5, minWidth: 0,
-              bgcolor: alpha("#fff", 0.04), color: "#EDEDED", border: `1px solid ${BR}`,
+              fontSize: 11, fontWeight: 500, borderRadius: 0, px: 1.5, py: 0.5, minWidth: 0,
+              bgcolor: alpha("#fff", 0.04), color: "#EDEBE4", border: `1px solid ${BR}`,
               "&:hover": { bgcolor: alpha(G, 0.1), borderColor: alpha(G, 0.3), color: G },
             }}>Ver</Button>
             <Button size="small" startIcon={<Pencil size={13} />} onClick={onEdit} sx={{
-              fontSize: 11, fontWeight: 700, borderRadius: 1.5, px: 1.5, py: 0.5, minWidth: 0,
+              fontSize: 11, fontWeight: 500, borderRadius: 0, px: 1.5, py: 0.5, minWidth: 0,
               bgcolor: alpha(G, 0.08), color: G, border: `1px solid ${alpha(G, 0.22)}`,
               "&:hover": { bgcolor: alpha(G, 0.15), borderColor: G },
             }}>Editar</Button>
@@ -257,8 +257,8 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
       <Dialog
         open={open} onClose={onClose} maxWidth="sm" fullWidth
         PaperProps={{ sx: {
-          bgcolor: "#0a0a0a", borderRadius: 3, overflow: "hidden",
-          border: `1px solid ${BR}`, boxShadow: "0 32px 96px rgba(0,0,0,0.85)",
+          bgcolor: "#0B0B0A", borderRadius: 0, overflow: "hidden",
+          border: `1px solid ${BR}`, boxShadow: "none",
         }}}
       >
         {/* Green accent top */}
@@ -279,7 +279,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
               {/* Avatar */}
               <Box sx={{ position: "relative", flexShrink: 0 }}>
                 <Avatar sx={{
-                  width: 72, height: 72, fontWeight: 900, fontSize: 26,
+                  width: 72, height: 72, fontWeight: 500, fontSize: 26,
                   bgcolor: alpha(ac, 0.14), color: ac,
                   border: `3px solid ${form.active ? alpha(G, 0.55) : alpha("#fff", 0.1)}`,
                   boxShadow: form.active ? `0 0 24px ${alpha(G, 0.25)}` : "none",
@@ -290,7 +290,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                 <Box sx={{
                   position: "absolute", bottom: 3, right: 3,
                   width: 12, height: 12, borderRadius: "50%",
-                  bgcolor: form.active ? G : "#52525b",
+                  bgcolor: form.active ? G : "#55524C",
                   border: `2px solid ${S1}`,
                   boxShadow: form.active ? `0 0 8px ${G}` : "none",
                 }} />
@@ -299,7 +299,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
               <Box flex={1} minWidth={0}>
                 <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
                   <Box minWidth={0}>
-                    <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#EDEDED", letterSpacing: -0.5, lineHeight: 1.1 }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 20, color: "#EDEBE4", letterSpacing: -0.5, lineHeight: 1.1 }}>
                       {fullName}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: TM, mt: 0.4, fontFamily: "monospace" }} noWrap>
@@ -308,14 +308,14 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                   </Box>
                   <Stack direction="row" gap={0.75} alignItems="center" flexShrink={0}>
                     <Box sx={{
-                      px: 1.25, py: 0.35, borderRadius: 1.25, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.8,
-                      bgcolor: form.active ? alpha(G, 0.12) : alpha("#71717a", 0.15),
-                      color: form.active ? G : "#71717a",
-                      border: `1px solid ${form.active ? alpha(G, 0.3) : alpha("#71717a", 0.3)}`,
+                      px: 1.25, py: 0.35, borderRadius: 0, fontSize: 9.5, fontWeight: 500, letterSpacing: 0.8,
+                      bgcolor: form.active ? alpha(G, 0.12) : alpha("#6B6862", 0.15),
+                      color: form.active ? G : "#6B6862",
+                      border: `1px solid ${form.active ? alpha(G, 0.3) : alpha("#6B6862", 0.3)}`,
                     }}>
                       {form.active ? "ACTIVO" : "INACTIVO"}
                     </Box>
-                    <IconButton onClick={onClose} size="small" sx={{ color: TM, "&:hover": { color: "#EDEDED", bgcolor: alpha("#fff", 0.06) } }}>
+                    <IconButton onClick={onClose} size="small" sx={{ color: TM, "&:hover": { color: "#EDEBE4", bgcolor: alpha("#fff", 0.06) } }}>
                       <X size={17} />
                     </IconButton>
                   </Stack>
@@ -352,7 +352,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
           sx={{
             bgcolor: S1, borderBottom: `1px solid ${BR}`,
             "& .MuiTabs-indicator": { bgcolor: G, height: 2.5, borderRadius: "2px 2px 0 0" },
-            "& .MuiTab-root": { fontSize: 12.5, fontWeight: 700, color: TM, textTransform: "none", minHeight: 44, gap: 0.75 },
+            "& .MuiTab-root": { fontSize: 12.5, fontWeight: 500, color: TM, textTransform: "none", minHeight: 44, gap: 0.75 },
             "& .MuiTab-root.Mui-selected": { color: G },
             "& .MuiTab-root .MuiTab-iconWrapper": { margin: 0 },
           }}
@@ -363,10 +363,10 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
         </Tabs>
 
         {/* ── Content ── */}
-        <DialogContent sx={{ p: 2.5, bgcolor: "#0a0a0a", minHeight: 260 }}>
+        <DialogContent sx={{ p: 2.5, bgcolor: "#0B0B0A", minHeight: 260 }}>
           {loading ? (
             <Stack spacing={1.5}>
-              {[1,2,3].map(i => <Skeleton key={i} height={54} sx={{ borderRadius: 2, bgcolor: alpha("#fff", 0.04) }} />)}
+              {[1,2,3].map(i => <Skeleton key={i} height={54} sx={{ borderRadius: 0, bgcolor: alpha("#fff", 0.04) }} />)}
             </Stack>
           ) : (
             <>
@@ -413,8 +413,8 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
               {/* Tab 1 — Roles */}
               {tab === 1 && (
                 <Stack spacing={1.25}>
-                  <Box sx={{ p: 1.75, borderRadius: 2, bgcolor: alpha(G, 0.05), border: `1px solid ${alpha(G, 0.15)}` }}>
-                    <Typography sx={{ fontSize: 11.5, color: alpha(G, 0.85), fontWeight: 600, lineHeight: 1.5 }}>
+                  <Box sx={{ p: 1.75, borderRadius: 0, bgcolor: alpha(G, 0.05), border: `1px solid ${alpha(G, 0.15)}` }}>
+                    <Typography sx={{ fontSize: 11.5, color: alpha(G, 0.85), fontWeight: 500, lineHeight: 1.5 }}>
                       Los roles controlan qué funcionalidades puede acceder este usuario.
                     </Typography>
                   </Box>
@@ -424,7 +424,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                       key={r.key}
                       onClick={() => mode === "edit" && toggleRole(r.key)}
                       sx={{
-                        p: 1.75, borderRadius: 2, display: "flex", alignItems: "center",
+                        p: 1.75, borderRadius: 0, display: "flex", alignItems: "center",
                         justifyContent: "space-between", gap: 1.5,
                         border: `1px solid ${form.roles?.[r.key] ? alpha(r.color, 0.35) : BR}`,
                         bgcolor: form.roles?.[r.key] ? alpha(r.color, 0.06) : alpha("#fff", 0.02),
@@ -441,7 +441,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                           transition: "all 0.15s",
                         }} />
                         <Box>
-                          <Typography sx={{ fontWeight: 800, fontSize: 13, color: form.roles?.[r.key] ? r.color : "#EDEDED", lineHeight: 1 }}>
+                          <Typography sx={{ fontWeight: 500, fontSize: 13, color: form.roles?.[r.key] ? r.color : "#EDEBE4", lineHeight: 1 }}>
                             {r.label}
                           </Typography>
                           <Typography sx={{ fontSize: 11, color: TM, mt: 0.2 }}>{r.desc}</Typography>
@@ -455,7 +455,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                           size="small"
                           sx={{
                             flexShrink: 0,
-                            "& .MuiSwitch-thumb": { bgcolor: form.roles?.[r.key] ? r.color : "#52525b", width: 14, height: 14 },
+                            "& .MuiSwitch-thumb": { bgcolor: form.roles?.[r.key] ? r.color : "#55524C", width: 14, height: 14 },
                             "& .MuiSwitch-track": { bgcolor: form.roles?.[r.key] ? alpha(r.color, 0.35) : "rgba(255,255,255,0.1)" },
                             "& .MuiSwitch-switchBase.Mui-checked": { transform: "translateX(14px)" },
                           }}
@@ -469,16 +469,16 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                   <Box
                     onClick={() => mode === "edit" && setForm(f => ({ ...f, active: !f.active }))}
                     sx={{
-                      p: 1.75, borderRadius: 2, display: "flex", alignItems: "center",
+                      p: 1.75, borderRadius: 0, display: "flex", alignItems: "center",
                       justifyContent: "space-between", gap: 1.5,
                       border: `1px solid ${form.active ? alpha(G, 0.35) : BR}`,
-                      bgcolor: form.active ? alpha(G, 0.06) : alpha("#ef4444", 0.04),
+                      bgcolor: form.active ? alpha(G, 0.06) : alpha("#B4472A", 0.04),
                       cursor: mode === "edit" ? "pointer" : "default",
                       transition: "all 0.15s ease",
                     }}
                   >
                     <Box>
-                      <Typography sx={{ fontWeight: 800, fontSize: 13, color: form.active ? G : "#ef4444", lineHeight: 1 }}>
+                      <Typography sx={{ fontWeight: 500, fontSize: 13, color: form.active ? G : "#B4472A", lineHeight: 1 }}>
                         Cuenta activa
                       </Typography>
                       <Typography sx={{ fontSize: 11, color: TM, mt: 0.25 }}>
@@ -493,8 +493,8 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                         size="small"
                         sx={{
                           flexShrink: 0,
-                          "& .MuiSwitch-thumb": { bgcolor: form.active ? G : "#ef4444", width: 14, height: 14 },
-                          "& .MuiSwitch-track": { bgcolor: form.active ? alpha(G, 0.35) : alpha("#ef4444", 0.3) },
+                          "& .MuiSwitch-thumb": { bgcolor: form.active ? G : "#B4472A", width: 14, height: 14 },
+                          "& .MuiSwitch-track": { bgcolor: form.active ? alpha(G, 0.35) : alpha("#B4472A", 0.3) },
                           "& .MuiSwitch-switchBase.Mui-checked": { transform: "translateX(14px)" },
                         }}
                       />
@@ -524,15 +524,15 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                 startIcon={<Pencil size={15} />}
                 onClick={() => setMode("edit")}
                 sx={{
-                  bgcolor: alpha(G, 0.1), color: G, fontWeight: 700, fontSize: 13,
-                  border: `1px solid ${alpha(G, 0.25)}`, borderRadius: 2,
+                  bgcolor: alpha(G, 0.1), color: G, fontWeight: 500, fontSize: 13,
+                  border: `1px solid ${alpha(G, 0.25)}`, borderRadius: 0,
                   "&:hover": { bgcolor: alpha(G, 0.18), borderColor: G },
                 }}
               >
                 Editar usuario
               </Button>
               <Box flex={1} />
-              <Button onClick={onClose} sx={{ color: TM, fontWeight: 600, fontSize: 13, borderRadius: 2 }}>Cerrar</Button>
+              <Button onClick={onClose} sx={{ color: TM, fontWeight: 500, fontSize: 13, borderRadius: 0 }}>Cerrar</Button>
             </>
           ) : (
             <>
@@ -541,7 +541,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                 onClick={handleSave}
                 disabled={saving}
                 sx={{
-                  bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2,
+                  bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0,
                   "&:hover": { bgcolor: GD }, "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) },
                   px: 2.5,
                 }}
@@ -549,7 +549,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                 {saving ? "Guardando…" : "Guardar cambios"}
               </Button>
               <Box flex={1} />
-              <Button onClick={() => setMode("view")} sx={{ color: TM, fontWeight: 600, fontSize: 13, borderRadius: 2 }}>
+              <Button onClick={() => setMode("view")} sx={{ color: TM, fontWeight: 500, fontSize: 13, borderRadius: 0 }}>
                 Cancelar
               </Button>
             </>
@@ -606,28 +606,28 @@ function CreateUserDialog({ open, onClose, onCreated }: {
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { bgcolor: "#0a0a0a", borderRadius: 3, overflow: "hidden", border: `1px solid ${BR}`, boxShadow: "0 32px 96px rgba(0,0,0,0.85)" } }}>
+        PaperProps={{ sx: { bgcolor: "#0B0B0A", borderRadius: 0, overflow: "hidden", border: `1px solid ${BR}`, boxShadow: "none" } }}>
         <Box sx={{ height: 3.5, background: `linear-gradient(90deg, ${G} 0%, ${alpha(G, 0.2)} 100%)` }} />
         <Box sx={{ p: 3, pb: 1.5, bgcolor: S1 }}>
           <Stack direction="row" alignItems="center" gap={1.25}>
             <UserPlus size={20} color={G} />
-            <Typography sx={{ fontWeight: 900, fontSize: 18, color: "#EDEDED", letterSpacing: -0.4 }}>Nueva cajera</Typography>
+            <Typography sx={{ fontWeight: 500, fontSize: 18, color: "#EDEBE4", letterSpacing: -0.4 }}>Nueva cajera</Typography>
           </Stack>
           <Typography sx={{ fontSize: 12, color: TM, mt: 0.5 }}>
             Crea la cuenta con una contraseña temporal y pásasela a la cajera para que inicie sesión.
           </Typography>
         </Box>
 
-        <DialogContent sx={{ p: 2.5, bgcolor: "#0a0a0a" }}>
+        <DialogContent sx={{ p: 2.5, bgcolor: "#0B0B0A" }}>
           {created ? (
             <Stack spacing={1.5} sx={{ pt: 0.5 }}>
-              <Box sx={{ p: 2, borderRadius: 2, bgcolor: alpha(G, 0.06), border: `1px solid ${alpha(G, 0.25)}` }}>
-                <Typography sx={{ fontSize: 12, color: G, fontWeight: 800, mb: 1 }}>✓ Cuenta creada — guardá estas credenciales</Typography>
-                <Typography sx={{ fontSize: 13, color: "#EDEDED", fontFamily: "monospace" }}>Email: {created.email}</Typography>
-                <Typography sx={{ fontSize: 13, color: "#EDEDED", fontFamily: "monospace" }}>Contraseña: {created.password}</Typography>
+              <Box sx={{ p: 2, borderRadius: 0, bgcolor: alpha(G, 0.06), border: `1px solid ${alpha(G, 0.25)}` }}>
+                <Typography sx={{ fontSize: 12, color: G, fontWeight: 500, mb: 1 }}>✓ Cuenta creada — guardá estas credenciales</Typography>
+                <Typography sx={{ fontSize: 13, color: "#EDEBE4", fontFamily: "monospace" }}>Email: {created.email}</Typography>
+                <Typography sx={{ fontSize: 13, color: "#EDEBE4", fontFamily: "monospace" }}>Contraseña: {created.password}</Typography>
               </Box>
               <Button startIcon={<Copy size={15} />} onClick={copyCreds}
-                sx={{ bgcolor: alpha(G, 0.1), color: G, fontWeight: 700, fontSize: 13, border: `1px solid ${alpha(G, 0.25)}`, borderRadius: 2, "&:hover": { bgcolor: alpha(G, 0.18) } }}>
+                sx={{ bgcolor: alpha(G, 0.1), color: G, fontWeight: 500, fontSize: 13, border: `1px solid ${alpha(G, 0.25)}`, borderRadius: 0, "&:hover": { bgcolor: alpha(G, 0.18) } }}>
                 Copiar credenciales
               </Button>
             </Stack>
@@ -645,19 +645,19 @@ function CreateUserDialog({ open, onClose, onCreated }: {
                 InputProps={{
                   endAdornment: (
                     <Button size="small" onClick={genPassword} startIcon={<KeyRound size={13} />}
-                      sx={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: G, minWidth: 0, "&:hover": { bgcolor: alpha(G, 0.1) } }}>
+                      sx={{ flexShrink: 0, fontSize: 11, fontWeight: 500, color: G, minWidth: 0, "&:hover": { bgcolor: alpha(G, 0.1) } }}>
                       Generar
                     </Button>
                   ),
                 }}
               />
               <Box>
-                <Typography sx={{ fontSize: 11, color: TM, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>Roles</Typography>
+                <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>Roles</Typography>
                 <Stack direction="row" gap={0.75} flexWrap="wrap">
                   {ROLES.map(r => (
                     <Chip key={r.key} label={r.label} size="small" onClick={() => toggleRole(r.key)}
                       sx={{
-                        cursor: "pointer", fontWeight: 700, fontSize: 11,
+                        cursor: "pointer", fontWeight: 500, fontSize: 11,
                         bgcolor: form.roles?.[r.key] ? alpha(r.color, 0.15) : alpha("#fff", 0.03),
                         color:   form.roles?.[r.key] ? r.color : TM,
                         border: `1px solid ${form.roles?.[r.key] ? alpha(r.color, 0.4) : BR}`,
@@ -671,14 +671,14 @@ function CreateUserDialog({ open, onClose, onCreated }: {
 
         <DialogActions sx={{ p: 2, bgcolor: S1, borderTop: `1px solid ${BR}`, gap: 1 }}>
           {created ? (
-            <Button onClick={onClose} sx={{ bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2, px: 2.5, "&:hover": { bgcolor: GD } }}>Listo</Button>
+            <Button onClick={onClose} sx={{ bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2.5, "&:hover": { bgcolor: GD } }}>Listo</Button>
           ) : (
             <>
-              <Button onClick={onClose} sx={{ color: TM, fontWeight: 600, fontSize: 13, borderRadius: 2 }}>Cancelar</Button>
+              <Button onClick={onClose} sx={{ color: TM, fontWeight: 500, fontSize: 13, borderRadius: 0 }}>Cancelar</Button>
               <Box flex={1} />
               <Button onClick={handleCreate} disabled={!canSave}
                 startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <UserPlus size={15} />}
-                sx={{ bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2, px: 2.5, "&:hover": { bgcolor: GD }, "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) } }}>
+                sx={{ bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2.5, "&:hover": { bgcolor: GD }, "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) } }}>
                 {saving ? "Creando…" : "Crear cajera"}
               </Button>
             </>
@@ -760,14 +760,14 @@ export default function UsersPage() {
         return (
           <Stack direction="row" alignItems="center" gap={1.5} height="100%">
             <Avatar sx={{
-              width: 34, height: 34, flexShrink: 0, fontSize: 12, fontWeight: 900,
+              width: 34, height: 34, flexShrink: 0, fontSize: 12, fontWeight: 500,
               bgcolor: alpha(ac, 0.14), color: ac,
               border: `2px solid ${u.active ? alpha(G, 0.45) : BR}`,
             }}>
               {getInitials(u)}
             </Avatar>
             <Box>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, color: "text.primary", lineHeight: 1.2 }}>{full}</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: "text.primary", lineHeight: 1.2 }}>{full}</Typography>
               <Typography sx={{ fontSize: 11, color: "text.disabled", fontFamily: "monospace" }}>{u.email}</Typography>
             </Box>
           </Stack>
@@ -806,10 +806,10 @@ export default function UsersPage() {
             }
             label={p.row.active ? "Activo" : "Inactivo"}
             sx={{
-              fontSize: 10.5, fontWeight: 800,
-              bgcolor: p.row.active ? alpha(G, 0.1) : alpha("#71717a", 0.1),
-              color:   p.row.active ? G : "#71717a",
-              border: `1px solid ${p.row.active ? alpha(G, 0.25) : alpha("#71717a", 0.25)}`,
+              fontSize: 10.5, fontWeight: 500,
+              bgcolor: p.row.active ? alpha(G, 0.1) : alpha("#6B6862", 0.1),
+              color:   p.row.active ? G : "#6B6862",
+              border: `1px solid ${p.row.active ? alpha(G, 0.25) : alpha("#6B6862", 0.25)}`,
               "& .MuiChip-icon": { color: "inherit" },
             }}
           />
@@ -844,10 +844,10 @@ export default function UsersPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" mb={3}>
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
             Administración
           </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
             Usuarios
           </Typography>
           <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
@@ -859,7 +859,7 @@ export default function UsersPage() {
             onClick={() => setCreateOpen(true)}
             startIcon={<UserPlus size={16} />}
             sx={{
-              bgcolor: G, color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 2, px: 2,
+              bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2,
               "&:hover": { bgcolor: GD },
             }}
           >
@@ -878,16 +878,16 @@ export default function UsersPage() {
 
       {/* ── Stats ──────────────────────────────────────────────────────────── */}
       <Stack direction="row" gap={1.5} mb={3} flexWrap="wrap">
-        <StatPill label="Total"       value={data?.total ?? 0} color="#a78bfa" loading={isLoading} />
-        <StatPill label="Esta página" value={rows.length}      color="#60a5fa" loading={isLoading} />
+        <StatPill label="Total"       value={data?.total ?? 0} color="#8C6A3F" loading={isLoading} />
+        <StatPill label="Esta página" value={rows.length}      color="#6B8F7A" loading={isLoading} />
         <StatPill label="Activos"     value={activeCount}      color={G}       loading={isLoading} />
       </Stack>
 
       {/* ── Filters ────────────────────────────────────────────────────────── */}
       <Paper sx={{
-        p: 2, mb: 2, borderRadius: 3,
+        p: 2, mb: 2, borderRadius: 0,
         bgcolor: S1, border: `1px solid ${BR}`,
-        boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+        boxShadow: "none",
       }}>
         <Stack direction={{ xs: "column", sm: "row" }} gap={1.25} flexWrap="wrap" alignItems="center">
 
@@ -901,7 +901,7 @@ export default function UsersPage() {
             sx={{
               flex: "1 1 240px", minWidth: 200,
               "& .MuiOutlinedInput-root": {
-                borderRadius: 2, bgcolor: alpha("#fff", 0.03), fontSize: 13,
+                borderRadius: 0, bgcolor: alpha("#fff", 0.03), fontSize: 13,
                 "& fieldset": { borderColor: BR },
                 "&:hover fieldset": { borderColor: alpha("#fff", 0.15) },
                 "&.Mui-focused fieldset": { borderColor: G },
@@ -917,7 +917,7 @@ export default function UsersPage() {
               label="Ciudad"
               onChange={e => { setCity(e.target.value); setPagination(p => ({ ...p, page: 0 })); }}
               sx={{
-                borderRadius: 2, fontSize: 13,
+                borderRadius: 0, fontSize: 13,
                 "& fieldset": { borderColor: BR },
                 "&:hover fieldset": { borderColor: alpha("#fff", 0.15) },
                 "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G },
@@ -942,7 +942,7 @@ export default function UsersPage() {
                 </Stack>
               )}
               sx={{
-                borderRadius: 2, fontSize: 13,
+                borderRadius: 0, fontSize: 13,
                 "& fieldset": { borderColor: BR },
                 "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G },
               }}
@@ -964,7 +964,7 @@ export default function UsersPage() {
             <Select
               value={active} label="Estado"
               onChange={e => { setActive(e.target.value); setPagination(p => ({ ...p, page: 0 })); }}
-              sx={{ borderRadius: 2, fontSize: 13, "& fieldset": { borderColor: BR }, "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G } }}
+              sx={{ borderRadius: 0, fontSize: 13, "& fieldset": { borderColor: BR }, "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G } }}
             >
               <MenuItem value="" sx={{ fontSize: 13 }}><em>Todos</em></MenuItem>
               <MenuItem value="true"  sx={{ fontSize: 13 }}>Activo</MenuItem>
@@ -978,7 +978,7 @@ export default function UsersPage() {
             <Select
               value={sortBy} label="Ordenar"
               onChange={e => setSortBy(String(e.target.value))}
-              sx={{ borderRadius: 2, fontSize: 13, "& fieldset": { borderColor: BR }, "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G } }}
+              sx={{ borderRadius: 0, fontSize: 13, "& fieldset": { borderColor: BR }, "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: G } }}
             >
               <MenuItem value="createdAt"   sx={{ fontSize: 13 }}>Creado</MenuItem>
               <MenuItem value="firstName"   sx={{ fontSize: 13 }}>Nombre</MenuItem>
@@ -993,8 +993,8 @@ export default function UsersPage() {
             size="small"
             onClick={() => setSortDir(d => d === "desc" ? "asc" : "desc")}
             sx={{
-              px: 1.75, fontWeight: 700, fontSize: 12, borderRadius: 2, flexShrink: 0,
-              bgcolor: alpha("#fff", 0.04), color: "#EDEDED", border: `1px solid ${BR}`,
+              px: 1.75, fontWeight: 500, fontSize: 12, borderRadius: 0, flexShrink: 0,
+              bgcolor: alpha("#fff", 0.04), color: "#EDEBE4", border: `1px solid ${BR}`,
               "&:hover": { bgcolor: alpha(G, 0.1), borderColor: alpha(G, 0.3), color: G },
             }}
           >
@@ -1005,7 +1005,7 @@ export default function UsersPage() {
 
       {/* Progress bar */}
       {isFetching && (
-        <LinearProgress sx={{ mb: 1.5, borderRadius: 1, height: 2, "& .MuiLinearProgress-bar": { bgcolor: G } }} />
+        <LinearProgress sx={{ mb: 1.5, borderRadius: 0, height: 2, "& .MuiLinearProgress-bar": { bgcolor: G } }} />
       )}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
@@ -1014,7 +1014,7 @@ export default function UsersPage() {
         <Stack spacing={1.5}>
           {isLoading
             ? [1,2,3,4,5].map(i => (
-                <Paper key={i} sx={{ p: 2, borderRadius: 3, bgcolor: S1, border: `1px solid ${BR}` }}>
+                <Paper key={i} sx={{ p: 2, borderRadius: 0, bgcolor: S1, border: `1px solid ${BR}` }}>
                   <Stack direction="row" gap={1.5} alignItems="center">
                     <Skeleton variant="circular" width={50} height={50} sx={{ bgcolor: alpha("#fff", 0.05) }} />
                     <Box flex={1}>
@@ -1026,9 +1026,9 @@ export default function UsersPage() {
               ))
             : rows.length === 0
               ? (
-                <Paper sx={{ p: 6, borderRadius: 3, bgcolor: S1, border: `1px solid ${BR}`, textAlign: "center" }}>
+                <Paper sx={{ p: 6, borderRadius: 0, bgcolor: S1, border: `1px solid ${BR}`, textAlign: "center" }}>
                   <Users size={44} color={alpha("#fff", 0.12)} style={{ marginBottom: 12 }} />
-                  <Typography sx={{ color: TM, fontWeight: 700, fontSize: 15 }}>Sin resultados</Typography>
+                  <Typography sx={{ color: TM, fontWeight: 500, fontSize: 15 }}>Sin resultados</Typography>
                   <Typography sx={{ color: TM, fontSize: 12, mt: 0.5 }}>Intenta ajustar los filtros de búsqueda</Typography>
                 </Paper>
               )
@@ -1051,14 +1051,14 @@ export default function UsersPage() {
                 <Button size="small"
                   disabled={pagination.page === 0}
                   onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
-                  sx={{ fontSize: 11, borderRadius: 2, border: `1px solid ${BR}`, color: "#EDEDED", minWidth: 90,
+                  sx={{ fontSize: 11, borderRadius: 0, border: `1px solid ${BR}`, color: "#EDEBE4", minWidth: 90,
                     "&:hover": { borderColor: alpha(G, 0.3), color: G }, "&:disabled": { opacity: 0.35 },
                   }}
                 >← Anterior</Button>
                 <Button size="small"
                   disabled={!data?.total || (pagination.page + 1) * pagination.pageSize >= data.total}
                   onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
-                  sx={{ fontSize: 11, borderRadius: 2, border: `1px solid ${BR}`, color: "#EDEDED", minWidth: 90,
+                  sx={{ fontSize: 11, borderRadius: 0, border: `1px solid ${BR}`, color: "#EDEBE4", minWidth: 90,
                     "&:hover": { borderColor: alpha(G, 0.3), color: G }, "&:disabled": { opacity: 0.35 },
                   }}
                 >Siguiente →</Button>
@@ -1069,9 +1069,9 @@ export default function UsersPage() {
       ) : (
         /* Desktop DataGrid */
         <Paper sx={{
-          borderRadius: 3, overflow: "hidden",
+          borderRadius: 0, overflow: "hidden",
           bgcolor: S1, border: `1px solid ${BR}`,
-          boxShadow: "0 4px 28px rgba(0,0,0,0.45)",
+          boxShadow: "none",
         }}>
           <DataGrid
             rows={rows}
@@ -1093,7 +1093,7 @@ export default function UsersPage() {
                 borderBottom: `1px solid ${BR}`, borderRadius: 0,
               },
               "& .MuiDataGrid-columnHeaderTitle": {
-                fontSize: 11, fontWeight: 800, letterSpacing: 0.5,
+                fontSize: 11, fontWeight: 500, letterSpacing: 0.5,
                 textTransform: "uppercase", color: "text.secondary",
               },
               "& .MuiDataGrid-row": {

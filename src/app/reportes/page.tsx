@@ -30,7 +30,7 @@ const isCaja = (o: OrderDoc) => {
 
 function KpiCard({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
   return (
-    <Card sx={{ borderRadius: 3, flex: 1, minWidth: 150 }}><CardContent>
+    <Card sx={{ borderRadius: 0, flex: 1, minWidth: 150 }}><CardContent>
       <Typography variant="caption" color="text.secondary">{label}</Typography>
       <Typography fontWeight={900} fontSize={24} color={color}>{value}</Typography>
     </CardContent></Card>
@@ -92,7 +92,7 @@ export default function ReportesPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(63,164,110,0.14)", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <BarChart3 size={20} />
         </Box>
         <Box flex={1}>
@@ -101,7 +101,7 @@ export default function ReportesPage() {
         </Box>
         <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => { appsQ.refetch(); ordersQ.refetch(); }} sx={{ textTransform: "none" }}>Actualizar</Button>
         <Button variant="contained" disableElevation startIcon={<Download size={16} />} onClick={exportAll}
-          sx={{ textTransform: "none", bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}>Exportar CSV</Button>
+          sx={{ textTransform: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>Exportar CSV</Button>
       </Stack>
 
       {loading ? (
@@ -113,11 +113,11 @@ export default function ReportesPage() {
             <Typography fontWeight={800} fontSize={15} mb={1.5}>Solicitudes</Typography>
             <Stack direction="row" flexWrap="wrap" gap={2} mb={2}>
               <KpiCard label="Total solicitudes" value={apps?.total ?? 0} />
-              <KpiCard label="Inscripción pagada" value={apps?.paid ?? 0} color="#16a34a" />
-              <KpiCard label="Aceptadas" value={byStatus["accepted"] ?? 0} color="#16a34a" />
-              <KpiCard label="Rechazadas" value={byStatus["rejected"] ?? 0} color="#b91c1c" />
+              <KpiCard label="Inscripción pagada" value={apps?.paid ?? 0} color="#3FA46E" />
+              <KpiCard label="Aceptadas" value={byStatus["accepted"] ?? 0} color="#3FA46E" />
+              <KpiCard label="Rechazadas" value={byStatus["rejected"] ?? 0} color="#8A3520" />
             </Stack>
-            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
               <Table size="small">
                 <TableHead><TableRow><TableCell>Estado</TableCell><TableCell align="right">Cantidad</TableCell></TableRow></TableHead>
                 <TableBody>
@@ -136,7 +136,7 @@ export default function ReportesPage() {
             <Typography fontWeight={800} fontSize={15} mb={1.5}>Ventas de obras</Typography>
             <Stack direction="row" flexWrap="wrap" gap={2}>
               <KpiCard label="Órdenes pagadas" value={paidOrders.length} />
-              <KpiCard label="Ingresos totales" value={money(revenue)} color="#16a34a" />
+              <KpiCard label="Ingresos totales" value={money(revenue)} color="#3FA46E" />
               <KpiCard label={`En caja (${cajaOrders.length})`} value={money(cajaRevenue)} />
               <KpiCard label={`En línea (${onlineOrders.length})`} value={money(onlineRevenue)} />
             </Stack>

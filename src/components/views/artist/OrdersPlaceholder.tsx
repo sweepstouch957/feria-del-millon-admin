@@ -7,7 +7,7 @@ export default function OrdersPlaceholder() {
     <Paper
       variant="outlined"
       sx={{
-        borderRadius: 3,
+        borderRadius: 0,
         p: 4,
         textAlign: "center",
         color: "text.secondary",

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Jost } from "next/font/google";
 import "./globals.css";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
@@ -21,6 +21,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// La tipografía del sistema editorial. next/font la autoaloja: no hay
+// petición bloqueante a Google ni salto de fuente al cargar.
+const jost = Jost({
+  variable: "--font-jost",
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Feria del Millón - Admin",
   description: "Panel de administración de Feria del Millón",
@@ -37,7 +46,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/sweeps.ico" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${jost.variable} antialiased`}
       >
         <I18nProvider>
           <ReactQueryProvider>

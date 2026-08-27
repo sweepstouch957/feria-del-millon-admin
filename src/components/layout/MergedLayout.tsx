@@ -76,7 +76,7 @@ const ThemeToggleButton = () => {
             transform: isDark ? "rotate(90deg) scale(0)" : "rotate(0) scale(1)",
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9902B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="5" />
             <line x1="12" y1="1" x2="12" y2="3" />
             <line x1="12" y1="21" x2="12" y2="23" />
@@ -100,7 +100,7 @@ const ThemeToggleButton = () => {
             transform: isDark ? "rotate(0) scale(1)" : "rotate(-90deg) scale(0)",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C6A3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
         </Box>
@@ -155,8 +155,8 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
-          backgroundColor: isDark ? "#09090b" : "#FFFFFF",
-          color: isDark ? "#fafafa" : "#09090b",
+          backgroundColor: isDark ? "#0B0B0A" : "#FFFFFF",
+          color: isDark ? "#F7F6F2" : "#0B0B0A",
           borderBottom: isDark
             ? "1px solid rgba(255,255,255,0.06)"
             : "1px solid rgba(0,0,0,0.06)",
@@ -178,7 +178,7 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
             variant="h6"
             noWrap
             sx={{
-              fontWeight: 900,
+              fontWeight: 500,
               mr: 2,
               display: { xs: "none", sm: "block" },
             }}
@@ -244,7 +244,7 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: "76px",
-          backgroundColor: isDark ? "#09090b" : "#F5F5F5",
+          backgroundColor: isDark ? "#0B0B0A" : "#F5F5F5",
           minHeight: "calc(100vh - 76px)",
           transition: "background-color 0.3s ease",
         }}

@@ -14,7 +14,7 @@ const SectionTitle = ({ label }: Props) => (
       sx={{
         color: C.textMuted,
         letterSpacing: 1.2,
-        fontWeight: 800,
+        fontWeight: 500,
         fontSize: 11,
       }}
     >

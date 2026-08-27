@@ -150,7 +150,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
     <>
       <Card
         sx={{
-          borderRadius: 4,
+          borderRadius: 0,
           border: "1px solid",
           borderColor: "divider",
           mb: 3,
@@ -224,7 +224,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                   <Card
                     variant="outlined"
                     sx={{
-                      borderRadius: 3,
+                      borderRadius: 0,
                       height: "100%",
                       display: "flex",
                       flexDirection: "column",
@@ -271,7 +271,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                       <LinearProgress
                         variant="determinate"
                         value={percent}
-                        sx={{ borderRadius: 10, height: 8, mt: 0.4 }}
+                        sx={{ borderRadius: 0, height: 8, mt: 0.4 }}
                       />
 
                       <Stack

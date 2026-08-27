@@ -139,7 +139,7 @@ export default function ArtworksCursorPage() {
             key={item.label}
             sx={{
               flex: "1 1 240px",
-              borderRadius: 3,
+              borderRadius: 0,
               border: "1px solid",
               borderColor: "divider",
               minWidth: 240,
@@ -179,7 +179,7 @@ export default function ArtworksCursorPage() {
       <Card
         elevation={0}
         sx={{
-          borderRadius: 3,
+          borderRadius: 0,
           border: "1px solid",
           borderColor: "divider",
           overflow: "hidden",

@@ -149,7 +149,7 @@ export default function MiEstudioClient() {
           <Box>
             <Typography
               variant="h4"
-              sx={{ fontWeight: 900, letterSpacing: "-0.03em" }}
+              sx={{ fontWeight: 500, letterSpacing: "-0.03em" }}
             >
               Mi estudio de artista
             </Typography>
@@ -181,7 +181,7 @@ export default function MiEstudioClient() {
           <Paper
             elevation={1}
             sx={{
-              borderRadius: 3,
+              borderRadius: 0,
               border: "1px solid",
               borderColor: "grey.100",
               p: 2.5,

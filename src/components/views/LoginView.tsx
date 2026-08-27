@@ -1,26 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Typography,
-  Link as MuiLink,
-  Container,
-  InputAdornment,
-  IconButton,
-  Stack,
-  CircularProgress,
-} from "@mui/material";
-import Image from "next/image";
+import React, { useEffect, useRef, useState } from "react";
+import { Box, Stack, Typography, CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/provider/authProvider";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { FDM, eyebrow } from "@/app/theme";
+
+/* ──────────────────────────────────────────────────────────────
+   Acceso al panel — mismo sistema editorial que el sitio público:
+   panel oscuro con el manifiesto a la izquierda, formulario a la
+   derecha. La lógica de autenticación no cambió.
+   ────────────────────────────────────────────────────────────── */
+
+const line = "rgba(11,11,10,0.16)";
+const dim = "rgba(11,11,10,0.6)";
 
 const FullScreenBlocking = ({ text = "Cargando…" }: { text?: string }) => (
   <Box
@@ -29,18 +22,24 @@ const FullScreenBlocking = ({ text = "Cargando…" }: { text?: string }) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#000",
+      backgroundColor: FDM.panel,
       px: 2,
     }}
   >
-    <Stack alignItems="center" spacing={3}>
-      <CircularProgress sx={{ color: "#22c55e" }} />
-      <Typography variant="body2" sx={{ color: "#a1a1aa", fontWeight: 600 }}>
+    <Stack alignItems="center" spacing={2.5}>
+      <CircularProgress size={26} sx={{ color: FDM.green }} />
+      <Typography sx={{ ...eyebrow, fontSize: 10, color: "rgba(245,244,239,0.65)" }}>
         {text}
       </Typography>
     </Stack>
   </Box>
 );
+
+const PUNTOS = [
+  "Curaduría y resolución de postulaciones",
+  "Catálogo, pabellones y técnicas",
+  "Ventas, cartera y entregas",
+];
 
 const LoginClient: React.FC = () => {
   const router = useRouter();
@@ -51,6 +50,9 @@ const LoginClient: React.FC = () => {
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [capsOn, setCapsOn] = useState(false);
+
+  const firstRef = useRef<HTMLInputElement | null>(null);
 
   // Redirige si ya está autenticado
   useEffect(() => {
@@ -58,6 +60,17 @@ const LoginClient: React.FC = () => {
       router.replace("/");
     }
   }, [isAuthenticated, isAuthLoading, router]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => firstRef.current?.focus(), 60);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  // Bloq Mayús: la causa nº1 de "mi contraseña no funciona".
+  const onPassKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const on = e.getModifierState?.("CapsLock");
+    if (typeof on === "boolean" && on !== capsOn) setCapsOn(on);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,275 +97,266 @@ const LoginClient: React.FC = () => {
     }
   };
 
-  // Gate para evitar “flash” del formulario
+  // Gate para evitar "flash" del formulario
   if (isAuthLoading || submitting || isAuthenticated) {
     return (
       <FullScreenBlocking
-        text={submitting ? "Autenticando administración…" : "Cargando entorno seguro…"}
+        text={submitting ? "Autenticando…" : "Cargando entorno seguro"}
       />
     );
   }
 
+  const fieldSx = {
+    width: "100%",
+    mt: 1,
+    py: 1.4,
+    background: "transparent",
+    color: FDM.ink,
+    border: 0,
+    borderBottom: `1px solid ${line}`,
+    fontFamily: "var(--font-jost), Jost, system-ui, sans-serif",
+    fontSize: 17,
+    outline: "none",
+    transition: "border-color .3s ease",
+    "&:focus": { borderBottomColor: FDM.green },
+    "&::placeholder": { color: "rgba(11,11,10,0.38)" },
+  } as const;
+
+  const labelSx = { ...eyebrow, fontSize: 9.5, color: dim } as const;
+
   return (
     <Box
       sx={{
-        position: "relative",
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#000",
-        overflow: "hidden",
-        px: 2,
+        flexWrap: "wrap",
+        alignItems: "stretch",
+        background: FDM.paper,
+        color: FDM.ink,
       }}
     >
-      {/* Glow Effects */}
+      {/* ══ Panel oscuro ═══════════════════════════════════ */}
       <Box
         sx={{
-          position: "absolute",
-          top: "10%",
-          left: "20%",
-          width: "40vw",
-          height: "40vw",
-          background: "rgba(34, 197, 94, 0.08)",
-          filter: "blur(120px)",
-          borderRadius: "50%",
-          pointerEvents: "none",
+          flex: "1 1 400px",
+          minWidth: "min(100%,320px)",
+          background: FDM.panel,
+          color: FDM.onDark,
+          display: "flex",
+          flexDirection: "column",
+          gap: "clamp(20px,2.4vw,32px)",
+          p: "clamp(24px,2.8vw,44px)",
+          // En móvil el formulario va primero: a un login se entra, no se lee.
+          order: { xs: 2, md: 1 },
         }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: "10%",
-          right: "20%",
-          width: "30vw",
-          height: "30vw",
-          background: "rgba(255, 255, 255, 0.03)",
-          filter: "blur(100px)",
-          borderRadius: "50%",
-          pointerEvents: "none",
-        }}
-      />
+      >
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
+          <Typography
+            component="h1"
+            sx={{
+              fontWeight: 300,
+              fontSize: "clamp(30px,3.6vw,52px)",
+              lineHeight: 1.05,
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+            }}
+          >
+            <Box component="span" sx={{ display: "block" }}>Panel de</Box>
+            <Box component="span" sx={{ display: "block" }}>la</Box>
+            <Box component="span" sx={{ display: "block", color: FDM.green }}>feria</Box>
+          </Typography>
 
-      <Container maxWidth="xs" sx={{ position: "relative", zIndex: 10 }}>
-        <Card
-          sx={{
-            background: "rgba(18, 18, 18, 0.6)",
-            backdropFilter: "blur(20px)",
-            borderRadius: "24px",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)",
-            overflow: "hidden",
-            transition: "transform 0.3s ease",
-            "&:hover": {
-              borderColor: "rgba(255, 255, 255, 0.2)",
-              transform: "translateY(-4px)",
-              boxShadow: "0 25px 50px rgba(0,0,0,0.9), 0 0 40px rgba(34, 197, 94, 0.05)",
-            },
-          }}
-        >
-          <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
-            <Box
-              sx={{
-                textAlign: "center",
-                mb: 4,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {PUNTOS.map((t, i) => (
               <Box
+                key={t}
                 sx={{
-                  background: "rgba(255,255,255,1)",
-                  p: 2,
-                  borderRadius: "16px",
-                  mb: 3,
-                  boxShadow: "0 10px 20px rgba(0,0,0,0.5)",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: "baseline",
+                  gap: 1.5,
+                  py: 1.1,
+                  borderTop: "1px solid rgba(245,244,239,0.16)",
+                  borderBottom: i === PUNTOS.length - 1 ? "1px solid rgba(245,244,239,0.16)" : undefined,
+                  fontSize: 14.5,
+                  color: "rgba(245,244,239,0.88)",
                 }}
               >
-                <Image
-                  src="/logo.png"
-                  alt="Feria del Millón"
-                  width={140}
-                  height={50}
-                  style={{ objectFit: "contain", filter: "invert(0)" }}
-                  priority
-                />
+                <Box component="span" sx={{ fontSize: 9.5, letterSpacing: "0.2em", color: FDM.green }}>
+                  0{i + 1}
+                </Box>
+                {t}
               </Box>
-              <Typography variant="h5" sx={{ fontWeight: 900, color: "#fff", letterSpacing: "-0.5px" }}>
-                Panel Administrativo
+            ))}
+          </Box>
+        </Box>
+
+        <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "rgba(245,244,239,0.6)" }}>
+          Feria del Millón · Acceso restringido
+        </Typography>
+      </Box>
+
+      {/* ══ Formulario ═════════════════════════════════════ */}
+      <Box
+        sx={{
+          flex: "1 1 520px",
+          minWidth: "min(100%,320px)",
+          display: "flex",
+          flexDirection: "column",
+          p: "clamp(20px,2.4vw,36px)",
+          order: { xs: 1, md: 2 },
+        }}
+      >
+        <Box sx={{ pb: "clamp(16px,1.8vw,24px)", borderBottom: `1px solid ${line}` }}>
+          <Typography sx={{ ...eyebrow, fontSize: 10, color: dim }}>
+            Administración
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            py: "clamp(16px,2vw,30px)",
+          }}
+        >
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+            sx={{ width: "100%", maxWidth: 440, display: "flex", flexDirection: "column" }}
+          >
+            <Typography
+              component="h2"
+              sx={{
+                fontWeight: 300,
+                fontSize: "clamp(26px,2.6vw,36px)",
+                lineHeight: 1.1,
+                letterSpacing: "0.02em",
+                mb: 0.75,
+              }}
+            >
+              Ingresar
+            </Typography>
+            <Typography sx={{ fontSize: 14.5, lineHeight: 1.6, color: dim }}>
+              Acceso para el equipo de la feria.
+            </Typography>
+
+            <Typography component="label" htmlFor="adm-user" sx={{ ...labelSx, mt: 3, display: "block" }}>
+              Correo o teléfono
+            </Typography>
+            <Box
+              component="input"
+              id="adm-user"
+              ref={firstRef}
+              value={emailOrPhone}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmailOrPhone(e.target.value)}
+              placeholder="tu@correo.com"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-invalid={!!errorMsg}
+              sx={fieldSx}
+            />
+
+            <Stack direction="row" alignItems="baseline" justifyContent="space-between" sx={{ mt: 2.5 }}>
+              <Typography component="label" htmlFor="adm-pass" sx={labelSx}>
+                Contraseña
               </Typography>
-              <Typography variant="body2" sx={{ color: "#a1a1aa", mt: 1, fontWeight: 500 }}>
-                Control y gestión centralizada
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                sx={{
+                  background: "transparent",
+                  border: 0,
+                  p: 0,
+                  cursor: "pointer",
+                  color: FDM.green,
+                  ...eyebrow,
+                  fontSize: 9.5,
+                  letterSpacing: "0.16em",
+                  "&:hover": { opacity: 0.7 },
+                }}
+              >
+                {showPwd ? "Ocultar" : "Ver"}
+              </Box>
+            </Stack>
+            <Box
+              component="input"
+              id="adm-pass"
+              type={showPwd ? "text" : "password"}
+              value={password}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              onKeyUp={onPassKey}
+              onKeyDown={onPassKey}
+              onBlur={() => setCapsOn(false)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              aria-invalid={!!errorMsg}
+              sx={fieldSx}
+            />
+
+            {capsOn && (
+              <Typography role="status" sx={{ ...eyebrow, fontSize: 9.5, color: FDM.amber, mt: 1 }}>
+                Bloq Mayús activado
               </Typography>
-            </Box>
+            )}
 
             {errorMsg && (
               <Box
+                role="alert"
                 sx={{
-                  background: "rgba(239, 68, 68, 0.1)",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                  borderRadius: "12px",
-                  p: 2,
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
+                  mt: 2.5,
+                  px: 1.75,
+                  py: 1.5,
+                  borderLeft: `2px solid ${FDM.terracotta}`,
+                  background: "rgba(180,71,42,0.07)",
+                  fontSize: 14,
+                  lineHeight: 1.5,
                 }}
               >
-                <Box
-                  sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: "#f87171",
-                    boxShadow: "0 0 10px #f87171",
-                  }}
-                />
-                <Typography variant="body2" sx={{ color: "#fca5a5", fontWeight: 600 }}>
-                  {errorMsg}
-                </Typography>
+                {errorMsg}
               </Box>
             )}
 
-            <form onSubmit={handleSubmit} noValidate>
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Usuario o Correo"
-                value={emailOrPhone}
-                onChange={(e) => setEmailOrPhone(e.target.value)}
-                placeholder="admin@correo.com"
-                autoComplete="username"
-                required
-                variant="outlined"
-                InputLabelProps={{
-                  sx: { color: "#71717a", fontWeight: 600, "&.Mui-focused": { color: "#22c55e" } },
-                }}
-                inputProps={{
-                  sx: { color: "#fff", fontWeight: 500 },
-                }}
-                sx={{
-                  mb: 3,
-                  "& .MuiOutlinedInput-root": {
-                    background: "#0a0a0a",
-                    borderRadius: "16px",
-                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)", transition: "all 0.3s" },
-                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "rgba(34,197,94,0.5)", borderWidth: "1px" },
-                    "&.Mui-focused": {
-                      background: "rgba(34, 197, 94, 0.05)",
-                      boxShadow: "0 0 0 4px rgba(34,197,94,0.1)",
-                    },
-                  },
-                }}
-              />
+            <Box
+              component="button"
+              type="submit"
+              disabled={submitting}
+              sx={{
+                mt: 3,
+                width: "100%",
+                height: 54,
+                borderRadius: 999,
+                cursor: submitting ? "wait" : "pointer",
+                border: `1px solid ${FDM.ink}`,
+                background: FDM.ink,
+                color: FDM.paper,
+                ...eyebrow,
+                fontSize: 11,
+                letterSpacing: "0.18em",
+                transition: "all .3s ease",
+                "&:hover": { background: FDM.green, borderColor: FDM.green, color: FDM.ink },
+              }}
+            >
+              Ingresar
+            </Box>
+          </Box>
+        </Box>
 
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Contraseña"
-                type={showPwd ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="********"
-                autoComplete="current-password"
-                required
-                InputLabelProps={{
-                  sx: { color: "#71717a", fontWeight: 600, "&.Mui-focused": { color: "#22c55e" } },
-                }}
-                inputProps={{
-                  sx: { color: "#fff", fontWeight: 500 },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockOutlinedIcon sx={{ color: "#71717a" }} fontSize="small" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="mostrar contraseña"
-                        onClick={() => setShowPwd((v) => !v)}
-                        edge="end"
-                        sx={{ color: "#71717a", "&:hover": { color: "#fff" } }}
-                      >
-                        {showPwd ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": {
-                    background: "#0a0a0a",
-                    borderRadius: "16px",
-                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)", transition: "all 0.3s" },
-                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "rgba(34,197,94,0.5)", borderWidth: "1px" },
-                    "&.Mui-focused": {
-                      background: "rgba(34, 197, 94, 0.05)",
-                      boxShadow: "0 0 0 4px rgba(34,197,94,0.1)",
-                    },
-                  },
-                }}
-              />
-
-              <Box sx={{ textAlign: "right", mb: 4 }}>
-                <MuiLink
-                  href="#"
-                  variant="caption"
-                  sx={{
-                    color: "#71717a",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    "&:hover": { color: "#fff" },
-                    transition: "color 0.2s",
-                  }}
-                >
-                  ¿Necesitas acceso?
-                </MuiLink>
-              </Box>
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={!emailOrPhone || !password}
-                sx={{
-                  py: 1.8,
-                  fontWeight: 900,
-                  fontSize: "0.95rem",
-                  letterSpacing: "0.5px",
-                  borderRadius: "14px",
-                  color: "#000",
-                  textTransform: "none",
-                  background: "linear-gradient(to right, #22c55e, #16a34a)",
-                  boxShadow: "0 4px 15px rgba(34, 197, 94, 0.3)",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    background: "linear-gradient(to right, #16a34a, #15803d)",
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 8px 25px rgba(34, 197, 94, 0.5)",
-                  },
-                  "&:disabled": {
-                    background: "rgba(255,255,255,0.05)",
-                    color: "rgba(255,255,255,0.3)",
-                    boxShadow: "none",
-                  },
-                }}
-              >
-                Autorizar Ingreso
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </Container>
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          justifyContent="space-between"
+          sx={{ gap: 2, pt: 1.75, borderTop: `1px solid ${line}` }}
+        >
+          <Typography sx={{ ...eyebrow, fontSize: 9.5, color: dim }}>
+            © Feria del Millón · Oficina para la Cultura SAS
+          </Typography>
+        </Stack>
+      </Box>
     </Box>
   );
 };

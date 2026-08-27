@@ -5,7 +5,7 @@ export const drawerWidth = 280;
 export const LAYOUT_COLORS = {
   bgStart: "#0E0E0E",
   bgEnd: "#151515",
-  text: "#EDEDED",
+  text: "#EDEBE4",
   text2: "#AFAFAF",
   textMuted: "#787878",
   line: "rgba(255,255,255,0.06)",
