@@ -181,7 +181,7 @@ export default function TechniquesPage() {
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3} flexWrap="wrap" gap={2}>
         <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={0.5}>
             <Palette size={28} />
             <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: "-0.5px" }}>
               Técnicas artísticas
@@ -202,7 +202,7 @@ export default function TechniquesPage() {
       </Stack>
 
       {/* Stats */}
-      <Stack direction="row" spacing={2} mb={3}>
+      <Stack direction="row" flexWrap="wrap" spacing={2} mb={3}>
         <Box sx={{ background: "#EEF5F1", border: "1px solid #D7E8DF", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
           <Typography variant="caption" fontWeight={700} color="#3FA46E" sx={{ textTransform: "uppercase", fontSize: 10 }}>Activas</Typography>
           <Typography variant="h5" fontWeight={900} color="#3FA46E">{activeCount}</Typography>
@@ -234,10 +234,10 @@ export default function TechniquesPage() {
               </Button>
             </Box>
           ) : (
-            <Box sx={{ overflow: "auto" }}>
+            <Box sx={{ overflowX: { xs: "visible", md: "auto" } }}>
               {/* Table header */}
               <Box sx={{
-                display: "grid",
+                display: { xs: "none", md: "grid" },
                 gridTemplateColumns: "40px 1fr 150px 80px 80px 120px",
                 gap: 1, px: 2.5, py: 1.5,
                 background: "#F7F6F2",
@@ -258,8 +258,13 @@ export default function TechniquesPage() {
                   key={t.id}
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: "40px 1fr 150px 80px 80px 120px",
-                    gap: 1, px: 2.5, py: 1.5,
+                    gridTemplateColumns: {
+                      xs: "1fr auto",
+                      md: "40px 1fr 150px 80px 80px 120px",
+                    },
+                    gap: 1,
+                    px: { xs: 1.5, md: 2.5 },
+                    py: 1.5,
                     alignItems: "center",
                     borderBottom: "1px solid #F0EEE7",
                     transition: "background .15s",
@@ -267,8 +272,8 @@ export default function TechniquesPage() {
                     opacity: t.active ? 1 : 0.5,
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" fontSize={12}>{i + 1}</Typography>
-                  <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography variant="body2" color="text.secondary" fontSize={12} sx={{ display: { xs: "none", md: "block" } }}>{i + 1}</Typography>
+                  <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                     <Palette size={16} color={t.active ? "#7c3aed" : "#9ca3af"} />
                     <Typography fontWeight={700} fontSize={14}>{t.name}</Typography>
                   </Stack>
@@ -286,7 +291,7 @@ export default function TechniquesPage() {
                       onClick={() => toggleMut.mutate(t.id)}
                     />
                   </Box>
-                  <Stack direction="row" justifyContent="center" spacing={0.5}>
+                  <Stack direction="row" flexWrap="wrap" justifyContent="center" spacing={0.5}>
                     <Tooltip title={t.active ? "Desactivar" : "Activar"}>
                       <IconButton size="small" onClick={() => toggleMut.mutate(t.id)}>
                         {t.active ? <ToggleRight size={16} color="#3FA46E" /> : <ToggleLeft size={16} color="#9ca3af" />}

@@ -87,7 +87,7 @@ function Section({
 // ── Activity row ──────────────────────────────────────────────────────────────
 function ActivityRow({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
   return (
-    <Stack direction="row" alignItems="center" gap={2} sx={{
+    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={2} sx={{
       p: 1.75, borderRadius: 0,
       bgcolor: alpha("#fff", 0.02), border: `1px solid ${BR}`,
     }}>
@@ -350,7 +350,7 @@ export default function AccountPage() {
 
                   {/* Roles */}
                   <Box>
-                    <Stack direction="row" alignItems="center" gap={0.75} mb={1.25}>
+                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.75} mb={1.25}>
                       <Shield size={12} color={TM} />
                       <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: TM, textTransform: "uppercase", letterSpacing: 0.8 }}>
                         {t("account.roles")}

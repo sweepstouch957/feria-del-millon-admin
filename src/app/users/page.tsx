@@ -150,7 +150,7 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
         <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 2.5, background: `linear-gradient(90deg, ${G}, ${alpha(G, 0)})` }} />
       )}
 
-      <Stack direction="row" gap={1.5} alignItems="flex-start">
+      <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="flex-start">
         <Avatar sx={{
           width: 50, height: 50, flexShrink: 0, fontWeight: 500, fontSize: 17,
           bgcolor: alpha(ac, 0.14), color: ac,
@@ -161,7 +161,7 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
         </Avatar>
 
         <Box flex={1} minWidth={0}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.3}>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" mb={0.3}>
             <Typography noWrap sx={{ fontWeight: 500, fontSize: 14, color: "#EDEBE4", lineHeight: 1.2 }}>
               {fullName}
             </Typography>
@@ -177,7 +177,7 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
           </Typography>
 
           {user.city && (
-            <Stack direction="row" alignItems="center" gap={0.4} mb={0.75}>
+            <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.4} mb={0.75}>
               <MapPin size={10} color={TM} />
               <Typography sx={{ fontSize: 11, color: TM }}>{user.city}</Typography>
             </Stack>
@@ -190,7 +190,7 @@ function UserCard({ user, onView, onEdit }: { user: UserDTO; onView: () => void;
             }
           </Stack>
 
-          <Stack direction="row" gap={1} onClick={e => e.stopPropagation()}>
+          <Stack direction="row" flexWrap="wrap" gap={1} onClick={e => e.stopPropagation()}>
             <Button size="small" startIcon={<Eye size={13} />} onClick={onView} sx={{
               fontSize: 11, fontWeight: 500, borderRadius: 0, px: 1.5, py: 0.5, minWidth: 0,
               bgcolor: alpha("#fff", 0.04), color: "#EDEBE4", border: `1px solid ${BR}`,
@@ -267,7 +267,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
         {/* ── Hero header ── */}
         <Box sx={{ p: 3, pb: 2.5, bgcolor: S1, position: "relative" }}>
           {loading ? (
-            <Stack direction="row" gap={2} alignItems="center">
+            <Stack direction="row" flexWrap="wrap" gap={2} alignItems="center">
               <Skeleton variant="circular" width={72} height={72} sx={{ bgcolor: alpha("#fff", 0.06) }} />
               <Box flex={1}>
                 <Skeleton width="55%" height={26} sx={{ bgcolor: alpha("#fff", 0.06) }} />
@@ -275,7 +275,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
               </Box>
             </Stack>
           ) : (
-            <Stack direction="row" gap={2.5} alignItems="flex-start">
+            <Stack direction="row" flexWrap="wrap" gap={2.5} alignItems="flex-start">
               {/* Avatar */}
               <Box sx={{ position: "relative", flexShrink: 0 }}>
                 <Avatar sx={{
@@ -297,7 +297,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
               </Box>
 
               <Box flex={1} minWidth={0}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                <Stack direction="row" flexWrap="wrap" alignItems="flex-start" justifyContent="space-between" gap={1}>
                   <Box minWidth={0}>
                     <Typography sx={{ fontWeight: 500, fontSize: 20, color: "#EDEBE4", letterSpacing: -0.5, lineHeight: 1.1 }}>
                       {fullName}
@@ -306,7 +306,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                       {form.email}
                     </Typography>
                   </Box>
-                  <Stack direction="row" gap={0.75} alignItems="center" flexShrink={0}>
+                  <Stack direction="row" flexWrap="wrap" gap={0.75} alignItems="center" flexShrink={0}>
                     <Box sx={{
                       px: 1.25, py: 0.35, borderRadius: 0, fontSize: 9.5, fontWeight: 500, letterSpacing: 0.8,
                       bgcolor: form.active ? alpha(G, 0.12) : alpha("#6B6862", 0.15),
@@ -324,13 +324,13 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                 {/* Meta: phone + city */}
                 <Stack direction="row" gap={2} mt={1} flexWrap="wrap">
                   {form.mobile && (
-                    <Stack direction="row" alignItems="center" gap={0.5}>
+                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.5}>
                       <Phone size={11} color={G} />
                       <Typography sx={{ fontSize: 11.5, color: TM }}>{form.mobile}</Typography>
                     </Stack>
                   )}
                   {form.city && (
-                    <Stack direction="row" alignItems="center" gap={0.5}>
+                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.5}>
                       <MapPin size={11} color={G} />
                       <Typography sx={{ fontSize: 11.5, color: TM }}>{form.city}</Typography>
                     </Stack>
@@ -433,7 +433,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                         "&:hover": mode === "edit" ? { border: `1px solid ${alpha(r.color, 0.5)}`, bgcolor: alpha(r.color, 0.08) } : {},
                       }}
                     >
-                      <Stack direction="row" gap={1.5} alignItems="center">
+                      <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
                         <Box sx={{
                           width: 9, height: 9, borderRadius: "50%", flexShrink: 0,
                           bgcolor: form.roles?.[r.key] ? r.color : "#3f3f46",
@@ -609,7 +609,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
         PaperProps={{ sx: { bgcolor: "#0B0B0A", borderRadius: 0, overflow: "hidden", border: `1px solid ${BR}`, boxShadow: "none" } }}>
         <Box sx={{ height: 3.5, background: `linear-gradient(90deg, ${G} 0%, ${alpha(G, 0.2)} 100%)` }} />
         <Box sx={{ p: 3, pb: 1.5, bgcolor: S1 }}>
-          <Stack direction="row" alignItems="center" gap={1.25}>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.25}>
             <UserPlus size={20} color={G} />
             <Typography sx={{ fontWeight: 500, fontSize: 18, color: "#EDEBE4", letterSpacing: -0.4 }}>Nueva cajera</Typography>
           </Stack>
@@ -758,7 +758,7 @@ export default function UsersPage() {
         const full = `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Sin nombre";
         const ac = hashColor(u.email);
         return (
-          <Stack direction="row" alignItems="center" gap={1.5} height="100%">
+          <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.5} height="100%">
             <Avatar sx={{
               width: 34, height: 34, flexShrink: 0, fontSize: 12, fontWeight: 500,
               bgcolor: alpha(ac, 0.14), color: ac,
@@ -777,7 +777,7 @@ export default function UsersPage() {
     {
       field: "city", headerName: "Ciudad", width: 140,
       renderCell: (p: GridRenderCellParams<UserDTO>) => p.row.city
-        ? <Stack direction="row" alignItems="center" gap={0.75} height="100%"><MapPin size={11} color={TM} /><Typography sx={{ fontSize: 12, color: "text.secondary" }}>{p.row.city}</Typography></Stack>
+        ? <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.75} height="100%"><MapPin size={11} color={TM} /><Typography sx={{ fontSize: 12, color: "text.secondary" }}>{p.row.city}</Typography></Stack>
         : <Typography sx={{ fontSize: 12, color: "text.disabled" }}>—</Typography>,
     },
     {
@@ -821,7 +821,7 @@ export default function UsersPage() {
       renderCell: (p: GridRenderCellParams<UserDTO>) => {
         const id = p.row.id || (p.row as any)._id;
         return (
-          <Stack direction="row" gap={0.5} alignItems="center" height="100%">
+          <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="center" height="100%">
             <Tooltip title="Ver detalle">
               <IconButton size="small" onClick={() => openModal(id, "view")} sx={{ color: TM, "&:hover": { color: G, bgcolor: alpha(G, 0.08) } }}>
                 <Eye size={16} />
@@ -842,7 +842,7 @@ export default function UsersPage() {
     <Box sx={{ pb: 4 }}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <Stack direction="row" alignItems="flex-end" justifyContent="space-between" mb={3}>
+      <Stack direction="row" flexWrap="wrap" alignItems="flex-end" justifyContent="space-between" mb={3}>
         <Box>
           <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
             Administración
@@ -854,7 +854,7 @@ export default function UsersPage() {
             Gestión de cuentas, roles y permisos del sistema
           </Typography>
         </Box>
-        <Stack direction="row" gap={1} alignItems="center">
+        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
           <Button
             onClick={() => setCreateOpen(true)}
             startIcon={<UserPlus size={16} />}
@@ -949,7 +949,7 @@ export default function UsersPage() {
             >
               {ROLES.map(r => (
                 <MenuItem key={r.key} value={r.key}>
-                  <Stack direction="row" alignItems="center" gap={1.25}>
+                  <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.25}>
                     <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: r.color, flexShrink: 0 }} />
                     <Typography fontSize={13}>{r.label}</Typography>
                   </Stack>
@@ -1015,7 +1015,7 @@ export default function UsersPage() {
           {isLoading
             ? [1,2,3,4,5].map(i => (
                 <Paper key={i} sx={{ p: 2, borderRadius: 0, bgcolor: S1, border: `1px solid ${BR}` }}>
-                  <Stack direction="row" gap={1.5} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
                     <Skeleton variant="circular" width={50} height={50} sx={{ bgcolor: alpha("#fff", 0.05) }} />
                     <Box flex={1}>
                       <Skeleton width="55%" height={18} sx={{ bgcolor: alpha("#fff", 0.05) }} />
@@ -1043,11 +1043,11 @@ export default function UsersPage() {
           }
 
           {!isLoading && rows.length > 0 && (
-            <Stack direction="row" justifyContent="space-between" alignItems="center" pt={0.5}>
+            <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center" pt={0.5}>
               <Typography sx={{ fontSize: 12, color: TM }}>
                 {rows.length} de {data?.total ?? 0} usuarios
               </Typography>
-              <Stack direction="row" gap={1}>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
                 <Button size="small"
                   disabled={pagination.page === 0}
                   onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}

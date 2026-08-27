@@ -117,7 +117,7 @@ function ImageLightbox({ images, open, startIdx, onClose }: {
           <Typography variant="h6" sx={{ color: "#fff", flex: 1, fontSize: 16, fontWeight: 500 }}>
             {img.title || `Imagen ${idx + 1}`}
           </Typography>
-          <Stack direction="row" spacing={0.5} alignItems="center">
+          <Stack direction="row" flexWrap="wrap" spacing={0.5} alignItems="center">
             <IconButton onClick={() => setZoom((z) => Math.max(0.5, z - 0.3))} size="small" sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }} title="Zoom out">−</IconButton>
             <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 500, minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</Typography>
             <IconButton onClick={() => setZoom((z) => Math.min(5, z + 0.3))} size="small" sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }} title="Zoom in">+</IconButton>
@@ -339,7 +339,7 @@ function ApplicationDetailDialog({
       }}>
         {/* Header with profile photo */}
         <Box sx={{ background: "#0B0B0A", p: 3, pb: 2.5, color: "#fff", borderBottom: "4px solid #3FA46E" }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={2}>
             {app.profilePhotoUrl ? (
               <Avatar src={app.profilePhotoUrl} sx={{ width: 64, height: 64, border: "3px solid #3FA46E", boxShadow: "none" }} />
             ) : (
@@ -420,7 +420,7 @@ function ApplicationDetailDialog({
 
               {/* Instagram */}
               {(artist as any)?.instagram && (
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                   <InstagramIcon size={16} />
                   <Typography variant="body2" fontWeight={600}>{(artist as any).instagram}</Typography>
                 </Stack>
@@ -451,7 +451,7 @@ function ApplicationDetailDialog({
             <Stack spacing={4}>
               {/* ─── Section 1: Obras del proyecto ─── */}
               <Box>
-                <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+                <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={2}>
                   <PaletteIcon size={18} />
                   <Typography variant="subtitle1" fontWeight={800}>Obras del proyecto</Typography>
                   <Chip label={`${app.artworkImages?.length || 0} obras`} size="small" sx={{ fontWeight: 500, fontSize: 11, bgcolor: dk ? 'rgba(74,222,128,0.12)' : '#EEF5F1', color: dk ? '#3FA46E' : '#3FA46E' }} />
@@ -516,7 +516,7 @@ function ApplicationDetailDialog({
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 3 }}>
                 {/* Imagen de detalle */}
                 <Box>
-                  <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
+                  <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={1.5}>
                     <EyeIcon size={16} />
                     <Typography variant="subtitle2" fontWeight={800}>Imagen de detalle</Typography>
                   </Stack>
@@ -558,7 +558,7 @@ function ApplicationDetailDialog({
 
                 {/* Plano de montaje */}
                 <Box>
-                  <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
+                  <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={1.5}>
                     <FileIcon size={16} />
                     <Typography variant="subtitle2" fontWeight={800}>Plano de montaje</Typography>
                   </Stack>
@@ -1017,7 +1017,7 @@ export default function SolicitudesPage() {
         const a = p.row?.artist as any;
         const photoUrl = p.row?.profilePhotoUrl;
         return (
-          <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5}>
             {photoUrl ? (
               <Avatar src={photoUrl} sx={{ width: 32, height: 32 }} />
             ) : (
@@ -1387,7 +1387,7 @@ export default function SolicitudesPage() {
                 border: `1.5px solid ${cfgForm.status === "open" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.3)"}`,
                 background: cfgForm.status === "open" ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.05)",
               }}>
-                <Stack direction="row" alignItems="center" spacing={1} mb={1.25}>
+                <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1} mb={1.25}>
                   <Box sx={{ color: cfgForm.status === "open" ? "#3FA46E" : "#9E3B22", display: "flex" }}>
                     {cfgForm.status === "open" ? <UnlockIcon size={18} /> : <LockIcon size={18} />}
                   </Box>

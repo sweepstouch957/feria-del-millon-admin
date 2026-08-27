@@ -187,7 +187,7 @@ export function QrValidationPanel() {
               minRows={2}
             />
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" flexWrap="wrap" spacing={1}>
               <Button
                 variant="contained"
                 startIcon={<QrCodeIcon />}

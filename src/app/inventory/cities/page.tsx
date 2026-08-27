@@ -11,6 +11,7 @@ import { Search, MapPin, CheckCircle2, XCircle, Globe } from "lucide-react";
 import { useCities } from "@/hooks/useCities";
 import type { CityDoc } from "@/services/city.service";
 import { formatDate } from "@/utils/date";
+import ResponsiveRows from "@/components/common/ResponsiveRows";
 
 const GREEN = "#3FA46E";
 
@@ -48,7 +49,7 @@ export default function CitiesPage() {
       flex: 1,
       minWidth: 180,
       renderCell: ({ value }) => (
-        <Stack direction="row" alignItems="center" gap={1.25} height="100%">
+        <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.25} height="100%">
           <Box sx={{
             width: 28, height: 28, borderRadius: 0, flexShrink: 0,
             bgcolor: alpha(GREEN, 0.1),
@@ -99,7 +100,7 @@ export default function CitiesPage() {
     <Box sx={{ pb: 4 }}>
 
       {/* Header */}
-      <Stack direction="row" alignItems="flex-end" justifyContent="space-between" mb={3}>
+      <Stack direction="row" flexWrap="wrap" alignItems="flex-end" justifyContent="space-between" mb={3}>
         <Box>
           <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
             Inventario
@@ -203,6 +204,36 @@ export default function CitiesPage() {
         </Box>
 
         {/* DataGrid */}
+        <ResponsiveRows
+          loading={isLoading}
+          emptyText="No hay ciudades registradas."
+          cards={filtered.map((c: any) => ({
+            id: String(c.id ?? c._id ?? c.legacyId),
+            title: c.name,
+            badge: (
+              <Chip
+                label={c.active ? "Activa" : "Inactiva"}
+                size="small"
+                sx={{
+                  fontWeight: 500,
+                  fontSize: 11,
+                  bgcolor: c.active ? alpha(GREEN, 0.12) : alpha("#B4472A", 0.1),
+                  color: c.active ? GREEN : "#B4472A",
+                  border: `1px solid ${c.active ? alpha(GREEN, 0.3) : alpha("#B4472A", 0.25)}`,
+                }}
+              />
+            ),
+            fields: [
+              { label: "Código", value: c.legacyId },
+              {
+                label: "Registrada",
+                value: c.createdAt
+                  ? formatDate(c.createdAt, { day: "2-digit", month: "short", year: "numeric" })
+                  : "",
+              },
+            ],
+          }))}
+        >
         <DataGrid
           rows={filtered}
           columns={columns}
@@ -237,6 +268,7 @@ export default function CitiesPage() {
             "& .MuiDataGrid-virtualScroller": { minHeight: 200 },
           }}
         />
+        </ResponsiveRows>
       </Paper>
     </Box>
   );

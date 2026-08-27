@@ -260,7 +260,7 @@ const LoginClient: React.FC = () => {
               sx={fieldSx}
             />
 
-            <Stack direction="row" alignItems="baseline" justifyContent="space-between" sx={{ mt: 2.5 }}>
+            <Stack direction="row" flexWrap="wrap" alignItems="baseline" justifyContent="space-between" sx={{ mt: 2.5 }}>
               <Typography component="label" htmlFor="adm-pass" sx={labelSx}>
                 Contraseña
               </Typography>

@@ -176,7 +176,7 @@ export default function ArtworksTable({
                 <TableRow>
                   <TableCell colSpan={6} align="center">
                     <Stack
-                      direction="row"
+                      direction="row" flexWrap="wrap"
                       spacing={1}
                       alignItems="center"
                       justifyContent="center"
@@ -226,7 +226,7 @@ export default function ArtworksTable({
                     }}
                   >
                     <TableCell sx={{ py: 1.5 }}>
-                      <Stack direction="row" spacing={2} alignItems="center">
+                      <Stack direction="row" flexWrap="wrap" spacing={2} alignItems="center">
                         <Box
                           sx={{
                             width: 64,
@@ -263,7 +263,7 @@ export default function ArtworksTable({
                           >
                             {r.title}
                           </Typography>
-                          <Stack direction="row" spacing={1} mt={0.5}>
+                          <Stack direction="row" flexWrap="wrap" spacing={1} mt={0.5}>
                             <Typography
                               variant="caption"
                               color="text.secondary"

@@ -70,7 +70,7 @@ export default function PavilionDetailCard({
           gap: 2,
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
           <Typography variant="subtitle1" fontWeight={600}>
             {pavilionForm.name}
           </Typography>
@@ -124,7 +124,7 @@ export default function PavilionDetailCard({
           minRows={3}
         />
 
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" flexWrap="wrap" spacing={2}>
           <TextField
             label="Min. precio obra"
             size="small"

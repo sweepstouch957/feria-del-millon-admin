@@ -93,7 +93,7 @@ export default function EventInfoCard({
           <>
             <Divider sx={{ my: 1 }} />
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
               <Chip
                 size="small"
                 label={eventForm.status.toUpperCase()}
@@ -147,7 +147,7 @@ export default function EventInfoCard({
               minRows={3}
             />
 
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" flexWrap="wrap" spacing={2}>
               <DatePicker
                 label="Válido desde"
                 value={eventForm.validFrom}
@@ -166,7 +166,7 @@ export default function EventInfoCard({
               />
             </Stack>
 
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" flexWrap="wrap" spacing={2}>
               <TextField
                 label="Min. precio obra"
                 size="small"

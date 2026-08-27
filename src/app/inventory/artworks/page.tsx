@@ -49,6 +49,7 @@ import { useEvents } from "@/hooks/useEvents";
 import { usePavilions } from "@/hooks/usePavilions";
 import { setCatalogReveal } from "@services/events.service";
 import { formatCOP } from "@/utils/money";
+import ResponsiveRows from "@/components/common/ResponsiveRows";
 
 const formatPrice = (price?: number, currency = "COP") =>
   price == null ? "—" : formatCOP(price, { code: true, currency });
@@ -146,7 +147,7 @@ export default function ArtworksCursorPage() {
             }}
           >
             <CardContent>
-              <Stack direction="row" alignItems="center" spacing={2}>
+              <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={2}>
                 <Box
                   sx={{
                     p: 1.2,
@@ -187,7 +188,7 @@ export default function ArtworksCursorPage() {
       >
         <CardHeader
           title={
-            <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
               <Typography variant="h5" fontWeight={800}>
                 Obras
               </Typography>
@@ -195,7 +196,7 @@ export default function ArtworksCursorPage() {
             </Stack>
           }
           action={
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" flexWrap="wrap" spacing={1.5} alignItems="center">
               {selectedEvent && (
                 <Tooltip title="Al activarlo, las obras marcadas “ocultas hasta el evento” se muestran en el catálogo público ya mismo.">
                   <FormControlLabel
@@ -315,6 +316,35 @@ export default function ArtworksCursorPage() {
         {(isLoading || isFetching) && <LinearProgress />}
 
         {/* Tabla */}
+        <ResponsiveRows
+          loading={isLoading}
+          emptyText="No hay obras que coincidan con los filtros."
+          cards={rows.map((art: any) => ({
+            id: String(art.id),
+            title: (
+              <Link href={`/inventory/artworks/${art.id}`} style={{ color: "inherit" }}>
+                {art.title || "Sin título"}
+              </Link>
+            ),
+            subtitle:
+              [art.artistInfo?.firstName, art.artistInfo?.lastName]
+                .filter(Boolean)
+                .join(" ") || undefined,
+            badge: (
+              <Chip
+                size="small"
+                label={art.status ?? "—"}
+                color={art.status === "published" ? "success" : "default"}
+              />
+            ),
+            fields: [
+              { label: "Precio", value: formatPrice(art.price) },
+              { label: "Stock", value: String(art.stock ?? 0) },
+              { label: "Técnica", value: art.techniqueInfo?.name },
+              { label: "Pabellón", value: art.pavilionInfo?.name },
+            ],
+          }))}
+        >
         <TableContainer component={Paper}>
           <Table stickyHeader>
             <TableHead>
@@ -435,6 +465,7 @@ export default function ArtworksCursorPage() {
             </TableBody>
           </Table>
         </TableContainer>
+        </ResponsiveRows>
       </Card>
     </Box>
   );

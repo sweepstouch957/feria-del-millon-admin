@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listOrders, registerAbono, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
 import { formatDate } from "@/utils/date";
+import ResponsiveRows from "@/components/common/ResponsiveRows";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 
@@ -58,7 +59,7 @@ export default function CarteraPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
         <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Wallet size={20} />
         </Box>
@@ -92,6 +93,44 @@ export default function CarteraPage() {
               No hay obras apartadas con saldo pendiente.
             </Typography>
           ) : (
+            <ResponsiveRows
+              emptyText="No hay obras apartadas con saldo pendiente."
+              cards={orders.map((o: any) => {
+                const paid = Number(o.layaway?.amountPaid || 0);
+                const bal = Number(o.layaway?.balanceDue || 0);
+                const pct = o.total ? Math.round((paid / o.total) * 100) : 0;
+                return {
+                  id: String(o.id),
+                  title: o.buyer?.name || "—",
+                  subtitle: o.buyer?.email || o.buyer?.phone || "",
+                  // El saldo es el dato por el que se entra a esta pantalla:
+                  // va arriba a la derecha, no perdido en una columna.
+                  badge: (
+                    <Typography sx={{ fontWeight: 500, fontSize: 15, color: bal > 0 ? "#C9902B" : "#3FA46E" }}>
+                      {money(bal)}
+                    </Typography>
+                  ),
+                  fields: [
+                    { label: "Obras", value: (o.items || []).map((it: any) => it.title || it.artworkId).join(", ") },
+                    { label: "Total", value: money(o.total) },
+                    { label: "Abonado", value: `${money(paid)} · ${pct}%` },
+                    { label: "Vence", value: formatDate(o.layaway?.dueDate) },
+                  ],
+                  actions: (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      disableElevation
+                      startIcon={<Plus size={14} />}
+                      onClick={() => openAbono(o)}
+                      sx={{ bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}
+                    >
+                      Registrar abono
+                    </Button>
+                  ),
+                };
+              })}
+            >
             <TableContainer component={Paper} elevation={0}>
               <Table size="small">
                 <TableHead>
@@ -143,6 +182,7 @@ export default function CarteraPage() {
                 </TableBody>
               </Table>
             </TableContainer>
+            </ResponsiveRows>
           )}
         </CardContent>
       </Card>

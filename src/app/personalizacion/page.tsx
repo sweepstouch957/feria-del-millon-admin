@@ -19,7 +19,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   return (
     <Box>
       <Typography variant="caption" fontWeight={700} sx={{ color: "text.secondary", display: "block", mb: 0.75 }}>{label}</Typography>
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
         <Box component="input" type="color" value={value}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
           sx={{ width: 44, height: 40, p: 0, border: "1px solid", borderColor: "divider", borderRadius: 0, cursor: "pointer", background: "none" }} />
@@ -54,7 +54,7 @@ function StrList({
       <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>{label}</Typography>
       <Stack spacing={1}>
         {items.map((v, i) => (
-          <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
+          <Stack key={i} direction="row" flexWrap="wrap" spacing={1} alignItems="flex-start">
             <TextField size="small" value={v} placeholder={placeholder} onChange={(e) => set(i, e.target.value)} fullWidth multiline={multiline} rows={multiline ? 2 : 1} />
             <IconButton size="small" color="error" onClick={() => rm(i)} sx={{ mt: 0.5 }}><Trash2 size={15} /></IconButton>
           </Stack>
@@ -69,7 +69,7 @@ function StrList({
 function Row({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
   return (
     <Box sx={{ p: 1.25, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
-      <Stack direction="row" spacing={1} alignItems="flex-start">
+      <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="flex-start">
         <Box flex={1}><Stack spacing={1}>{children}</Stack></Box>
         <IconButton size="small" color="error" onClick={onRemove}><Trash2 size={15} /></IconButton>
       </Stack>
@@ -197,7 +197,7 @@ export default function PersonalizacionPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
         <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(34,197,94,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <PaletteIcon size={20} />
         </Box>
@@ -302,7 +302,7 @@ export default function PersonalizacionPage() {
           </Typography>
           <Stack spacing={1}>
             {sections.order.map((k, i) => (
-              <Stack key={k} direction="row" alignItems="center" spacing={1}
+              <Stack key={k} direction="row" flexWrap="wrap" alignItems="center" spacing={1}
                 sx={{ p: 1, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
                 <Stack>
                   <IconButton size="small" disabled={i === 0} onClick={() => moveSection(i, -1)}><ChevronUp size={16} /></IconButton>
@@ -320,7 +320,7 @@ export default function PersonalizacionPage() {
 
         {/* Navbar — pestañas configurables */}
         <Section title="Navbar — pestañas del menú">
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
             <MenuIcon size={16} />
             <Typography variant="caption" color="text.secondary">
               <b>Mostrar</b> = aparece en el menú. <b>Habilitada</b> = clickable (apagada = se ve en gris como “Próximamente”). Reordena con las flechas.
@@ -336,7 +336,7 @@ export default function PersonalizacionPage() {
                   </Stack>
                   <TextField size="small" label="Texto" value={it.label} onChange={(e) => setNavItem(i, "label", e.target.value)} sx={{ minWidth: 140 }} />
                   <TextField size="small" label="Ruta (href)" value={it.href} onChange={(e) => setNavItem(i, "href", e.target.value)} fullWidth placeholder="/catalogo" />
-                  <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1.5} alignItems="center">
                     <Tooltip title={it.visible ? "Se muestra" : "Oculta"}>
                       <Stack alignItems="center" spacing={0}>
                         {it.visible ? <Eye size={15} /> : <EyeOff size={15} color="#8E8A80" />}
@@ -433,8 +433,8 @@ export default function PersonalizacionPage() {
 
         {/* Ticker */}
         <Section title="Ticker (cinta que se desliza)">
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Stack direction="row" alignItems="center"><Switch checked={landing.showTicker} onChange={() => setL((l) => ({ ...l, showTicker: !l.showTicker }))} /><Typography variant="body2">Mostrar ticker</Typography></Stack>
+          <Stack direction="row" flexWrap="wrap" spacing={2} alignItems="center">
+            <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.showTicker} onChange={() => setL((l) => ({ ...l, showTicker: !l.showTicker }))} /><Typography variant="body2">Mostrar ticker</Typography></Stack>
           </Stack>
           <StrList label="Palabras / frases del ticker" items={landing.ticker.items} onChange={(items) => setL((l) => ({ ...l, ticker: { ...l.ticker, items } }))} placeholder="Pintura" />
         </Section>
@@ -454,7 +454,7 @@ export default function PersonalizacionPage() {
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                 <TextField size="small" label="Número" value={s.value} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)) } }))} sx={{ width: 120 }} />
                 <TextField size="small" label="Etiqueta" value={s.label} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, label: e.target.value } : x)) } }))} fullWidth />
-                <Stack direction="row" alignItems="center"><Switch size="small" color="success" checked={!!s.accent} onChange={() => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, accent: !x.accent } : x)) } }))} /><Typography variant="caption">Verde</Typography></Stack>
+                <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch size="small" color="success" checked={!!s.accent} onChange={() => setL((l) => ({ ...l, about: { ...l.about, stats: l.about.stats.map((x, idx) => (idx === i ? { ...x, accent: !x.accent } : x)) } }))} /><Typography variant="caption">Verde</Typography></Stack>
               </Stack>
             </Row>
           ))}
@@ -487,7 +487,7 @@ export default function PersonalizacionPage() {
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                 <TextField size="small" label="Ciudad" value={s.name} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, name: e.target.value } : x)) } }))} sx={{ minWidth: 160 }} />
                 <TextField size="small" label="Etiqueta" value={s.tag} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, tag: e.target.value } : x)) } }))} fullWidth />
-                <Stack direction="row" alignItems="center"><Switch size="small" color="success" checked={!!s.highlight} onChange={() => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, highlight: !x.highlight } : x)) } }))} /><Typography variant="caption">Destacar</Typography></Stack>
+                <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch size="small" color="success" checked={!!s.highlight} onChange={() => setL((l) => ({ ...l, sedes: { ...l.sedes, items: l.sedes.items.map((x, idx) => (idx === i ? { ...x, highlight: !x.highlight } : x)) } }))} /><Typography variant="caption">Destacar</Typography></Stack>
               </Stack>
             </Row>
           ))}
@@ -512,7 +512,7 @@ export default function PersonalizacionPage() {
 
         {/* Convocatoria */}
         <Section title="Convocatoria">
-          <Stack direction="row" alignItems="center"><Switch checked={landing.convocatoria.open} onChange={() => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, open: !l.convocatoria.open } }))} color="success" /><Typography variant="body2">Convocatoria abierta (apagado = se oculta la sección)</Typography></Stack>
+          <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.convocatoria.open} onChange={() => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, open: !l.convocatoria.open } }))} color="success" /><Typography variant="body2">Convocatoria abierta (apagado = se oculta la sección)</Typography></Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Badge" value={landing.convocatoria.badge} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, badge: e.target.value } }))} fullWidth />
             <TextField size="small" label="Título" value={landing.convocatoria.title} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, title: e.target.value } }))} sx={{ minWidth: 140 }} />
@@ -565,7 +565,7 @@ export default function PersonalizacionPage() {
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                 <TextField size="small" label="Valor" value={s.value} onChange={(e) => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, value: e.target.value } : x) }))} sx={{ width: 120 }} />
                 <TextField size="small" label="Etiqueta" value={s.label} onChange={(e) => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x) }))} fullWidth />
-                <Stack direction="row" alignItems="center"><Switch size="small" color="success" checked={!!s.accent} onChange={() => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, accent: !x.accent } : x) }))} /><Typography variant="caption">Verde</Typography></Stack>
+                <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch size="small" color="success" checked={!!s.accent} onChange={() => setCP((c) => ({ ...c, stats: c.stats.map((x, idx) => idx === i ? { ...x, accent: !x.accent } : x) }))} /><Typography variant="caption">Verde</Typography></Stack>
               </Stack>
             </Row>
           ))}
@@ -642,7 +642,7 @@ export default function PersonalizacionPage() {
 
         {/* Boletín */}
         <Section title="Boletín (newsletter)">
-          <Stack direction="row" alignItems="center"><Switch checked={landing.newsletter.enabled} onChange={() => setL((l) => ({ ...l, newsletter: { ...l.newsletter, enabled: !l.newsletter.enabled } }))} color="success" /><Typography variant="body2">Mostrar sección</Typography></Stack>
+          <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.newsletter.enabled} onChange={() => setL((l) => ({ ...l, newsletter: { ...l.newsletter, enabled: !l.newsletter.enabled } }))} color="success" /><Typography variant="body2">Mostrar sección</Typography></Stack>
           <TextField size="small" label="Badge" value={landing.newsletter.badge} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, badge: e.target.value } }))} fullWidth />
           <TextField size="small" label="Título" value={landing.newsletter.title} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, title: e.target.value } }))} fullWidth multiline rows={2} />
           <TextField size="small" label="Párrafo" value={landing.newsletter.paragraph} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, paragraph: e.target.value } }))} fullWidth multiline rows={2} />
@@ -653,7 +653,7 @@ export default function PersonalizacionPage() {
         <Section title="Pie de página y ajustes">
           <TextField size="small" label="Descripción del footer" value={landing.footer.description} onChange={(e) => setL((l) => ({ ...l, footer: { ...l.footer, description: e.target.value } }))} fullWidth multiline rows={2} />
           <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
-            <Stack direction="row" alignItems="center"><Switch checked={landing.showPrices} onChange={() => setL((l) => ({ ...l, showPrices: !l.showPrices }))} color="success" /><Typography variant="body2">Mostrar precios en obras</Typography></Stack>
+            <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.showPrices} onChange={() => setL((l) => ({ ...l, showPrices: !l.showPrices }))} color="success" /><Typography variant="body2">Mostrar precios en obras</Typography></Stack>
             <TextField size="small" label="Precio de referencia" value={landing.priceLabel} onChange={(e) => setL((l) => ({ ...l, priceLabel: e.target.value }))} sx={{ minWidth: 160 }} />
           </Stack>
         </Section>

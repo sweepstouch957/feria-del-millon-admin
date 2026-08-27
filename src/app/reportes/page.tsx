@@ -91,7 +91,7 @@ export default function ReportesPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
         <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <BarChart3 size={20} />
         </Box>

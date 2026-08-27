@@ -295,7 +295,7 @@ export default function ArtworkDetailPage() {
       >
         <CardHeader
           title={
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
               <Typography variant="h5" fontWeight={800}>
                 Gestión de Obra
               </Typography>
@@ -349,7 +349,7 @@ export default function ArtworkDetailPage() {
                   }}
                 />
                 <Stack
-                  direction="row"
+                  direction="row" flexWrap="wrap"
                   spacing={1}
                   sx={{
                     position: "absolute",
@@ -359,7 +359,7 @@ export default function ArtworkDetailPage() {
                     justifyContent: "space-between",
                   }}
                 >
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" flexWrap="wrap" spacing={1}>
                     <Tooltip title="Cambiar imagen">
                       <span>
                         <Button
@@ -423,7 +423,7 @@ export default function ArtworkDetailPage() {
                       spacing={1}
                     >
                       <Typography fontWeight={700}>QR público</Typography>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" flexWrap="wrap" spacing={1}>
                         <Button
                           size="small"
                           variant="outlined"
@@ -486,7 +486,7 @@ export default function ArtworkDetailPage() {
               <Stack spacing={2.5}>
                 {/* Título y descripción */}
                 <Stack spacing={1}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
+                  <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                     <Typography variant="h4" fontWeight={900}>
                       {art.title}
                     </Typography>
@@ -510,7 +510,7 @@ export default function ArtworkDetailPage() {
 
                 {/* Ficha técnica */}
                 <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <ArtistIcon size={18} />
                     <Typography fontWeight={600}>
                       {art.artistInfo
@@ -519,28 +519,28 @@ export default function ArtworkDetailPage() {
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <TechniqueIcon size={18} />
                     <Typography color="text.secondary">
                       {art.techniqueInfo?.name ?? "—"}
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <PavilionIcon size={18} />
                     <Typography color="text.secondary">
                       {art.pavilionInfo?.name ?? "—"}
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <PriceIcon size={18} />
                     <Typography fontWeight={800} variant="h6">
                       {formatPrice(art.price, art.currency || "COP")}
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <ChannelIcon size={18} />
                     <Typography>
                       Canal:{" "}
@@ -552,7 +552,7 @@ export default function ArtworkDetailPage() {
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                     <CalendarIcon size={18} />
                     <Typography variant="caption" color="text.secondary">
                       Creado:{" "}
@@ -564,7 +564,7 @@ export default function ArtworkDetailPage() {
 
                   {copy && (
                     <Stack
-                      direction="row"
+                      direction="row" flexWrap="wrap"
                       spacing={1}
                       alignItems="center"
                       sx={{ mt: 1 }}
@@ -649,7 +649,7 @@ export default function ArtworkDetailPage() {
                     label="Ocultar en el catálogo hasta el día del evento"
                   />
 
-                  <Stack direction="row" spacing={2} justifyContent="flex-end">
+                  <Stack direction="row" flexWrap="wrap" spacing={2} justifyContent="flex-end">
                     <Button
                       variant="contained"
                       startIcon={<SaveIcon size={16} />}

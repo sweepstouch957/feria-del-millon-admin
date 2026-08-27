@@ -160,7 +160,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
           title="Días del evento"
           subheader="Configura capacidad, precio y estado por día."
           action={
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" flexWrap="wrap" spacing={1}>
               {/* Botón “Agregar día” deshabilitado (futuro feature) */}
               <Button
                 size="small"
@@ -234,7 +234,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                   >
                     <CardContent sx={{ pb: 1.5 }}>
                       <Stack
-                        direction="row"
+                        direction="row" flexWrap="wrap"
                         justifyContent="space-between"
                         alignItems="center"
                         mb={1}
@@ -258,7 +258,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                       </Typography>
 
                       <Stack
-                        direction="row"
+                        direction="row" flexWrap="wrap"
                         justifyContent="space-between"
                         mt={1}
                       >
@@ -275,12 +275,12 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                       />
 
                       <Stack
-                        direction="row"
+                        direction="row" flexWrap="wrap"
                         justifyContent="space-between"
                         alignItems="center"
                         mt={1.2}
                       >
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
                           <Typography variant="caption">Activo</Typography>
                           <Switch
                             size="small"
@@ -334,7 +334,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                 onChange={(e) => handlePriceChange(e.target.value)}
               />
 
-              <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                 <Switch
                   checked={editState.isActive}
                   onChange={(e) =>

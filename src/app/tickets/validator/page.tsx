@@ -18,7 +18,7 @@ export default function QrValidatorPage() {
       }}
     >
       <Stack
-        direction="row"
+        direction="row" flexWrap="wrap"
         alignItems="center"
         justifyContent="space-between"
         mb={2}

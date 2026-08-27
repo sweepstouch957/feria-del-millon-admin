@@ -122,7 +122,7 @@ export default function HomeClient() {
     <Box sx={{ pb: 5 }}>
 
       {/* Header */}
-      <Stack direction="row" alignItems="flex-end" justifyContent="space-between" mb={3}>
+      <Stack direction="row" flexWrap="wrap" alignItems="flex-end" justifyContent="space-between" mb={3}>
         <Box>
           <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
             Panel de control
@@ -196,12 +196,12 @@ export default function HomeClient() {
             <Stack spacing={1.5}>
               {statusCounts.map(s => (
                 <Box key={s.key}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.75}>
-                    <Stack direction="row" alignItems="center" gap={1}>
+                  <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center" mb={0.75}>
+                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
                       <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: s.color, flexShrink: 0 }} />
                       <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.secondary" }}>{s.label}</Typography>
                     </Stack>
-                    <Stack direction="row" alignItems="center" gap={1}>
+                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
                       <Typography sx={{ fontSize: 11, color: "text.disabled" }}>
                         {totalApps > 0 ? `${Math.round((s.count / totalApps) * 100)}%` : "0%"}
                       </Typography>
@@ -266,7 +266,7 @@ export default function HomeClient() {
               badge={`${paidOrders.length ?? 0} órdenes`}
             />
             <Divider sx={{ borderColor: "divider", my: 0.5 }} />
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center">
               <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.primary" }}>Total</Typography>
               <Typography sx={{ fontSize: 14, fontWeight: 500, color: GREEN }}>{fmt(totalRevenue)}</Typography>
             </Stack>
@@ -356,8 +356,8 @@ function RevenueRow({ label, amount, color, badge }: {
   label: string; amount: number; color: string; badge: string;
 }) {
   return (
-    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-      <Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
+    <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1}>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
         <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
         <Typography sx={{ fontSize: 12, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {label}
@@ -396,7 +396,7 @@ function NavCard({ label, sub, href, color, icon: Icon, dark }: {
         },
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" mb={1}>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" width="100%" mb={1}>
         <Box sx={{ color, display: "flex", p: 0.75, borderRadius: 0, bgcolor: alpha(color, 0.1) }}>
           <Icon size={16} />
         </Box>
