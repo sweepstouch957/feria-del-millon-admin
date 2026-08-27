@@ -15,6 +15,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
+import ResponsiveRows from "@/components/common/ResponsiveRows";
 import { Refresh as RefreshIcon } from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { formatCOP } from "@/utils/money";
@@ -60,6 +61,34 @@ export function TicketsTable({ eventId }: { eventId: string }) {
         )}
 
         {tickets.length > 0 && (
+          <ResponsiveRows
+            emptyText="No hay tickets."
+            cards={tickets.map((t: any) => ({
+              id: String(t.id),
+              title: t.buyer?.name || "Comprador",
+              subtitle: t.buyer?.email,
+              badge: (
+                <Chip
+                  size="small"
+                  label={
+                    t.status === "sold" ? "Vendido"
+                    : t.status === "checked_in" ? "Check-in"
+                    : t.status === "refunded" ? "Reembolsado"
+                    : "Cancelado"
+                  }
+                  color={
+                    t.status === "sold" ? "primary"
+                    : t.status === "checked_in" ? "success"
+                    : "default"
+                  }
+                />
+              ),
+              fields: [
+                { label: "Código", value: t.shortCode ?? String(t.id).slice(-6) },
+                { label: "Fecha", value: new Date(t.eventDay).toISOString().slice(0, 10) },
+              ],
+            }))}
+          >
           <Box sx={{ maxHeight: 360, overflow: "auto" }}>
             <Table size="small">
               <TableHead>
@@ -112,6 +141,7 @@ export function TicketsTable({ eventId }: { eventId: string }) {
               </TableBody>
             </Table>
           </Box>
+          </ResponsiveRows>
         )}
       </CardContent>
     </Card>

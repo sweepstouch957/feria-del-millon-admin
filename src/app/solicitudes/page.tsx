@@ -39,6 +39,7 @@ import {
   getConvocatorias, updateConvocatoria,
   type Convocatoria, type ConvocatoriaStatus,
 } from "@services/events.service";
+import ResponsiveRows from "@/components/common/ResponsiveRows";
 
 /* ── HEIC → JPEG via Cloudinary ────────────────────────────────────────────── */
 function resolveImgUrl(url?: string): string {
@@ -1282,6 +1283,39 @@ export default function SolicitudesPage() {
             {/* Table */}
             <Box sx={{ position: "relative" }}>
               {isLoading && <LinearProgress sx={{ position: "absolute", top: -10, left: 0, right: 0 }} />}
+              <ResponsiveRows
+                loading={isLoading}
+                emptyText="No hay solicitudes con estos filtros."
+                cards={rows.map((r: any) => {
+                  const a = r.artist as any;
+                  const nombre = [a?.firstName, a?.lastName].filter(Boolean).join(" ") || "Artista";
+                  return {
+                    id: String(r._id || r.id),
+                    title: nombre,
+                    subtitle: (r.convocatoria as any)?.name,
+                    // El estado es lo que se busca al abrir esta pantalla:
+                    // va arriba, no escondido en la cuarta columna.
+                    badge: (
+                      <Chip
+                        size="small"
+                        label={STATUS_CONFIG[r.status]?.label || r.status}
+                        color={STATUS_CONFIG[r.status]?.color || "default"}
+                        sx={{ fontWeight: 500, fontSize: 11 }}
+                      />
+                    ),
+                    fields: [
+                      { label: "Pago", value: r.isPaid ? "Pagado" : "Pendiente" },
+                      { label: "Obras", value: String(r.artworkImages?.length ?? 0) },
+                      { label: "Enviada", value: formatDate(r.submittedAt) },
+                    ],
+                    actions: (
+                      <Button size="small" variant="outlined" onClick={() => handleView(r)}>
+                        Ver detalle
+                      </Button>
+                    ),
+                  };
+                })}
+              >
               <DataGrid
                 autoHeight disableRowSelectionOnClick
                 rows={rows} columns={columns}
@@ -1324,6 +1358,7 @@ export default function SolicitudesPage() {
                   },
                 }}
               />
+              </ResponsiveRows>
             </Box>
           </Stack>
         </CardContent>
