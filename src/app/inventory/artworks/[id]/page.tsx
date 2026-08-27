@@ -61,7 +61,10 @@ async function fileToImage(file: File): Promise<HTMLImageElement> {
     });
     return img;
   } finally {
-    // se libera más abajo tras usar canvas.toBlob
+    // Para acá la imagen ya está decodificada en memoria: el blob puede
+    // liberarse. El comentario anterior decía que se liberaba "más abajo",
+    // pero blobURL es local a esta función y nunca salía de acá.
+    URL.revokeObjectURL(blobURL);
   }
 }
 
@@ -215,9 +218,13 @@ export default function ArtworkDetailPage() {
     try {
       setUploading(true);
 
-      // Vista previa local inmediata
+      // Vista previa local inmediata. Al reemplazarla hay que soltar la
+      // anterior: si no, cada intento de carga deja un blob vivo en memoria.
       const previewURL = URL.createObjectURL(file);
-      setLocalPreview(previewURL);
+      setLocalPreview((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return previewURL;
+      });
 
       // Comprimir si > 1MB
       const processed = await compressImage(file, {
