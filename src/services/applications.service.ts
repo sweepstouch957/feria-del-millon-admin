@@ -61,13 +61,25 @@ export interface ApplicationListResponse {
 const ADMIN_HEADERS = { "x-user-admin": "true" };
 
 export interface ApplicationStats {
+  /** Decididas (aceptadas + rechazadas). */
+  decided?: number;
+  /** Cuántas de esas ya recibieron el correo de resolución. */
+  notified?: number;
+  pendingNotification?: number;
   total: number;
   paid: number;
   byStatus: Record<string, number>;
 }
 
-export const getApplicationStats = async (): Promise<ApplicationStats> => {
-  const { data } = await apiClient.get("/applications/applications/stats", { headers: ADMIN_HEADERS });
+/** Estadísticas. Sin `convocatoria` son globales (todas las ediciones);
+ *  con ella, el reporte de esa feria en particular. */
+export const getApplicationStats = async (
+  convocatoria?: string
+): Promise<ApplicationStats> => {
+  const { data } = await apiClient.get("/applications/applications/stats", {
+    params: convocatoria ? { convocatoria } : undefined,
+    headers: ADMIN_HEADERS,
+  });
   return data;
 };
 

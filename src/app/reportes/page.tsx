@@ -2,12 +2,15 @@
 
 import * as React from "react";
 import {
-  Box, Card, CardContent, Typography, Stack, Button, Divider,
+  Box,
+  TextField,
+  MenuItem, Card, CardContent, Typography, Stack, Button, Divider,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, CircularProgress,
 } from "@mui/material";
 import { BarChart3, Download, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getApplicationStats } from "@services/applications.service";
+import { getConvocatorias } from "@services/events.service";
 import { listOrders, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
 
@@ -47,7 +50,21 @@ function downloadCsv(filename: string, rows: (string | number)[][]) {
 }
 
 export default function ReportesPage() {
-  const appsQ = useQuery({ queryKey: ["report", "apps"], queryFn: getApplicationStats, staleTime: 60_000 });
+  // Un reporte de "todas las ediciones juntas" no dice nada útil: cada feria
+  // tiene su propia convocatoria y sus propios números.
+  const [conv, setConv] = React.useState("");
+
+  const convQ = useQuery({
+    queryKey: ["convocatorias"],
+    queryFn: getConvocatorias,
+    staleTime: 5 * 60_000,
+  });
+
+  const appsQ = useQuery({
+    queryKey: ["report", "apps", conv],
+    queryFn: () => getApplicationStats(conv || undefined),
+    staleTime: 60_000,
+  });
   const ordersQ = useQuery({ queryKey: ["report", "orders"], queryFn: () => listOrders({}), staleTime: 60_000 });
 
   const loading = appsQ.isLoading || ordersQ.isLoading;
@@ -86,7 +103,14 @@ export default function ReportesPage() {
       ["Abonado (COP)", carteraAbonado],
       ["Saldo pendiente (COP)", cartera],
     ];
-    downloadCsv(`reporte-feria-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    const convName =
+      ((convQ.data as any[]) ?? []).find((c) => (c._id || c.id) === conv)?.name ||
+      "todas-las-ediciones";
+    rows.unshift(["Convocatoria", convName]);
+    downloadCsv(
+      `reporte-${convName.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
+      rows
+    );
   };
 
   return (
@@ -99,6 +123,21 @@ export default function ReportesPage() {
           <Typography fontWeight={500} fontSize={20}>Reportes</Typography>
           <Typography variant="caption" color="text.secondary">Solicitudes, ventas (caja vs línea) y cartera de fiado.</Typography>
         </Box>
+        <TextField
+          select
+          size="small"
+          value={conv}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConv(e.target.value)}
+          sx={{ minWidth: 200 }}
+          label="Convocatoria"
+        >
+          <MenuItem value="">Todas las ediciones</MenuItem>
+          {((convQ.data as any[]) ?? []).map((c) => (
+            <MenuItem key={c._id || c.id} value={c._id || c.id}>
+              {c.name || c.slug || "Convocatoria"}
+            </MenuItem>
+          ))}
+        </TextField>
         <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => { appsQ.refetch(); ordersQ.refetch(); }} sx={{ textTransform: "none" }}>Actualizar</Button>
         <Button variant="contained" disableElevation startIcon={<Download size={16} />} onClick={exportAll}
           sx={{ textTransform: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>Exportar CSV</Button>

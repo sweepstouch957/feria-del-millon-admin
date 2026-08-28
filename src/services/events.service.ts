@@ -81,6 +81,14 @@ export const listEvents = async (filters: ListEventsFilters = {}) => {
 };
 
 // Actualizar evento (PATCH /event/events/:eventId)
+/* ========= Crear evento (POST /event/events, staff) ========= */
+export const createEvent = async (payload: CreateEventDto) => {
+  const { data } = await apiClient.post<EventDoc>("/event/events", payload, {
+    withCredentials: true,
+  });
+  return normalizeId(data);
+};
+
 export const updateEvent = async (
   eventId: string,
   payload: Partial<CreateEventDto & { status?: EventStatus }>

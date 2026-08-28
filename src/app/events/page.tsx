@@ -1,7 +1,13 @@
 "use client";
 
+import * as React from "react";
+import { Plus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+
 import {
   Box,
+  Button,
+  Stack,
   Typography,
   LinearProgress,
   Card,
@@ -13,6 +19,11 @@ import { useEventsManager } from "@hooks/events/useEventsManager";
 import { usePavilionsManager } from "@hooks/events/usePavilionsManager";
 
 import EventInfoCard from "@components/views/events/EventInfoCard";
+import EventsList from "@components/views/events/EventsList";
+import {
+  CreateEventDialog,
+  CreatePavilionDialog,
+} from "@components/views/events/CreateDialogs";
 import PavilionDetailCard from "@components/views/events/PavilionDetailCard";
 import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
 import PavilionArtistsManager from "@components/views/events/PavilionArtistsManager";
@@ -48,6 +59,10 @@ export default function EventsManagerPage() {
     isSavingPavilion,
   } = usePavilionsManager(selectedEventId);
 
+  const queryClient = useQueryClient();
+  const [newEventOpen, setNewEventOpen] = React.useState(false);
+  const [newPavilionOpen, setNewPavilionOpen] = React.useState(false);
+
   const loadingAny = fetchingEvents || fetchingPavilions;
 
   return (
@@ -73,8 +88,21 @@ export default function EventsManagerPage() {
           gridTemplateColumns: { xs: "1fr", md: "1.2fr 2fr" },
         }}
       >
-        {/* ───────── Panel izquierdo: Evento ───────── */}
-        <EventInfoCard
+        {/* ───────── Panel izquierdo: ediciones ───────── */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Card variant="outlined" sx={{ borderRadius: 0 }}>
+            <CardContent>
+              <EventsList
+                events={events}
+                loading={loadingEvents}
+                selectedEventId={selectedEventId}
+                onSelect={handleSelectEvent}
+                onCreate={() => setNewEventOpen(true)}
+              />
+            </CardContent>
+          </Card>
+
+          <EventInfoCard
           events={events}
           loadingEvents={loadingEvents}
           selectedEvent={selectedEvent}
@@ -85,10 +113,23 @@ export default function EventsManagerPage() {
           onToggleStatus={handleToggleEventStatus}
           onSave={handleSaveEvent}
           isSaving={isSavingEvent}
-        />
+          />
+        </Box>
 
         {/* ───────── Panel derecho: Pabellones ───────── */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Stack direction="row" flexWrap="wrap" justifyContent="flex-end">
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Plus size={14} />}
+              disabled={!selectedEventId}
+              onClick={() => setNewPavilionOpen(true)}
+            >
+              Nuevo pabellón
+            </Button>
+          </Stack>
+
           <PavilionsTableCard
             selectedEvent={selectedEvent}
             pavilions={pavilions}
@@ -125,6 +166,25 @@ export default function EventsManagerPage() {
           />
         </Box>
       </Box>
+
+      <CreateEventDialog
+        open={newEventOpen}
+        onClose={() => setNewEventOpen(false)}
+        onCreated={(id) => {
+          queryClient.invalidateQueries({ queryKey: ["events", "all"] });
+          handleSelectEvent(id);
+        }}
+      />
+
+      <CreatePavilionDialog
+        open={newPavilionOpen}
+        eventId={selectedEventId ?? ""}
+        eventName={selectedEvent?.name}
+        onClose={() => setNewPavilionOpen(false)}
+        onCreated={() =>
+          queryClient.invalidateQueries({ queryKey: ["pavilions", selectedEventId] })
+        }
+      />
     </Box>
   );
 }

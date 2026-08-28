@@ -101,6 +101,19 @@ export const listPavilionsByUser = async (
 };
 
 // Actualizar pabellón (PATCH /event/events/:eventId/pavilions/:pavilionId)
+/* ========= Crear pabellón dentro de un evento (staff) ========= */
+export const createPavilion = async (
+  eventId: string,
+  payload: CreatePavilionDto
+) => {
+  const { data } = await apiClient.post<PavilionDoc>(
+    `/event/events/${encodeURIComponent(eventId)}/pavilions`,
+    payload,
+    { withCredentials: true }
+  );
+  return normalizeId(data);
+};
+
 export const updatePavilion = async (
   eventId: string,
   pavilionId: string,

@@ -836,6 +836,17 @@ export default function SolicitudesPage() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const [filterStatus, setFilterStatus] = React.useState("");
+  // Cada edición tiene su convocatoria: filtrar por ella es lo que permite
+  // leer una feria sin que se mezcle con las anteriores.
+  const [filterConv, setFilterConv] = React.useState("");
+
+  // Las convocatorias se cargaban solo al abrir el diálogo de configuración;
+  // el filtro las necesita desde el arranque.
+  const { data: convOptions = [] } = useQuery({
+    queryKey: ["convocatorias"],
+    queryFn: getConvocatorias,
+    staleTime: 5 * 60_000,
+  });
   const [filterPaid, setFilterPaid] = React.useState("");
   const [q, setQ] = React.useState("");
   const [pagination, setPagination] = React.useState<GridPaginationModel>({ page: 0, pageSize: 20 });
@@ -990,9 +1001,10 @@ export default function SolicitudesPage() {
   };
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["applications", filterStatus, filterPaid, q, pagination.page, pagination.pageSize],
+    queryKey: ["applications", filterStatus, filterPaid, filterConv, q, pagination.page, pagination.pageSize],
     queryFn: () => listApplications({
       status: filterStatus || undefined,
+      convocatoria: filterConv || undefined,
       isPaid: filterPaid === "" ? undefined : filterPaid === "true",
       q: q || undefined,
       page: pagination.page + 1,
@@ -1001,8 +1013,8 @@ export default function SolicitudesPage() {
   });
 
   const { data: stats, refetch: refetchStats } = useQuery({
-    queryKey: ["application-stats"],
-    queryFn: getApplicationStats,
+    queryKey: ["application-stats", filterConv],
+    queryFn: () => getApplicationStats(filterConv || undefined),
     staleTime: 30_000,
   });
 
@@ -1166,6 +1178,22 @@ export default function SolicitudesPage() {
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon size={16} /></InputAdornment> }}
                 sx={{ minWidth: 240 }}
               />
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Convocatoria</InputLabel>
+                <Select
+                  value={filterConv}
+                  label="Convocatoria"
+                  onChange={(e) => { setFilterConv(e.target.value); setPagination({ page: 0, pageSize: 20 }); }}
+                >
+                  <MenuItem value="">Todas las ediciones</MenuItem>
+                  {(convOptions as any[]).map((c) => (
+                    <MenuItem key={c._id || c.id} value={c._id || c.id}>
+                      {c.name || c.slug || "Convocatoria"}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
               <FormControl size="small" sx={{ minWidth: 170 }}>
                 <InputLabel>Estado</InputLabel>
                 <Select value={filterStatus} label="Estado" onChange={(e) => { setFilterStatus(e.target.value); setPagination({ page: 0, pageSize: 20 }); }}>
