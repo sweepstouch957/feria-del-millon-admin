@@ -29,11 +29,119 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/* ── Contexto de la página ────────────────────────────────────────────
+   Cada tarjeta necesita saber tres cosas: qué hay ahora, qué hay guardado
+   y cómo guardar lo suyo. Pasarlo por contexto evita encadenar props por
+   23 secciones. */
+type PersoCtxValue = {
+  cfg: any;
+  savedCfg: any;
+  savingPath: string | null;
+  saveSection: (paths: string[]) => void;
+  query: string;
+  onlyDirty: boolean;
+};
+const PersoCtx = React.createContext<PersoCtxValue | null>(null);
+
+/** Lee "content.brand" dentro de un objeto. */
+function getPath(obj: any, path: string) {
+  return path.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
+}
+
+/** Escribe "content.brand" sin mutar el original. */
+function setPath(obj: any, path: string, value: any) {
+  const keys = path.split(".");
+  const out = Array.isArray(obj) ? [...obj] : { ...obj };
+  let cur: any = out;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const k = keys[i];
+    cur[k] = Array.isArray(cur[k]) ? [...cur[k]] : { ...cur[k] };
+    cur = cur[k];
+  }
+  cur[keys[keys.length - 1]] = value;
+  return out;
+}
+
+const norm = (t: string) =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+function Section({
+  title,
+  hint,
+  paths,
+  children,
+}: {
+  title: string;
+  /** Una línea que explica dónde se ve esto en el sitio. */
+  hint?: string;
+  /** Trozos de la config que edita esta tarjeta. */
+  paths: string[];
+  children: React.ReactNode;
+}) {
+  const ctx = React.useContext(PersoCtx);
+  if (!ctx) return null;
+
+  const dirty = paths.some(
+    (path) =>
+      JSON.stringify(getPath(ctx.cfg, path)) !==
+      JSON.stringify(getPath(ctx.savedCfg, path))
+  );
+
+  const q = norm(ctx.query.trim());
+  const matches = !q || norm(title).includes(q) || norm(hint || "").includes(q);
+  if (!matches) return null;
+  if (ctx.onlyDirty && !dirty) return null;
+
+  const saving = ctx.savingPath === paths.join("|");
+
   return (
-    <Card sx={{ borderRadius: 0 }}>
+    <Card sx={{ borderRadius: 0, borderColor: dirty ? "#3FA46E" : undefined }}>
       <CardContent>
-        <Typography fontWeight={500} fontSize={15} mb={2}>{title}</Typography>
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          alignItems="flex-start"
+          justifyContent="space-between"
+          gap={1.5}
+          mb={2}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
+              <Typography fontWeight={500} fontSize={15}>{title}</Typography>
+              {dirty && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 6, height: 6, borderRadius: 999, bgcolor: "#3FA46E",
+                    flex: "0 0 auto",
+                  }}
+                  aria-label="Con cambios sin guardar"
+                />
+              )}
+            </Stack>
+            {hint && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.4 }}>
+                {hint}
+              </Typography>
+            )}
+          </Box>
+
+          {/* El botón solo aparece si hay algo que guardar: sin cambios, no
+              hay decisión que tomar. */}
+          {dirty && (
+            <Button
+              size="small"
+              variant="contained"
+              disableElevation
+              disabled={saving}
+              onClick={() => ctx.saveSection(paths)}
+              startIcon={saving ? <CircularProgress size={12} color="inherit" /> : <SaveIcon size={14} />}
+              sx={{ bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" }, flex: "0 0 auto" }}
+            >
+              {saving ? "Guardando…" : "Guardar"}
+            </Button>
+          )}
+        </Stack>
         <Stack spacing={2}>{children}</Stack>
       </CardContent>
     </Card>
@@ -89,9 +197,24 @@ export default function PersonalizacionPage() {
   const heroFileRef = React.useRef<HTMLInputElement>(null);
   const logoFileRef = React.useRef<HTMLInputElement>(null);
   const [toast, setToast] = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
+  // Línea base: lo último confirmado por el servidor. Comparar contra esto es
+  // lo que permite saber qué tarjeta tiene cambios sin guardar.
+  const [savedCfg, setSavedCfg] = React.useState<SiteConfig | null>(null);
+  const [savingPath, setSavingPath] = React.useState<string | null>(null);
+  const [query, setQuery] = React.useState("");
+  const [onlyDirty, setOnlyDirty] = React.useState(false);
 
   React.useEffect(() => {
-    getSiteConfig().then(setCfg).catch(() => setCfg(SITE_DEFAULTS)).finally(() => setLoading(false));
+    getSiteConfig()
+      .then((c) => {
+        setCfg(c);
+        setSavedCfg(c);
+      })
+      .catch(() => {
+        setCfg(SITE_DEFAULTS);
+        setSavedCfg(SITE_DEFAULTS);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   // Setters
@@ -155,12 +278,56 @@ export default function PersonalizacionPage() {
   const setCP = (updater: (cp: CP) => CP) =>
     setL((l) => ({ ...l, convocatoriaPage: updater(l.convocatoriaPage) }));
 
+  /** Guarda SOLO los trozos indicados, sobre la última versión confirmada.
+   *  Así "guardar esta tarjeta" guarda esa tarjeta y nada más: los cambios
+   *  a medio hacer en otras quedan intactos y siguen marcados. */
+  const saveSection = async (paths: string[]) => {
+    if (!cfg || !savedCfg) return;
+    const key = paths.join("|");
+    setSavingPath(key);
+    try {
+      let payload: any = savedCfg;
+      for (const path of paths) {
+        payload = setPath(payload, path, getPath(cfg, path));
+      }
+      const saved = await updateSiteConfig(payload);
+      setSavedCfg(saved);
+      setToast({ open: true, msg: "Guardado — sale en el sitio en ~1 min", sev: "success" });
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error al guardar", sev: "error" });
+    } finally {
+      setSavingPath(null);
+    }
+  };
+
+  // Cuántas tarjetas tienen cambios sin guardar (para el encabezado y el
+  // filtro "solo con cambios").
+  const dirtyCount = React.useMemo(() => {
+    if (!cfg || !savedCfg) return 0;
+    const groups = [
+      ["content.brand", "content.seo"], ["theme"], ["sections"], ["nav"],
+      ["content.hero"], ["landing.heroMeta"], ["landing.ticker", "landing.showTicker"],
+      ["landing.about"], ["landing.techniqueItems"], ["landing.sedes"],
+      ["landing.programs"], ["landing.convocatoria"], ["landing.convocatoriaPage"],
+      ["landing.newsletter"],
+      ["landing.footer", "landing.priceLabel", "landing.showPrices"],
+      ["content.featured"], ["content.techniques"], ["content.contact"], ["content.social"],
+    ];
+    return groups.filter((paths) =>
+      paths.some(
+        (path) =>
+          JSON.stringify(getPath(cfg, path)) !== JSON.stringify(getPath(savedCfg, path))
+      )
+    ).length;
+  }, [cfg, savedCfg]);
+
   const handleSave = async () => {
     if (!cfg) return;
     setSaving(true);
     try {
       const saved = await updateSiteConfig(cfg);
       setCfg(saved);
+      setSavedCfg(saved);
       setToast({ open: true, msg: "Sitio actualizado — los cambios salen en el landing en ~1 min", sev: "success" });
     } catch (e: any) {
       setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error al guardar", sev: "error" });
@@ -192,6 +359,7 @@ export default function PersonalizacionPage() {
   }
 
   const { theme, content, sections, nav, landing } = cfg;
+
   const cp = landing.convocatoriaPage;
 
   return (
@@ -208,16 +376,49 @@ export default function PersonalizacionPage() {
         <Tooltip title="Restaurar valores por defecto">
           <IconButton onClick={() => setCfg(SITE_DEFAULTS)}><ResetIcon size={18} /></IconButton>
         </Tooltip>
-        <Button variant="contained" disableElevation onClick={handleSave} disabled={saving}
+        <Button variant="contained" disableElevation onClick={handleSave} disabled={saving || dirtyCount === 0}
           startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <SaveIcon size={16} />}
           sx={{ fontWeight: 500, textTransform: "none", boxShadow: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C", boxShadow: "none" } }}>
-          {saving ? "Guardando…" : "Guardar"}
+          {saving ? "Guardando…" : dirtyCount > 0 ? `Guardar todo (${dirtyCount})` : "Sin cambios"}
         </Button>
       </Stack>
 
+      {/* Buscador: 23 tarjetas en una página son muchas para recorrer a ojo. */}
+      <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.5} mb={2.5}>
+        <TextField
+          size="small"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar sección…"
+          sx={{ flex: "1 1 220px", maxWidth: 340 }}
+        />
+        <Button
+          size="small"
+          variant={onlyDirty ? "contained" : "outlined"}
+          disableElevation
+          onClick={() => setOnlyDirty((v) => !v)}
+          disabled={dirtyCount === 0 && !onlyDirty}
+          sx={onlyDirty ? { bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } } : undefined}
+        >
+          Solo con cambios{dirtyCount > 0 ? ` (${dirtyCount})` : ""}
+        </Button>
+        {(query || onlyDirty) && (
+          <Button size="small" onClick={() => { setQuery(""); setOnlyDirty(false); }}>
+            Limpiar
+          </Button>
+        )}
+      </Stack>
+
+      <PersoCtx.Provider
+        value={{ cfg, savedCfg, savingPath, saveSection, query, onlyDirty }}
+      >
       <Stack spacing={2.5}>
         {/* Marca y SEO */}
-        <Section title="Marca y SEO">
+        <Section
+          title="Marca y SEO"
+          hint="Nombre, lema y cómo aparece el sitio en buscadores."
+          paths={["content.brand", "content.seo"]}
+        >
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Nombre de marca (navbar)" value={content.brand.name} onChange={(e) => setBrand("name", e.target.value)} fullWidth />
             <TextField size="small" label="Tagline (navbar)" value={content.brand.tagline} onChange={(e) => setBrand("tagline", e.target.value)} fullWidth />
@@ -260,7 +461,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Tema — paleta editorial de la landing */}
-        <Section title="Tema — colores de la landing">
+        <Section
+          title="Tema — colores de la landing"
+          hint="Paleta que usa todo el sitio público."
+          paths={["theme"]}
+        >
           <Typography variant="caption" color="text.secondary">
             Colores del tema claro. El modo oscuro se genera automáticamente.
           </Typography>
@@ -296,7 +501,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Secciones: orden + visibilidad */}
-        <Section title="Secciones — orden y visibilidad">
+        <Section
+          title="Secciones — orden y visibilidad"
+          hint="Qué bloques se muestran en la portada y en qué orden."
+          paths={["sections"]}
+        >
           <Typography variant="caption" color="text.secondary">
             Reordena con las flechas y muestra/oculta con el interruptor. El Hero (portada) siempre va primero.
           </Typography>
@@ -319,7 +528,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Navbar — pestañas configurables */}
-        <Section title="Navbar — pestañas del menú">
+        <Section
+          title="Navbar — pestañas del menú"
+          hint="Enlaces de la barra superior."
+          paths={["nav"]}
+        >
           <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
             <MenuIcon size={16} />
             <Typography variant="caption" color="text.secondary">
@@ -362,7 +575,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Hero */}
-        <Section title="Portada (hero)">
+        <Section
+          title="Portada (hero)"
+          hint="Lo primero que se ve al entrar."
+          paths={["content.hero"]}
+        >
           <TextField size="small" label="Badge" value={content.hero.badge} onChange={(e) => setHero("badge", e.target.value)} fullWidth />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Título" value={content.hero.title} onChange={(e) => setHero("title", e.target.value)} fullWidth />
@@ -413,7 +630,11 @@ export default function PersonalizacionPage() {
         <Divider textAlign="left"><Typography variant="overline" fontWeight={500} color="text.secondary">Contenido del landing</Typography></Divider>
 
         {/* Hero — barra y datos */}
-        <Section title="Portada — barra superior y datos">
+        <Section
+          title="Portada — barra superior y datos"
+          hint="Edición, ciudad y año sobre la portada."
+          paths={["landing.heroMeta"]}
+        >
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Edición (izq.)" value={landing.heroMeta.edition} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, edition: e.target.value } }))} fullWidth />
             <TextField size="small" label="Ubicación (centro)" value={landing.heroMeta.location} onChange={(e) => setL((l) => ({ ...l, heroMeta: { ...l.heroMeta, location: e.target.value } }))} fullWidth />
@@ -432,7 +653,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Ticker */}
-        <Section title="Ticker (cinta que se desliza)">
+        <Section
+          title="Ticker (cinta que se desliza)"
+          hint="Cinta de texto en movimiento bajo la portada."
+          paths={["landing.ticker", "landing.showTicker"]}
+        >
           <Stack direction="row" flexWrap="wrap" spacing={2} alignItems="center">
             <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.showTicker} onChange={() => setL((l) => ({ ...l, showTicker: !l.showTicker }))} /><Typography variant="body2">Mostrar ticker</Typography></Stack>
           </Stack>
@@ -440,7 +665,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* La feria (about) */}
-        <Section title="La feria (intro + estadísticas)">
+        <Section
+          title="La feria (intro + estadísticas)"
+          hint="Bloque de presentación con cifras."
+          paths={["landing.about"]}
+        >
           <TextField size="small" label="Badge" value={landing.about.badge} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, badge: e.target.value } }))} fullWidth />
           <TextField size="small" label="Título" value={landing.about.title} onChange={(e) => setL((l) => ({ ...l, about: { ...l.about, title: e.target.value } }))} fullWidth multiline rows={2} />
           <StrList label="Párrafos" multiline items={landing.about.paragraphs} onChange={(paragraphs) => setL((l) => ({ ...l, about: { ...l.about, paragraphs } }))} />
@@ -462,7 +691,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Técnicas — tarjetas */}
-        <Section title="Técnicas — tarjetas (imagen + nombre)">
+        <Section
+          title="Técnicas — tarjetas (imagen + nombre)"
+          hint="Tarjetas ilustradas de la sección de técnicas."
+          paths={["landing.techniqueItems"]}
+        >
           {landing.techniqueItems.map((t, i) => (
             <Row key={i} onRemove={() => setL((l) => ({ ...l, techniqueItems: l.techniqueItems.filter((_, idx) => idx !== i) }))}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -476,7 +709,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Sedes */}
-        <Section title="Sedes">
+        <Section
+          title="Sedes"
+          hint="Ciudades y espacios donde ocurre la feria."
+          paths={["landing.sedes"]}
+        >
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Badge" value={landing.sedes.badge} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, badge: e.target.value } }))} sx={{ minWidth: 140 }} />
             <TextField size="small" label="Título" value={landing.sedes.title} onChange={(e) => setL((l) => ({ ...l, sedes: { ...l.sedes, title: e.target.value } }))} fullWidth />
@@ -495,7 +732,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Programas */}
-        <Section title="Programas">
+        <Section
+          title="Programas"
+          hint="Actividades y programación."
+          paths={["landing.programs"]}
+        >
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Badge" value={landing.programs.badge} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, badge: e.target.value } }))} sx={{ minWidth: 140 }} />
             <TextField size="small" label="Título" value={landing.programs.title} onChange={(e) => setL((l) => ({ ...l, programs: { ...l.programs, title: e.target.value } }))} fullWidth />
@@ -511,7 +752,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Convocatoria */}
-        <Section title="Convocatoria">
+        <Section
+          title="Convocatoria"
+          hint="Bloque de convocatoria en la portada."
+          paths={["landing.convocatoria"]}
+        >
           <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.convocatoria.open} onChange={() => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, open: !l.convocatoria.open } }))} color="success" /><Typography variant="body2">Convocatoria abierta (apagado = se oculta la sección)</Typography></Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Badge" value={landing.convocatoria.badge} onChange={(e) => setL((l) => ({ ...l, convocatoria: { ...l.convocatoria, badge: e.target.value } }))} fullWidth />
@@ -536,7 +781,11 @@ export default function PersonalizacionPage() {
         {/* ═══ PÁGINA DE CONVOCATORIA (bases) ═══ */}
         <Divider textAlign="left"><Typography variant="overline" fontWeight={500} color="text.secondary">Página de convocatoria</Typography></Divider>
 
-        <Section title="Convocatoria — portada">
+        <Section
+          title="Convocatoria — portada"
+          hint="Encabezado de la página de convocatoria."
+          paths={["landing.convocatoriaPage"]}
+        >
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Título" value={cp.hero.title} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, title: e.target.value } }))} fullWidth />
             <TextField size="small" label="Título (bold)" value={cp.hero.titleStrong} onChange={(e) => setCP((c) => ({ ...c, hero: { ...c.hero, titleStrong: e.target.value } }))} sx={{ minWidth: 140 }} />
@@ -576,7 +825,11 @@ export default function PersonalizacionPage() {
           <Typography variant="caption" color="text.secondary">El estado abierto/cerrado se controla con el interruptor de la sección “Convocatoria” de arriba.</Typography>
         </Section>
 
-        <Section title="Convocatoria — textos">
+        <Section
+          title="Convocatoria — textos"
+          hint="Copys de la página de convocatoria."
+          paths={["landing.convocatoriaPage"]}
+        >
           <Divider textAlign="left"><Typography variant="caption" color="text.secondary">01 · La feria</Typography></Divider>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Título" value={cp.intro.title} onChange={(e) => setCP((c) => ({ ...c, intro: { ...c.intro, title: e.target.value } }))} fullWidth />
@@ -591,7 +844,11 @@ export default function PersonalizacionPage() {
           <TextField size="small" label="Nota CTA" value={cp.cta.note} onChange={(e) => setCP((c) => ({ ...c, cta: { ...c.cta, note: e.target.value } }))} fullWidth />
         </Section>
 
-        <Section title="Convocatoria — quién participa / requisitos">
+        <Section
+          title="Convocatoria — quién participa / requisitos"
+          hint="Condiciones para postular."
+          paths={["landing.convocatoriaPage"]}
+        >
           {(["participantes", "requisitos"] as const).map((key) => (
             <Box key={key} sx={{ p: 1.25, borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
               <Typography variant="caption" fontWeight={500} color="text.secondary">{key === "participantes" ? "04 · Quién participa" : "05 · Requisitos del proyecto"}</Typography>
@@ -601,7 +858,11 @@ export default function PersonalizacionPage() {
           ))}
         </Section>
 
-        <Section title="Convocatoria — documentos y pasos">
+        <Section
+          title="Convocatoria — documentos y pasos"
+          hint="Qué debe preparar el artista."
+          paths={["landing.convocatoriaPage"]}
+        >
           <Divider textAlign="left"><Typography variant="caption" color="text.secondary">06 · Documentos requeridos</Typography></Divider>
           {cp.documentos.items.map((d, i) => (
             <Row key={i} onRemove={() => setCP((c) => ({ ...c, documentos: { ...c.documentos, items: c.documentos.items.filter((_, idx) => idx !== i) } }))}>
@@ -622,7 +883,11 @@ export default function PersonalizacionPage() {
           <AddBtn onClick={() => setCP((c) => ({ ...c, pasos: { ...c.pasos, items: [...c.pasos.items, { title: "Nuevo", description: "" }] } }))} />
         </Section>
 
-        <Section title="Convocatoria — rechazo, comisiones y compromisos">
+        <Section
+          title="Convocatoria — rechazo, comisiones y compromisos"
+          hint="Reglas del proceso y letra chica."
+          paths={["landing.convocatoriaPage"]}
+        >
           <StrList label="08 · Causales de rechazo" items={cp.rechazo.items} onChange={(v) => setCP((c) => ({ ...c, rechazo: { ...c.rechazo, items: v } }))} />
           <Divider textAlign="left"><Typography variant="caption" color="text.secondary">09 · Comisiones</Typography></Divider>
           <TextField size="small" label="Nota comisiones" value={cp.comisiones.note} onChange={(e) => setCP((c) => ({ ...c, comisiones: { ...c.comisiones, note: e.target.value } }))} fullWidth multiline rows={2} />
@@ -641,7 +906,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Boletín */}
-        <Section title="Boletín (newsletter)">
+        <Section
+          title="Boletín (newsletter)"
+          hint="Bloque de suscripción por correo."
+          paths={["landing.newsletter"]}
+        >
           <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.newsletter.enabled} onChange={() => setL((l) => ({ ...l, newsletter: { ...l.newsletter, enabled: !l.newsletter.enabled } }))} color="success" /><Typography variant="body2">Mostrar sección</Typography></Stack>
           <TextField size="small" label="Badge" value={landing.newsletter.badge} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, badge: e.target.value } }))} fullWidth />
           <TextField size="small" label="Título" value={landing.newsletter.title} onChange={(e) => setL((l) => ({ ...l, newsletter: { ...l.newsletter, title: e.target.value } }))} fullWidth multiline rows={2} />
@@ -650,7 +919,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Footer + ajustes */}
-        <Section title="Pie de página y ajustes">
+        <Section
+          title="Pie de página y ajustes"
+          hint="Pie del sitio y visibilidad de precios."
+          paths={["landing.footer", "landing.priceLabel", "landing.showPrices"]}
+        >
           <TextField size="small" label="Descripción del footer" value={landing.footer.description} onChange={(e) => setL((l) => ({ ...l, footer: { ...l.footer, description: e.target.value } }))} fullWidth multiline rows={2} />
           <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
             <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.showPrices} onChange={() => setL((l) => ({ ...l, showPrices: !l.showPrices }))} color="success" /><Typography variant="body2">Mostrar precios en obras</Typography></Stack>
@@ -659,19 +932,31 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Obras destacadas (título de sección; las obras salen del catálogo) */}
-        <Section title="Obras destacadas">
+        <Section
+          title="Obras destacadas"
+          hint="Textos de la sección de obras destacadas."
+          paths={["content.featured"]}
+        >
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" label="Badge" value={content.featured.badge} onChange={(e) => setFeat("badge", e.target.value)} sx={{ minWidth: 160 }} />
             <TextField size="small" label="Título" value={content.featured.title} onChange={(e) => setFeat("title", e.target.value)} fullWidth />
           </Stack>
         </Section>
-        <Section title="Técnicas">
+        <Section
+          title="Técnicas"
+          hint="Textos de la sección de técnicas."
+          paths={["content.techniques"]}
+        >
           <TextField size="small" label="Título" value={content.techniques.title} onChange={(e) => setTech("title", e.target.value)} fullWidth />
           <TextField size="small" label="Subtítulo" value={content.techniques.subtitle} onChange={(e) => setTech("subtitle", e.target.value)} fullWidth />
         </Section>
 
         {/* Contacto */}
-        <Section title="Contacto">
+        <Section
+          title="Contacto"
+          hint="Datos de contacto públicos."
+          paths={["content.contact"]}
+        >
           <TextField size="small" label="Badge" value={content.contact.badge} onChange={(e) => setContact("badge", e.target.value)} fullWidth />
           <TextField size="small" label="Título" value={content.contact.title} onChange={(e) => setContact("title", e.target.value)} fullWidth />
           <TextField size="small" label="Subtítulo" value={content.contact.subtitle} onChange={(e) => setContact("subtitle", e.target.value)} fullWidth multiline rows={2} />
@@ -682,7 +967,11 @@ export default function PersonalizacionPage() {
         </Section>
 
         {/* Redes sociales */}
-        <Section title="Redes sociales">
+        <Section
+          title="Redes sociales"
+          hint="Enlaces a redes."
+          paths={["content.social"]}
+        >
           <Typography variant="caption" color="text.secondary">
             Pega el enlace completo. Vacío = no se muestra ese ícono.
           </Typography>
@@ -700,6 +989,7 @@ export default function PersonalizacionPage() {
           </Stack>
         </Section>
       </Stack>
+      </PersoCtx.Provider>
 
       <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast((t) => ({ ...t, open: false }))}>
         <Alert severity={toast.sev} variant="filled">{toast.msg}</Alert>
