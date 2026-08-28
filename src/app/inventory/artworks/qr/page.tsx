@@ -36,6 +36,14 @@ export default function ArtworksQrPage() {
   const base = shopUrl.replace(/\/+$/, "");
   const urlFor = (id: string) => `${base}/obra/${id}`;
 
+  // Clave estable de las obras: depender del arreglo en sí ataba el efecto a
+  // la identidad del objeto, no a su contenido. Con los ids concatenados el
+  // efecto solo vuelve a correr si de verdad cambió el conjunto de obras.
+  const rowsKey = React.useMemo(
+    () => (rows as any[]).map((a) => a.id || a._id).filter(Boolean).join(","),
+    [rows]
+  );
+
   // Generar los QR (data URLs) cuando cambian obras o base.
   React.useEffect(() => {
     let cancelled = false;
@@ -53,8 +61,9 @@ export default function ArtworksQrPage() {
       if (!cancelled) { setQrById(out); setBuilding(false); }
     })();
     return () => { cancelled = true; };
+    // rowsKey en lugar de rows: ver la nota de arriba.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, base]);
+  }, [rowsKey, base]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>

@@ -69,11 +69,19 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
     staleTime: 10_000,
   });
 
-  const pages =
-    (query.data as any)
-      ?.pages ?? [];
+  const pages = useMemo(
+    () => ((query.data as any)?.pages ?? []) as any[],
+    [query.data]
+  );
 
-  const rows: ArtworkRow[] = pages.flatMap((p:any) => p.docs) ?? [];
+  // Memoizado a propósito: sin esto `rows` es un arreglo nuevo en cada
+  // render, y cualquier efecto que lo tenga como dependencia entra en bucle.
+  // (Pasaba en /inventory/artworks/qr: regeneraba los QR sin parar y dejaba
+  // el hilo principal saturado.)
+  const rows: ArtworkRow[] = useMemo(
+    () => pages.flatMap((p: any) => p.docs) ?? [],
+    [pages]
+  );
   const totalFromApi = pages[0]?.pageInfo?.total as number | undefined;
   const totalLabel =
     typeof totalFromApi === "number"

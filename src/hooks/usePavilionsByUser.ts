@@ -19,6 +19,30 @@ type Options = {
   retryCount?: number;
 };
 
+/* La función de `select` vive fuera del hook a propósito.
+   Definida en línea, su identidad cambia en cada render y react-query vuelve
+   a ejecutarla, devolviendo un objeto nuevo aunque los datos sean idénticos.
+   Cualquier efecto o memo que dependiera de ese objeto se re-disparaba solo. */
+function selectPavilions(data: any) {
+  // Ordena por nombre si viene disponible; si no, por slug
+  const sortedRows = [...(data?.rows ?? [])].sort((a: any, b: any) => {
+    const an = (a.name || a.slug || "").toLowerCase();
+    const bn = (b.name || b.slug || "").toLowerCase();
+    return an.localeCompare(bn);
+  });
+
+  const totalArtworks = sortedRows.reduce(
+    (acc: number, r: any) => acc + (r.artworksCount || 0),
+    0
+  );
+
+  return {
+    ...data,
+    rows: sortedRows,
+    meta: { totalArtworks },
+  };
+}
+
 export function usePavilionsByUser(
   eventId?: string,
   userId?: string,
@@ -53,27 +77,6 @@ export function usePavilionsByUser(
       // eventId/userId garantizados por `enabled`
       return listPavilionsByUser(eventId as string, userId as string, includeCounts);
     },
-    select: (data) => {
-      // Ordena por nombre si viene disponible; si no, por slug
-      const sortedRows = [...(data?.rows ?? [])].sort((a, b) => {
-        const an = (a.name || a.slug || "").toLowerCase();
-        const bn = (b.name || b.slug || "").toLowerCase();
-        return an.localeCompare(bn);
-      });
-
-      // Derivados útiles para UI
-      const totalArtworks = sortedRows.reduce(
-        (acc, r) => acc + (r.artworksCount || 0),
-        0
-      );
-
-      return {
-        ...data,
-        rows: sortedRows,
-        meta: {
-          totalArtworks,
-        },
-      };
-    },
+    select: selectPavilions,
   });
 }
