@@ -187,3 +187,40 @@ export const registerAbono = async (
     );
     return data;
 };
+
+export interface CustomerDoc {
+    _id: string;
+    email: string;
+    name?: string;
+    phone?: string | null;
+    address?: AddressInput | null;
+    ordersCount?: number;
+    totalSpent?: number;
+    firstOrderAt?: string;
+    lastOrderAt?: string;
+}
+
+/** GET /order/customers — compradores únicos (staff). */
+export const listCustomers = async (): Promise<CustomerDoc[]> => {
+    const { data } = await apiClient.get<CustomerDoc[]>("/order/customers", { withCredentials: true });
+    return data;
+};
+
+export interface SalesBucket { key: string; label: string; amount: number; units: number; caja: number; online: number }
+export interface SalesLine {
+    day: string; orderId: string; artwork: string; artist: string; technique: string; pavilion: string;
+    qty: number; amount: number; channel: string; method: string; buyer: string; buyerEmail: string; buyerPhone: string;
+}
+export interface SalesReport {
+    total: number; units: number; orders: number;
+    byDay: SalesBucket[]; byPavilion: SalesBucket[]; byArtist: SalesBucket[]; byTechnique: SalesBucket[];
+    lines: SalesLine[];
+}
+
+/** GET /order/reports/sales — ventas pagadas agregadas (staff). Fechas YYYY-MM-DD, hora Bogotá. */
+export const getSalesReport = async (params: {
+    event?: string; from?: string; to?: string; artist?: string; technique?: string; pavilion?: string;
+}): Promise<SalesReport> => {
+    const { data } = await apiClient.get<SalesReport>("/order/reports/sales", { params, withCredentials: true });
+    return data;
+};

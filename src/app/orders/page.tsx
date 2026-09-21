@@ -6,9 +6,10 @@ import {
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   CircularProgress, LinearProgress,
 } from "@mui/material";
-import { ShoppingBag, RefreshCw } from "lucide-react";
+import { ShoppingBag, RefreshCw, FileSpreadsheet } from "lucide-react";
+import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
 import { useQuery } from "@tanstack/react-query";
-import { listOrders, type OrderDoc } from "@services/orders.service";
+import { listOrders, listCustomers, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
 import { formatDate } from "@/utils/date";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
@@ -43,6 +44,26 @@ export default function OrdersPage() {
           .some((v) => String(v || "").toLowerCase().includes(needle)))
     : orders;
 
+  const [exporting, setExporting] = React.useState(false);
+  const exportBuyers = async () => {
+    setExporting(true);
+    try {
+      const customers = await listCustomers();
+      downloadCsv(`compradores_${stamp()}.csv`, toCsv(customers, [
+        { header: "Nombre", value: (c) => c.name },
+        { header: "Email", value: (c) => c.email },
+        { header: "Teléfono", value: (c) => c.phone, text: true },
+        { header: "Dirección", value: (c) => [c.address?.line1, c.address?.line2].filter(Boolean).join(", ") },
+        { header: "Compras", value: (c) => c.ordersCount ?? 0 },
+        { header: "Total gastado (COP)", value: (c) => c.totalSpent ?? 0 },
+        { header: "Primera compra", value: (c) => fmtDay(c.firstOrderAt) },
+        { header: "Última compra", value: (c) => fmtDay(c.lastOrderAt) },
+      ]));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const paidTotal = rows.filter((o) => o.status === "paid").reduce((a, o) => a + Number(o.total || 0), 0);
   const items = (o: OrderDoc) => (o.items || []).map((it: any) => it.title || it.artworkId).join(", ");
   const chip = (s: OrderDoc["status"]) => (
@@ -59,6 +80,9 @@ export default function OrdersPage() {
           <Typography fontWeight={500} fontSize={20}>Pedidos</Typography>
           <Typography variant="caption" color="text.secondary">Todas las ventas de obras, en línea y en caja.</Typography>
         </Box>
+        <Button variant="outlined" startIcon={<FileSpreadsheet size={16} />} onClick={exportBuyers} disabled={exporting} sx={{ textTransform: "none" }}>
+          {exporting ? "Exportando…" : "Exportar compradores"}
+        </Button>
         <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => refetch()} disabled={isFetching} sx={{ textTransform: "none" }}>
           Actualizar
         </Button>

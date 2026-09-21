@@ -156,6 +156,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
               icon={<ReportesIcon size={18} />}
               text="Reportes"
             />
+            <NavItem
+              active={pathname === "/reportes/ventas"}
+              onClick={() => router.push("/reportes/ventas")}
+              icon={<ReportesIcon size={18} />}
+              text="Informe de ventas"
+            />
           </List>
 
           {/* OPERATIONS - EVENTOS, BOLETOS, PEDIDOS */}

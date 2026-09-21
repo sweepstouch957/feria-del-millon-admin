@@ -17,13 +17,14 @@ import {
   Search, RefreshCcw, Pencil, Eye, Save, X, Users,
   Mail, Phone, MapPin, Instagram, Facebook, Globe, Calendar,
   CheckCircle2, XCircle, Shield, Clock, User as UserIcon,
-  UserPlus, Copy, KeyRound,
+  UserPlus, Copy, KeyRound, FileSpreadsheet,
 } from "lucide-react";
+import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
 
 import { useUsers, useDebouncedValue } from "@/hooks/useAuth";
 import { useCities } from "@/hooks/useCities";
 import {
-  getUserById, updateUser, createUser,
+  getUserById, updateUser, createUser, listUsers,
   type UsersSearchParams, type UserDTO, type Roles as RolesMap,
   type CreateUserPayload,
 } from "@services/user.service";
@@ -722,6 +723,35 @@ export default function UsersPage() {
   };
 
   const { data, isLoading, isFetching, refetch } = useUsers(params);
+
+  // Exporta TODOS los usuarios que cumplen los filtros actuales (no solo la página).
+  const [exporting, setExporting] = React.useState(false);
+  const exportUsers = async () => {
+    setExporting(true);
+    try {
+      const all: UserDTO[] = [];
+      for (let page = 1; ; page++) {
+        const r = await listUsers({ ...params, page, limit: 200 });
+        all.push(...(r.users || []));
+        if (page >= (r.totalPages || 1)) break;
+      }
+      const roleNames = (u: UserDTO) =>
+        Object.entries(u.roles || {}).filter(([, v]) => v).map(([k]) => k).join(", ");
+      downloadCsv(`usuarios_${stamp()}.csv`, toCsv(all, [
+        { header: "Nombre", value: (u) => u.firstName },
+        { header: "Apellido", value: (u) => u.lastName },
+        { header: "Email", value: (u) => u.email },
+        { header: "Teléfono", value: (u) => u.mobile, text: true },
+        { header: "Ciudad", value: (u) => u.city },
+        { header: "Roles", value: roleNames },
+        { header: "Activo", value: (u) => (u.active ? "Sí" : "No") },
+        { header: "Registro", value: (u) => fmtDay(u.registeredAt || u.createdAt) },
+        { header: "Último ingreso", value: (u) => fmtDay(u.lastLoginAt) },
+      ]));
+    } finally {
+      setExporting(false);
+    }
+  };
   const { data: cities = [] } = useCities();
 
   // Modal
@@ -864,6 +894,15 @@ export default function UsersPage() {
             }}
           >
             Nueva cajera
+          </Button>
+          <Button
+            onClick={exportUsers}
+            disabled={exporting}
+            variant="outlined"
+            startIcon={<FileSpreadsheet size={16} />}
+            sx={{ fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2, textTransform: "none" }}
+          >
+            {exporting ? "Exportando…" : "Exportar Excel"}
           </Button>
           <Tooltip title="Actualizar">
             <IconButton onClick={() => refetch()} sx={{
