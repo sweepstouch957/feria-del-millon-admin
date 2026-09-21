@@ -324,7 +324,7 @@ function ApplicationDetailDialog({
     setSaving(true);
     try {
       await reviewApplication(app._id, decision, { notes, rejectionReason: rejReason });
-      setToast({ open: true, msg: `Postulación ${decision === "accepted" ? "aceptada" : "rechazada"} y notificación enviada`, sev: "success" });
+      setToast({ open: true, msg: `Postulación ${decision === "accepted" ? "aceptada" : "rechazada"} — el correo sale con \"Enviar resolución\"`, sev: "success" });
       setReviewing(false);
       onRefresh();
       onClose();
@@ -626,9 +626,9 @@ function ApplicationDetailDialog({
                     <MenuItem value="rejected"><XCircleIcon size={14} style={{ marginRight: 8 }} /> Rechazar postulación</MenuItem>
                   </Select>
                 </FormControl>
-                <TextField label="Notas del curador (visibles al artista)" multiline rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth size="small" />
+                <TextField label="Notas del curador (internas)" multiline rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth size="small" />
                 {decision === "rejected" && (
-                  <TextField label="Razón de rechazo *" multiline rows={2} value={rejReason} onChange={(e) => setRejReason(e.target.value)} fullWidth size="small" required />
+                  <TextField label="Razón de rechazo (interna) *" multiline rows={2} value={rejReason} onChange={(e) => setRejReason(e.target.value)} fullWidth size="small" required />
                 )}
               </Stack>
             </Box>
@@ -701,7 +701,7 @@ function ApplicationDetailDialog({
             <>
               <Button onClick={() => setReviewing(false)} color="inherit">Cancelar</Button>
               <Button variant="contained" onClick={handleReview} disabled={saving || !decision || (decision === "rejected" && !rejReason)}>
-                {saving ? <CircularProgress size={18} /> : "Confirmar y notificar"}
+                {saving ? <CircularProgress size={18} /> : "Confirmar decisión"}
               </Button>
             </>
           )}

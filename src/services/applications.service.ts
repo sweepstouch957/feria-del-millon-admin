@@ -95,7 +95,7 @@ export const reviewApplication = async (
 ): Promise<{ ok: boolean; doc: ArtistApplication }> => {
   const { data } = await apiClient.patch(
     `/applications/applications/${id}/review`,
-    { decision, ...payload },
+    { decision, ...payload, notify: false },
     { headers: ADMIN_HEADERS }
   );
   return data;
