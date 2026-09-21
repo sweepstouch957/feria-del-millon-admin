@@ -2,6 +2,7 @@
 
     import { useMemo, useState } from "react";
     import {
+        Autocomplete,
         Box,
         Button,
         Card,
@@ -20,6 +21,8 @@
         Typography,
     } from "@mui/material";
     import { useForm } from "react-hook-form";
+    import { useQuery } from "@tanstack/react-query";
+    import { listUsers } from "@services/user.service";
     import { toast } from "sonner";
     import { formatCOP } from "@/utils/money";
 
@@ -52,6 +55,18 @@
         const { user } = useAuth();
 
         const [search, setSearch] = useState("");
+        const [artistQ, setArtistQ] = useState("");
+        const [artist, setArtist] = useState<{ id: string; label: string } | null>(null);
+        const { data: artistOpts = [] } = useQuery({
+            queryKey: ["users", "artist-search", artistQ],
+            queryFn: async () =>
+                (await listUsers({ q: artistQ, limit: 20 })).users.map((u: any) => ({
+                    id: String(u.id),
+                    label: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
+                })),
+            enabled: artistQ.trim().length >= 2,
+            staleTime: 60_000,
+        });
         const [selectedArtwork, setSelectedArtwork] = useState<ArtworkRow | null>(
             null
         );
@@ -65,6 +80,7 @@
             isFetchingNextPage,
         } = useArtworksCursor({
             q: search || undefined,
+            artist: artist?.id,
             event: DEFAULT_EVENT_ID,
             limit: 25,
         });
@@ -267,7 +283,7 @@
                         >
                             <CardHeader
                                 title="Buscar obra"
-                                subheader="Busca por slug, SKU o nombre de la obra"
+                                subheader="Busca por nombre de la obra o filtra por artista"
                             />
                             <CardContent
                                 sx={{
@@ -284,6 +300,17 @@
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Ej: obra-azul-01 o SKU123"
+                                />
+                                <Autocomplete
+                                    size="small"
+                                    options={artistOpts}
+                                    value={artist}
+                                    onChange={(_, v) => setArtist(v)}
+                                    onInputChange={(_, v) => setArtistQ(v)}
+                                    isOptionEqualToValue={(a, b) => a.id === b.id}
+                                    filterOptions={(x) => x}
+                                    noOptionsText={artistQ.trim().length < 2 ? "Escribe el nombre del artista" : "Sin resultados"}
+                                    renderInput={(params) => <TextField {...params} label="Filtrar por artista" />}
                                 />
 
                                 <TableContainer component={Paper} sx={{ maxHeight: 420 }}>
