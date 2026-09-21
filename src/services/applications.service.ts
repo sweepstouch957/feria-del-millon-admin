@@ -16,7 +16,7 @@ export interface ArtistApplication {
   _id: string;
   convocatoria: { _id: string; name: string; slug: string; fee: number; currency: string } | string;
   artist: { _id: string; firstName: string; lastName: string; email: string; mobile?: string; city?: string } | string;
-  status: "pending_payment" | "draft" | "submitted" | "under_review" | "revision_requested" | "accepted" | "rejected";
+  status: "pending_payment" | "draft" | "submitted" | "under_review" | "stand_by" | "revision_requested" | "accepted" | "rejected";
   paymentStatus: "pending" | "approved" | "rejected" | "cancelled";
   isPaid: boolean;
   paidAt?: string;
@@ -29,6 +29,10 @@ export interface ArtistApplication {
   montageImageUrl?: string;
   adminNotes?: string;
   rejectionReason?: string;
+  /** 1–5, interna (equipo de la feria). */
+  staffRating?: number;
+  /** 1–5, interna (curadores/jurados invitados). */
+  curatorRating?: number;
   revisionNotes?: string;
   revisionRequestedAt?: string;
   revisionRequestedBy?: string;
@@ -44,6 +48,9 @@ export interface ApplicationListParams {
   convocatoria?: string;
   isPaid?: boolean | string;
   q?: string;
+  technique?: string;
+  minStaffRating?: number;
+  minCuratorRating?: number;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -107,6 +114,21 @@ export const setUnderReview = async (id: string): Promise<{ ok: boolean }> => {
     {},
     { headers: ADMIN_HEADERS }
   );
+  return data;
+};
+
+/** Calificada, a la espera de decisión final. */
+export const setStandBy = async (id: string): Promise<{ ok: boolean }> => {
+  const { data } = await apiClient.patch(`/applications/applications/${id}/stand-by`, {});
+  return data;
+};
+
+/** Calificación 1–5; null la borra. Un curador solo puede poner curatorRating. */
+export const rateApplication = async (
+  id: string,
+  payload: { staffRating?: number | null; curatorRating?: number | null }
+): Promise<{ ok: boolean; staffRating: number | null; curatorRating: number | null }> => {
+  const { data } = await apiClient.patch(`/applications/applications/${id}/rating`, payload);
   return data;
 };
 

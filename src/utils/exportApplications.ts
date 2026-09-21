@@ -11,8 +11,9 @@ export type Segment = "paid_submitted" | "paid_not_submitted" | "not_paid" | "al
 const STATUS_LABEL: Record<string, string> = {
   pending_payment: "Pago pendiente",
   draft: "Borrador",
-  submitted: "Enviada",
+  submitted: "Recibida",
   under_review: "En revisión",
+  stand_by: "Stand by",
   revision_requested: "Corrección solicitada",
   accepted: "Aceptada",
   rejected: "Rechazada",
@@ -21,7 +22,7 @@ const STATUS_LABEL: Record<string, string> = {
 /** "Envió propuesta" = tiene submittedAt, o su estado ya pasó de borrador. */
 export function isSubmitted(a: ArtistApplication): boolean {
   if (a.submittedAt) return true;
-  return ["submitted", "under_review", "revision_requested", "accepted", "rejected"].includes(a.status);
+  return ["submitted", "under_review", "stand_by", "revision_requested", "accepted", "rejected"].includes(a.status);
 }
 
 export function inSegment(a: ArtistApplication, seg: Segment): boolean {
@@ -98,6 +99,8 @@ const HEADERS = [
   "Envió propuesta",
   "Fecha de envío",
   "Obras cargadas",
+  "Calificación staff",
+  "Calificación curador",
   "Fecha de registro",
 ];
 
@@ -118,6 +121,8 @@ export function applicationsToCsv(apps: ArtistApplication[]): string {
       isSubmitted(a) ? "Sí" : "No",
       fmtDate(a.submittedAt),
       String(a.artworkImages?.length || 0),
+      a.staffRating ? String(a.staffRating) : "",
+      a.curatorRating ? String(a.curatorRating) : "",
       fmtDate(a.createdAt),
     ];
   });

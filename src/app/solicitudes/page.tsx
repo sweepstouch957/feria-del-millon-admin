@@ -7,7 +7,7 @@ import {
   IconButton, Select, MenuItem, FormControl, InputLabel, Chip, Button,
   Tooltip, Typography, Divider, Dialog, DialogTitle, DialogContent,
   DialogActions, Snackbar, Alert, LinearProgress, Avatar, Badge,
-  Tab, Tabs, CircularProgress, Menu,
+  Tab, Tabs, CircularProgress, Menu, Rating,
 } from "@mui/material";
 import { DataGrid, type GridColDef, type GridRenderCellParams, type GridPaginationModel } from "@mui/x-data-grid";
 import {
@@ -27,7 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import SendResolutionButton from "@/components/solicitudes/SendResolutionButton";
 import {
   listApplications, getApplicationStats, reviewApplication, requestRevision,
-  setUnderReview, markAsPaid, deleteApplication, sendPaymentReminder,
+  setUnderReview, setStandBy, rateApplication, markAsPaid, deleteApplication, sendPaymentReminder,
   sendBulkReminders,
   type ArtistApplication, type ArtworkImageEntry,
 } from "@services/applications.service";
@@ -53,8 +53,9 @@ function resolveImgUrl(url?: string): string {
 const STATUS_CONFIG: Record<string, { label: string; color: "default" | "primary" | "success" | "warning" | "info" | "error" }> = {
   pending_payment:    { label: "Pago pendiente",         color: "warning" },
   draft:              { label: "Borrador",                color: "info"    },
-  submitted:          { label: "Enviada",                 color: "primary" },
+  submitted:          { label: "Recibida",                color: "primary" },
   under_review:       { label: "En revisión",             color: "info"    },
+  stand_by:           { label: "Stand by",                color: "default" },
   revision_requested: { label: "Corrección solicitada",   color: "warning" },
   accepted:           { label: "Aceptada",                color: "success" },
   rejected:           { label: "Rechazada",               color: "error"   },
@@ -245,6 +246,11 @@ function ApplicationDetailDialog({
     }
   }, [open]);
 
+  const [ratings, setRatings] = React.useState<{ staffRating: number | null; curatorRating: number | null }>({ staffRating: null, curatorRating: null });
+  React.useEffect(() => {
+    setRatings({ staffRating: app?.staffRating ?? null, curatorRating: app?.curatorRating ?? null });
+  }, [app?._id, app?.staffRating, app?.curatorRating]);
+
   if (!app) return null;
 
   const artist = typeof app.artist === "object" ? app.artist : null;
@@ -266,6 +272,30 @@ function ApplicationDetailDialog({
     } catch (e: any) {
       setToast({ open: true, msg: e?.message || "Error", sev: "error" });
     } finally { setSaving(false); }
+  };
+
+  const handleSetStandBy = async () => {
+    setSaving(true);
+    try {
+      await setStandBy(app._id);
+      setToast({ open: true, msg: "Postulación en stand by", sev: "success" });
+      onRefresh();
+    } catch (e: any) {
+      setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error", sev: "error" });
+    } finally { setSaving(false); }
+  };
+
+  // Calificaciones internas: se guardan al instante, sin pasar por "decidir".
+  const handleRate = async (field: "staffRating" | "curatorRating", value: number | null) => {
+    const prev = ratings;
+    setRatings((r) => ({ ...r, [field]: value }));
+    try {
+      await rateApplication(app._id, { [field]: value });
+      onRefresh();
+    } catch (e: any) {
+      setRatings(prev);
+      setToast({ open: true, msg: e?.response?.data?.error || e?.message || "No se pudo calificar", sev: "error" });
+    }
   };
 
   const handleMarkAsPaid = async () => {
@@ -424,6 +454,20 @@ function ApplicationDetailDialog({
                 <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
                   <InstagramIcon size={16} />
                   <Typography variant="body2" fontWeight={500}>{(artist as any).instagram}</Typography>
+                </Stack>
+              )}
+
+              {/* Calificaciones internas 1–5 */}
+              {!["pending_payment", "draft"].includes(app.status) && (
+                <Stack direction="row" flexWrap="wrap" gap={3} sx={{ border: 1, borderColor: "divider", p: 1.5 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Calificación staff</Typography>
+                    <Rating value={ratings.staffRating} onChange={(_, v) => handleRate("staffRating", v)} />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Calificación curador</Typography>
+                    <Rating value={ratings.curatorRating} onChange={(_, v) => handleRate("curatorRating", v)} />
+                  </Box>
                 </Stack>
               )}
 
@@ -666,6 +710,11 @@ function ApplicationDetailDialog({
                   Marcar en revisión
                 </Button>
               )}
+              {["submitted", "under_review"].includes(app.status) && (
+                <Button variant="outlined" color="inherit" onClick={handleSetStandBy} disabled={saving}>
+                  Stand by
+                </Button>
+              )}
               {["submitted", "under_review", "revision_requested"].includes(app.status) && (
                 <Button
                   startIcon={<RevisionIcon size={16} />}
@@ -677,7 +726,7 @@ function ApplicationDetailDialog({
                   Invitar a editar
                 </Button>
               )}
-              {["submitted", "under_review", "revision_requested"].includes(app.status) && (
+              {["submitted", "under_review", "stand_by", "revision_requested"].includes(app.status) && (
                 <Button
                   startIcon={<CheckCircleIcon size={16} />}
                   variant="contained" color="success"
@@ -686,7 +735,7 @@ function ApplicationDetailDialog({
                   Aceptar
                 </Button>
               )}
-              {["submitted", "under_review", "revision_requested"].includes(app.status) && (
+              {["submitted", "under_review", "stand_by", "revision_requested"].includes(app.status) && (
                 <Button
                   startIcon={<XCircleIcon size={16} />}
                   variant="contained" color="error"
@@ -848,6 +897,9 @@ export default function SolicitudesPage() {
     staleTime: 5 * 60_000,
   });
   const [filterPaid, setFilterPaid] = React.useState("");
+  const [filterTech, setFilterTech] = React.useState("");
+  const [filterMinStaff, setFilterMinStaff] = React.useState("");
+  const [filterMinCur, setFilterMinCur] = React.useState("");
   const [q, setQ] = React.useState("");
   const [pagination, setPagination] = React.useState<GridPaginationModel>({ page: 0, pageSize: 20 });
   
@@ -1001,12 +1053,15 @@ export default function SolicitudesPage() {
   };
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["applications", filterStatus, filterPaid, filterConv, q, pagination.page, pagination.pageSize],
+    queryKey: ["applications", filterStatus, filterPaid, filterConv, q, filterTech, filterMinStaff, filterMinCur, pagination.page, pagination.pageSize],
     queryFn: () => listApplications({
       status: filterStatus || undefined,
       convocatoria: filterConv || undefined,
       isPaid: filterPaid === "" ? undefined : filterPaid === "true",
       q: q || undefined,
+      technique: filterTech.trim() || undefined,
+      minStaffRating: filterMinStaff ? Number(filterMinStaff) : undefined,
+      minCuratorRating: filterMinCur ? Number(filterMinCur) : undefined,
       page: pagination.page + 1,
       limit: pagination.pageSize,
     }),
@@ -1059,6 +1114,13 @@ export default function SolicitudesPage() {
           sx={{ fontWeight: 500, fontSize: 11 }}
         />
       ),
+    },
+    {
+      field: "staffRating", headerName: "Calif. S / C", width: 110,
+      renderCell: (p) => {
+        const s = p.row?.staffRating, c = p.row?.curatorRating;
+        return s || c ? `${s ? `${s}★` : "—"} / ${c ? `${c}★` : "—"}` : "—";
+      },
     },
     {
       field: "isPaid", headerName: "Pago", width: 110,
@@ -1211,6 +1273,27 @@ export default function SolicitudesPage() {
                   <MenuItem value="false"><HourglassIcon size={14} style={{ marginRight: 8 }} /> Sin pago</MenuItem>
                 </Select>
               </FormControl>
+              <TextField
+                size="small"
+                label="Técnica"
+                value={filterTech}
+                onChange={(e) => { setFilterTech(e.target.value); setPagination({ page: 0, pageSize: 20 }); }}
+                sx={{ width: 150 }}
+              />
+              {([
+                ["Calif. staff", filterMinStaff, setFilterMinStaff],
+                ["Calif. curador", filterMinCur, setFilterMinCur],
+              ] as const).map(([label, value, set]) => (
+                <FormControl key={label} size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>{label}</InputLabel>
+                  <Select value={value} label={label} onChange={(e) => { set(String(e.target.value)); setPagination({ page: 0, pageSize: 20 }); }}>
+                    <MenuItem value="">Todas</MenuItem>
+                    {[5, 4, 3, 2, 1].map((n) => (
+                      <MenuItem key={n} value={String(n)}>{"★".repeat(n)}{n < 5 ? " o más" : ""}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ))}
               <Box flex={1} />
               <Button
                 onClick={openConfig}
