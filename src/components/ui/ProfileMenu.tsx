@@ -28,6 +28,8 @@ type Roles = {
   staff?: boolean;
   curador?: boolean;
   cajero?: boolean;
+  taquilla?: boolean;
+  editor?: boolean;
   artista?: boolean;
 };
 
@@ -57,6 +59,8 @@ const roleChips = (roles?: Roles) => {
   if (roles.staff) items.push("Staff");
   if (roles.curador) items.push("Curador/a");
   if (roles.cajero) items.push("Cajero/a");
+  if (roles.taquilla) items.push("Taquilla");
+  if (roles.editor) items.push("Editor/a");
   if (roles.artista) items.push("Artista");
   return items;
 };

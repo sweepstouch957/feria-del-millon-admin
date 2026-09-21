@@ -20,7 +20,7 @@ import {
   ConfirmationNumberOutlined as TicketsIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
-import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Palette as PersonalizacionIcon, Wallet as CarteraIcon, BarChart3 as ReportesIcon } from "lucide-react";
+import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Mail as MailIcon, Palette as PersonalizacionIcon, Wallet as CarteraIcon, BarChart3 as ReportesIcon } from "lucide-react";
 import { LAYOUT_COLORS as C } from "../layoutConfig";
 import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
@@ -40,6 +40,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
   const isSuperUser = !!roles.superuser;
   const isArtist = !!roles.artista;
   const isCashier = !!roles.cajero;
+  const isBoxOffice = !!roles.taquilla;
+  const isEditor = !!roles.editor;
 
   const [inventoryOpen, setInventoryOpen] = useState(
     pathname.startsWith("/inventory")
@@ -200,6 +202,27 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
                 icon={<QrCodeIcon />}
                 text="Validador QR"
               />
+              <NavItem
+                inset
+                active={pathname === "/tickets/taquilla"}
+                onClick={() => router.push("/tickets/taquilla")}
+                icon={<TicketsIcon sx={{ fontSize: 18 }} />}
+                text="Taquilla"
+              />
+              <NavItem
+                inset
+                active={pathname === "/tickets/asistentes"}
+                onClick={() => router.push("/tickets/asistentes")}
+                icon={<ReportesIcon size={18} />}
+                text="Informe de asistentes"
+              />
+              <NavItem
+                inset
+                active={pathname === "/tickets/invitaciones"}
+                onClick={() => router.push("/tickets/invitaciones")}
+                icon={<MailIcon size={18} />}
+                text="Invitaciones"
+              />
             </CollapsibleGroup>
 
             {/* Pedidos con sub-items */}
@@ -271,8 +294,50 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
         </>
       )}
 
-      {/* CAJERO */}
-      {!isSuperUser && !isArtist && isCashier && (
+      {/* TAQUILLA (entradas) */}
+      {!isSuperUser && isBoxOffice && (
+        <>
+          <SectionTitle label="Taquilla" />
+          <List sx={{ py: 0 }}>
+            <NavItem
+              active={pathname === "/tickets/validator"}
+              onClick={() => router.push("/tickets/validator")}
+              icon={<QrCodeIcon />}
+              text="Validador QR"
+            />
+              <NavItem
+                active={pathname === "/tickets/taquilla"}
+                onClick={() => router.push("/tickets/taquilla")}
+                icon={<TicketsIcon sx={{ fontSize: 18 }} />}
+                text="Taquilla"
+              />
+              <NavItem
+                active={pathname === "/tickets/asistentes"}
+                onClick={() => router.push("/tickets/asistentes")}
+                icon={<ReportesIcon size={18} />}
+                text="Informe de asistentes"
+              />
+          </List>
+        </>
+      )}
+
+      {/* EDITOR (contenidos) */}
+      {!isSuperUser && isEditor && (
+        <>
+          <SectionTitle label="Contenidos" />
+          <List sx={{ py: 0 }}>
+            <NavItem
+              active={pathname === "/personalizacion"}
+              onClick={() => router.push("/personalizacion")}
+              icon={<PersonalizacionIcon size={18} />}
+              text="Personalización"
+            />
+          </List>
+        </>
+      )}
+
+      {/* CAJERO (caja de obras) */}
+      {!isSuperUser && isCashier && (
         <>
           <SectionTitle label={t("navigation.operations")} />
           <List sx={{ py: 0 }}>
@@ -319,7 +384,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
       )}
 
       {/* Fallback sin rol mapeado */}
-      {!isSuperUser && !isArtist && !isCashier && (
+      {!isSuperUser && !isArtist && !isCashier && !isBoxOffice && !isEditor && (
         <>
           <SectionTitle label="Navegación" />
           <List sx={{ py: 0 }}>

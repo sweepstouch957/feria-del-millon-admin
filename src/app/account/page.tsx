@@ -30,7 +30,12 @@ const ROLES: { key: keyof RolesMap; label: string; color: string }[] = [
   { key: "staff",     label: "Staff",     color: "#8C6A3F" },
   { key: "curador",   label: "Curador",   color: "#6B8F7A" },
   { key: "cajero",    label: "Cajero",    color: "#C9902B" },
+  { key: "taquilla",  label: "Taquilla",  color: "#4A7FB5" },
+  { key: "editor",    label: "Editor",    color: "#8E6BB0" },
   { key: "artista",   label: "Artista",   color: G         },
+  { key: "asistente", label: "Asistente", color: "#7A8A99" },
+  { key: "vip",       label: "VIP",       color: "#B8963E" },
+  { key: "mentor",    label: "Mentor",    color: "#5E8C8C" },
 ];
 
 const DOC_TYPES = ["CC", "NIT", "CE", "PP", "OTRO", "INE"];

@@ -25,7 +25,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { CameraOffIcon } from "lucide-react";
 
-import { validateQr } from "@services/ticket.service";
+import { validateQr, TICKET_TYPE_LABEL, type ValidateQrResponse } from "@services/ticket.service";
 import { BetterQrScanner } from "./BetterQrScanner";
 
 type ValidationResult = {
@@ -36,6 +36,7 @@ type ValidationResult = {
   eventDay?: string;
   scannedAt?: string;
   error?: string;
+  info?: ValidateQrResponse["ticket"];
 };
 
 export function QrValidationPanel() {
@@ -60,6 +61,7 @@ export function QrValidationPanel() {
         shortCode: data.ticket.shortCode,
         eventDay: data.ticket.eventDay,
         scannedAt: data.ticket.scannedAt,
+        info: data.ticket,
       };
       setLastResult(result);
 
@@ -69,12 +71,19 @@ export function QrValidationPanel() {
       }
     },
     onError: (err: any) => {
+      const code = err?.response?.data?.error;
       const message =
-        err?.response?.data?.error === "invalid_qr"
+        code === "invalid_qr"
           ? "QR inválido o manipulado."
-          : err?.response?.data?.error === "ticket_not_found"
+          : code === "ticket_not_found"
             ? "No se encontró el boleto."
-            : "Error al validar el QR.";
+            : code === "wrong_day"
+              ? "Este pase no es para hoy."
+              : code === "ticket_not_valid"
+                ? err?.response?.data?.status === "invited"
+                  ? "Invitación sin confirmar: el invitado debe confirmar desde su correo."
+                  : "Boleto anulado o reembolsado."
+                : "Error al validar el QR.";
       setLastResult({
         ok: false,
         error: message,
@@ -240,6 +249,26 @@ export function QrValidationPanel() {
                       <Typography variant="body2">
                         <strong>Código:</strong> {lastResult.shortCode}
                       </Typography>
+                      {lastResult.info?.type && (
+                        <Typography variant="body2">
+                          <strong>Tipo:</strong> {TICKET_TYPE_LABEL[lastResult.info.type] || lastResult.info.type}
+                          {lastResult.info.name ? ` · ${lastResult.info.name}` : ""}
+                          {lastResult.info.companionName ? ` + ${lastResult.info.companionName}` : ""}
+                        </Typography>
+                      )}
+                      {(lastResult.info?.admits || 1) > 1 && (
+                        <Typography variant="body2">
+                          <strong>Ingresos hoy:</strong> {lastResult.info?.usedToday} de {lastResult.info?.admits}
+                        </Typography>
+                      )}
+                      {lastResult.info?.type === "estudiante" && (
+                        <Alert severity="warning" sx={{ py: 0 }}>Verificar carné estudiantil vigente.</Alert>
+                      )}
+                      {lastResult.info?.validHours && (
+                        <Alert severity="info" sx={{ py: 0 }}>
+                          Válida solo de {lastResult.info.validHours.from} a {lastResult.info.validHours.to}.
+                        </Alert>
+                      )}
                       {lastResult.eventDay && (
                         <Typography variant="body2">
                           <strong>Día del boleto:</strong>{" "}

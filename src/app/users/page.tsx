@@ -41,8 +41,13 @@ const ROLES: { key: keyof RolesMap; label: string; desc: string; color: string }
   { key: "superuser", label: "Superuser", desc: "Acceso total al sistema",     color: "#B4472A" },
   { key: "staff",     label: "Staff",     desc: "Gestión operativa",           color: "#8C6A3F" },
   { key: "curador",   label: "Curador",   desc: "Curación y validación obras", color: "#6B8F7A" },
-  { key: "cajero",    label: "Cajero",    desc: "Caja y manejo de pagos",      color: "#C9902B" },
+  { key: "cajero",    label: "Cajero",    desc: "Caja de obras (venta de arte)", color: "#C9902B" },
+  { key: "taquilla",  label: "Taquilla",  desc: "Venta y validación de entradas", color: "#4A7FB5" },
+  { key: "editor",    label: "Editor",    desc: "Contenidos del sitio",          color: "#8E6BB0" },
   { key: "artista",   label: "Artista",   desc: "Perfil de artista activo",    color: G         },
+  { key: "asistente", label: "Asistente", desc: "Categoría de contacto",        color: "#7A8A99" },
+  { key: "vip",       label: "VIP",       desc: "Invitado VIP (contacto)",      color: "#B8963E" },
+  { key: "mentor",    label: "Mentor",    desc: "Mentor (contacto)",            color: "#5E8C8C" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

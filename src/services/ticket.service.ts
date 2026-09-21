@@ -11,12 +11,27 @@ export interface PaginatedCursorResponse<T> {
   nextCursor: string | null;
 }
 
-export type TicketStatus = "sold" | "refunded" | "canceled" | "checked_in";
+export type TicketStatus = "invited" | "sold" | "refunded" | "canceled" | "checked_in";
+export type TicketType = "general" | "allpass" | "preview" | "empresa" | "2x1" | "estudiante" | "invitacion";
+
+export const TICKET_TYPE_LABEL: Record<TicketType, string> = {
+  general: "General",
+  allpass: "All pass 4 días",
+  preview: "Preview",
+  empresa: "Empresa",
+  "2x1": "Promoción 2x1",
+  estudiante: "Estudiante",
+  invitacion: "Invitación",
+};
 export type TicketChannel = "online" | "presale" | "onsite";
 
 export interface TicketBuyer {
   name: string;
   email: string;
+  phone?: string;
+  company?: string;
+  nit?: string;
+  documentNumber?: string;
 }
 
 export interface Ticket {
@@ -29,6 +44,12 @@ export interface Ticket {
   currency: string; // p.ej. "COP"
   saleChannel: TicketChannel;
   status: TicketStatus;
+  type?: TicketType;
+  allDays?: boolean;
+  admits?: number;
+  inviteCategory?: string;
+  companionName?: string;
+  paymentMethod?: string;
   qrToken?: string; // presente al comprar
   shortCode?: string; // humano-legible
   scannedAt?: string | null;
@@ -53,6 +74,13 @@ export interface ValidateQrResponse {
     shortCode?: string;
     eventDay?: string;
     scannedAt?: string;
+    type?: TicketType;
+    name?: string;
+    companionName?: string;
+    allDays?: boolean;
+    admits?: number;
+    usedToday?: number;
+    validHours?: { from: string; to: string };
   };
 }
 
@@ -62,6 +90,7 @@ export interface TicketFilters extends PaginationParams {
   email?: string; // buyer.email
   date?: string; // YYYY-MM-DD (día del ticket)
   status?: TicketStatus;
+  type?: TicketType;
 }
 
 /** ────────── Ticket Days (configurable por evento) ────────── */
@@ -187,4 +216,73 @@ export const updateTicketDay = async (
     { withCredentials: true },
   );
   return normalizeId(data);
+};
+
+/** ────────── Taquilla (venta en sitio) ────────── */
+export interface BoxOfficeSaleInput {
+  eventId: string;
+  type: Exclude<TicketType, "invitacion">;
+  date?: string; // YYYY-MM-DD (tipos de un día)
+  quantity: number;
+  method: "cash" | "card_offline";
+  buyer: TicketBuyer;
+  idempotencyKey?: string;
+}
+
+/** POST /ticket/tickets/box-office — el QR también se envía al correo del comprador. */
+export const sellAtBoxOffice = async (input: BoxOfficeSaleInput) => {
+  const { data } = await apiClient.post<{ ok: boolean; tickets: Ticket[]; payment: { amount: number } }>(
+    "/ticket/tickets/box-office",
+    input,
+    { withCredentials: true },
+  );
+  return { ...data, tickets: data.tickets.map(normalizeId) };
+};
+
+/** ────────── Informe de asistentes ────────── */
+export interface AttendanceBucket { key: string; label: string; tickets: number; persons: number; attended: number }
+export interface AttendanceRow {
+  shortCode: string; name: string; email: string; phone: string; company: string; companion: string;
+  type: string; category: string; method: string; price: number; persons: number; attended: number;
+  checkedAt: string | null;
+}
+export interface AttendanceReport {
+  eventId: string; date: string;
+  totals: Omit<AttendanceBucket, "key" | "label">;
+  byCategory: AttendanceBucket[];
+  byType: AttendanceBucket[];
+  rows: AttendanceRow[];
+}
+
+/** GET /ticket/tickets/reports/attendance?eventId&date */
+export const getAttendanceReport = async (eventId: string, date: string) => {
+  const { data } = await apiClient.get<AttendanceReport>(
+    `/ticket/tickets/reports/attendance?${buildQuery({ eventId, date })}`,
+    { withCredentials: true },
+  );
+  return data;
+};
+
+/** ────────── Invitaciones ────────── */
+export interface CreateInvitationsInput {
+  eventId: string;
+  date?: string;
+  allDays?: boolean;
+  admits?: number;
+  category?: string;
+  invitees: { name: string; email: string }[];
+}
+
+/** POST /ticket/tickets/invitations — crea y envía el correo con botón de confirmación. */
+export const createInvitations = async (input: CreateInvitationsInput) => {
+  const { data } = await apiClient.post<{ created: number; skipped: { email: string; reason: string }[] }>(
+    "/ticket/tickets/invitations",
+    input,
+    { withCredentials: true },
+  );
+  return data;
+};
+
+export const resendInvitation = async (ticketId: string) => {
+  await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
 };

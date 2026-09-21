@@ -11,7 +11,12 @@ export interface Roles {
   staff?: boolean;
   curador?: boolean;
   cajero?: boolean;
+  taquilla?: boolean;
+  editor?: boolean;
   artista?: boolean;
+  asistente?: boolean;
+  vip?: boolean;
+  mentor?: boolean;
 }
 
 export interface AuthUser {

@@ -3,14 +3,21 @@
 import apiClient from "@/axios";
 
 /* ========= Tipos ========= */
-export type RoleKey = "superuser" | "staff" | "curador" | "cajero" | "artista";
+export type RoleKey =
+  | "superuser" | "staff" | "curador" | "cajero" | "taquilla" | "editor" | "artista"
+  | "asistente" | "vip" | "mentor";
 
 export interface Roles {
   superuser?: boolean;
   staff?: boolean;
   curador?: boolean;
   cajero?: boolean;
+  taquilla?: boolean;
+  editor?: boolean;
   artista?: boolean;
+  asistente?: boolean;
+  vip?: boolean;
+  mentor?: boolean;
 }
 
 export interface UserDTO {
