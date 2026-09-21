@@ -112,6 +112,17 @@ export const setCatalogReveal = async (eventId: string, revealed: boolean) => {
   return data;
 };
 
+// Cierre de carga de inventario (PATCH /event/events/:eventId/inventory-close, staff).
+// closeAt=null lo quita (carga abierta sin límite).
+export const setInventoryClose = async (eventId: string, closeAt: string | null) => {
+  const { data } = await apiClient.patch<{ ok: boolean; inventoryCloseAt: string | null }>(
+    `/event/events/${encodeURIComponent(eventId)}/inventory-close`,
+    { closeAt },
+    { withCredentials: true }
+  );
+  return data;
+};
+
 /* ========= Convocatorias ========= */
 export type ConvocatoriaStatus =
   | "draft"

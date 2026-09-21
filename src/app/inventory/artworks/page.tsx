@@ -47,7 +47,7 @@ import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useTechniques } from "@/hooks/useTechniques";
 import { useEvents } from "@/hooks/useEvents";
 import { usePavilions } from "@/hooks/usePavilions";
-import { setCatalogReveal } from "@services/events.service";
+import { setCatalogReveal, setInventoryClose } from "@services/events.service";
 import { formatCOP } from "@/utils/money";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 
@@ -87,6 +87,23 @@ export default function ArtworksCursorPage() {
     setRevealBusy(true);
     try {
       await setCatalogReveal(event, checked);
+      await eventsQuery.refetch?.();
+    } finally {
+      setRevealBusy(false);
+    }
+  };
+
+  // Cierre de carga de obras para artistas. datetime-local trabaja en hora local.
+  const toLocalInput = (iso?: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  const saveInventoryClose = async (value: string) => {
+    if (!event) return;
+    setRevealBusy(true);
+    try {
+      await setInventoryClose(event, value ? new Date(value).toISOString() : null);
       await eventsQuery.refetch?.();
     } finally {
       setRevealBusy(false);
@@ -210,6 +227,23 @@ export default function ArtworksCursorPage() {
                       />
                     }
                     label={<Typography variant="caption" fontWeight={500}>Catálogo revelado</Typography>}
+                  />
+                </Tooltip>
+              )}
+              {selectedEvent && (
+                <Tooltip title="Después de esta fecha los artistas ya no pueden crear ni editar obras. Vacío = sin cierre.">
+                  <TextField
+                    key={selectedEvent.inventoryCloseAt || "none"}
+                    size="small"
+                    type="datetime-local"
+                    label="Cierre de inventario"
+                    InputLabelProps={{ shrink: true }}
+                    defaultValue={toLocalInput(selectedEvent.inventoryCloseAt)}
+                    disabled={revealBusy}
+                    onBlur={(e) => {
+                      if (e.target.value !== toLocalInput(selectedEvent.inventoryCloseAt))
+                        saveInventoryClose(e.target.value);
+                    }}
                   />
                 </Tooltip>
               )}

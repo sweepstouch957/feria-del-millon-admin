@@ -28,6 +28,7 @@ export type ManualOrderFormValues = {
   paymentMethod: PaymentMethod;
   buyerName: string;
   buyerEmail: string;
+  buyerPhone: string;
   notes: string;
 
   // NUEVOS CAMPOS DE DIRECCIÓN
@@ -233,6 +234,13 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
             size="small"
             type="email"
             {...register("buyerEmail")}
+            disabled={isSubmitting}
+          />
+          <TextField
+            label="Teléfono del comprador"
+            size="small"
+            type="tel"
+            {...register("buyerPhone")}
             disabled={isSubmitting}
           />
 

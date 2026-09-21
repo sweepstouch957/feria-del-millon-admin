@@ -94,6 +94,7 @@
                 paymentMethod: "cash",
                 buyerName: "",
                 buyerEmail: "",
+                buyerPhone: "",
                 notes: "",
                 addressLine1: "",
                 cityId: "",
@@ -183,12 +184,11 @@
                         (c as any)._id === values.cityId
                 );
 
-                console.log(selectedCity);
                 
                 const buyer: BuyerInput = {
                     name: buyerName,
                     email: buyerEmail,
-                    phone: undefined,
+                    phone: values.buyerPhone?.trim() || undefined,
                     address: {
                         line1: values.addressLine1,
                         city: selectedCity?._id ?? "0",
