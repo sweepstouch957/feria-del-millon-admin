@@ -186,3 +186,32 @@ export const updateConvocatoria = async (
   );
   return normalizeId(data);
 };
+
+/* ────────── Crear convocatoria (con su pabellón y su gente) ────────── */
+export interface CreateConvocatoriaDto {
+  name: string;
+  event: string;
+  startDate: string;
+  endDate: string;
+  fee: number;
+  status?: ConvocatoriaStatus;
+  description?: string;
+  maxArtworksPerArtist?: number;
+  /** Pabellón existente al que pertenece la convocatoria. */
+  allowedPavilions?: string[];
+  /** …o crear el pabellón en la misma operación. */
+  newPavilion?: { name: string; minArtworkPrice?: number; maxArtworkPrice?: number; description?: string };
+  artistEmails?: string[];
+  cashierEmails?: string[];
+}
+
+export interface CreateConvocatoriaResult extends Convocatoria {
+  pavilion?: { _id: string; name: string; slug: string } | null;
+  assigned?: { artists: number; cashiers: number; notFound: string[] };
+}
+
+/** POST /event/convocatorias — crea convocatoria, su pabellón y asigna artistas/cajeros. */
+export const createConvocatoria = async (payload: CreateConvocatoriaDto): Promise<CreateConvocatoriaResult> => {
+  const { data } = await apiClient.post("/event/convocatorias", payload, { withCredentials: true });
+  return data;
+};

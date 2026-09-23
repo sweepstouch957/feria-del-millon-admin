@@ -152,3 +152,18 @@ export const updatePavilionArtists = async (
   );
   return data;
 };
+
+/** PATCH /event/events/:eventId/pavilions/:pavilionId/cashiers — cajeros del pabellón. */
+export const updatePavilionCashiers = async (
+  eventId: string,
+  pavilionId: string,
+  emails: string[],
+  mode: "replace" | "merge" = "replace",
+) => {
+  const { data } = await apiClient.patch(
+    `/event/events/${encodeURIComponent(eventId)}/pavilions/${encodeURIComponent(pavilionId)}/cashiers`,
+    { emails, mode },
+    { withCredentials: true },
+  );
+  return data;
+};

@@ -24,6 +24,7 @@ import {
   CreateEventDialog,
   CreatePavilionDialog,
 } from "@components/views/events/CreateDialogs";
+import CreateConvocatoriaDialog from "@components/views/events/CreateConvocatoriaDialog";
 import PavilionDetailCard from "@components/views/events/PavilionDetailCard";
 import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
 import PavilionArtistsManager from "@components/views/events/PavilionArtistsManager";
@@ -62,6 +63,7 @@ export default function EventsManagerPage() {
   const queryClient = useQueryClient();
   const [newEventOpen, setNewEventOpen] = React.useState(false);
   const [newPavilionOpen, setNewPavilionOpen] = React.useState(false);
+  const [newConvocatoriaOpen, setNewConvocatoriaOpen] = React.useState(false);
 
   const loadingAny = fetchingEvents || fetchingPavilions;
 
@@ -128,6 +130,16 @@ export default function EventsManagerPage() {
             >
               Nuevo pabellón
             </Button>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<Plus size={14} />}
+              disabled={!selectedEventId}
+              onClick={() => setNewConvocatoriaOpen(true)}
+              sx={{ ml: 1 }}
+            >
+              Nueva convocatoria
+            </Button>
           </Stack>
 
           <PavilionsTableCard
@@ -173,6 +185,17 @@ export default function EventsManagerPage() {
         onCreated={(id) => {
           queryClient.invalidateQueries({ queryKey: ["events", "all"] });
           handleSelectEvent(id);
+        }}
+      />
+
+      <CreateConvocatoriaDialog
+        open={newConvocatoriaOpen}
+        eventId={selectedEventId ?? ""}
+        eventName={selectedEvent?.name}
+        onClose={() => setNewConvocatoriaOpen(false)}
+        onCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ["pavilions", selectedEventId] });
+          queryClient.invalidateQueries({ queryKey: ["convocatorias"] });
         }}
       />
 
