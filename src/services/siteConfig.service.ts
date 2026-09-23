@@ -449,3 +449,41 @@ export const updateSiteConfig = async (payload: SiteConfig): Promise<SiteConfig>
   const { data } = await apiClient.patch("/event/site-config", payload, { withCredentials: true });
   return mergeSiteConfig(data);
 };
+
+/* ────────── Boletín y comunicaciones (event-svc) ────────── */
+export interface SubscriberDoc {
+  id: string; email: string; name: string; source: string;
+  createdAt: string; unsubscribedAt: string | null;
+}
+export interface CampaignDoc {
+  id: string; subject: string; body: string; ctaLabel?: string; ctaUrl?: string;
+  audiences: string[]; recipients: number; sent: number; failed: number;
+  errors?: string[]; status: "sent" | "partial" | "failed"; createdAt: string;
+}
+export interface CampaignInput {
+  subject: string; body: string; ctaLabel?: string; ctaUrl?: string;
+  audiences: string[]; testEmail?: string;
+}
+
+export const listSubscribers = async (all = false): Promise<SubscriberDoc[]> => {
+  const { data } = await apiClient.get("/event/newsletter/subscribers", {
+    params: all ? { all: 1 } : undefined, withCredentials: true,
+  });
+  return data;
+};
+
+/** A cuánta gente llegaría el envío, sin mandar nada. */
+export const previewCampaign = async (audiences: string[]): Promise<{ total: number; byAudience: Record<string, number> }> => {
+  const { data } = await apiClient.post("/event/campaigns/preview", { audiences }, { withCredentials: true });
+  return data;
+};
+
+export const sendCampaign = async (input: CampaignInput): Promise<{ recipients?: number; sent: number; failed: number; test?: boolean }> => {
+  const { data } = await apiClient.post("/event/campaigns", input, { withCredentials: true });
+  return data;
+};
+
+export const listCampaigns = async (): Promise<CampaignDoc[]> => {
+  const { data } = await apiClient.get("/event/campaigns", { withCredentials: true });
+  return data;
+};

@@ -20,7 +20,7 @@ import {
   ConfirmationNumberOutlined as TicketsIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
-import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Mail as MailIcon, Palette as PersonalizacionIcon, Wallet as CarteraIcon, BarChart3 as ReportesIcon } from "lucide-react";
+import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Mail as MailIcon, Megaphone as MegaphoneIcon, Palette as PersonalizacionIcon, Wallet as CarteraIcon, BarChart3 as ReportesIcon } from "lucide-react";
 import { LAYOUT_COLORS as C } from "../layoutConfig";
 import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
@@ -151,6 +151,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
               onClick={() => router.push("/personalizacion")}
               icon={<PersonalizacionIcon size={18} />}
               text="Personalización"
+            />
+            <NavItem
+              active={pathname === "/comunicaciones"}
+              onClick={() => router.push("/comunicaciones")}
+              icon={<MegaphoneIcon size={18} />}
+              text="Comunicaciones"
             />
             <NavItem
               active={pathname === "/reportes"}
@@ -331,6 +337,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
               onClick={() => router.push("/personalizacion")}
               icon={<PersonalizacionIcon size={18} />}
               text="Personalización"
+            />
+            <NavItem
+              active={pathname === "/comunicaciones"}
+              onClick={() => router.push("/comunicaciones")}
+              icon={<MegaphoneIcon size={18} />}
+              text="Comunicaciones"
             />
           </List>
         </>
