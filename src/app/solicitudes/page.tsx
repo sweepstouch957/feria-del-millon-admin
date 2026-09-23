@@ -220,6 +220,15 @@ function ApplicationDetailDialog({
   const muiTheme = useTheme();
   const dk = muiTheme.palette.mode === "dark";
   const [tab, setTab] = React.useState(0);
+  const reviewRef = React.useRef<HTMLDivElement | null>(null);
+  // El panel de resolución vive al final del diálogo: en "Obras" queda fuera de
+  // pantalla y parecía que el botón no funcionaba. Lo traemos a la vista.
+  const startReview = (d: "accepted" | "rejected") => {
+    setDecision(d);
+    setReviewing(true);
+    setTab(0);
+    requestAnimationFrame(() => reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [lightboxIdx, setLightboxIdx] = React.useState(0);
   const [reviewing, setReviewing] = React.useState(false);
@@ -658,7 +667,7 @@ function ApplicationDetailDialog({
 
           {/* Review panel */}
           {reviewing && (
-            <Box sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#F7F6F2", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, borderRadius: 0 }}>
+            <Box ref={reviewRef} sx={{ mt: 3, p: 2.5, background: dk ? "rgba(255,255,255,0.03)" : "#F7F6F2", border: `2px solid ${dk ? 'rgba(255,255,255,0.08)' : '#E2DFD6'}`, borderRadius: 0 }}>
               <Typography variant="subtitle2" fontWeight={500} mb={2} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <ScaleIcon size={16} /> Emitir resolución
               </Typography>
@@ -672,7 +681,7 @@ function ApplicationDetailDialog({
                 </FormControl>
                 <TextField label="Notas del curador (internas)" multiline rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} fullWidth size="small" />
                 {decision === "rejected" && (
-                  <TextField label="Razón de rechazo (interna) *" multiline rows={2} value={rejReason} onChange={(e) => setRejReason(e.target.value)} fullWidth size="small" required />
+                  <TextField label="Razón de rechazo (interna, opcional)" multiline rows={2} value={rejReason} onChange={(e) => setRejReason(e.target.value)} fullWidth size="small" />
                 )}
               </Stack>
             </Box>
@@ -730,7 +739,7 @@ function ApplicationDetailDialog({
                 <Button
                   startIcon={<CheckCircleIcon size={16} />}
                   variant="contained" color="success"
-                  onClick={() => { setDecision("accepted"); setReviewing(true); }}
+                  onClick={() => startReview("accepted")}
                 >
                   Aceptar
                 </Button>
@@ -739,7 +748,7 @@ function ApplicationDetailDialog({
                 <Button
                   startIcon={<XCircleIcon size={16} />}
                   variant="contained" color="error"
-                  onClick={() => { setDecision("rejected"); setReviewing(true); }}
+                  onClick={() => startReview("rejected")}
                 >
                   Rechazar
                 </Button>
@@ -749,7 +758,7 @@ function ApplicationDetailDialog({
           {reviewing && (
             <>
               <Button onClick={() => setReviewing(false)} color="inherit">Cancelar</Button>
-              <Button variant="contained" onClick={handleReview} disabled={saving || !decision || (decision === "rejected" && !rejReason)}>
+              <Button variant="contained" onClick={handleReview} disabled={saving || !decision}>
                 {saving ? <CircularProgress size={18} /> : "Confirmar decisión"}
               </Button>
             </>
