@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { DEFAULT_EVENT_ID, DEFAULT_EVENT_NAME } from "@core/constants";
 import { DaysGrid } from "@components/admin/tickets/DaysGrid";
+import PresaleCard from "@components/admin/tickets/PresaleCard";
 import { TicketsTable } from "@/components/admin/tickets/TicketsTable";
 
 export default function TicketsAdminPage() {
@@ -17,8 +18,13 @@ export default function TicketsAdminPage() {
         {DEFAULT_EVENT_NAME} · Control de días, capacidad y compras.
       </Typography>
 
+      {/* Preventa: tipos de entrada, precios, cupos y ventana de venta */}
+      <PresaleCard eventId={eventId} />
+
       {/* Días del evento + capacidad */}
-      <DaysGrid eventId={eventId} />
+      <Box mt={3}>
+        <DaysGrid eventId={eventId} />
+      </Box>
 
       {/* Tabla de tickets */}
       <Box mt={3}>

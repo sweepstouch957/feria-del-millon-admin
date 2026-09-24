@@ -218,6 +218,76 @@ export const updateTicketDay = async (
   return normalizeId(data);
 };
 
+/** ────────── Preventa: tipos de entrada por evento ────────── */
+
+export type TicketTypeKey = "general" | "allpass" | "preview" | "empresa" | "2x1" | "estudiante";
+export type TicketSaleClosedReason = "disabled" | "not_started" | "ended" | "sold_out" | null;
+
+export interface TicketTypeConfig {
+  key: TicketTypeKey;
+  label: string;
+  desc?: string;
+  /** null = lo pone el día elegido (general, 2x1, estudiante). */
+  price: number | null;
+  pickDay: boolean;
+  allDays: boolean;
+  quantities: number[] | null;
+  maxQty: number | null;
+  cap: number | null;
+  sold: number;
+  remaining: number | null;
+  enabled: boolean;
+  salesFrom: string | null; // ISO
+  salesTo: string | null; // ISO
+  open: boolean;
+  closedReason: TicketSaleClosedReason;
+  requiresStudentId: boolean;
+  bonus?: { weekday: number; from: string; to: string } | null;
+  sortOrder: number;
+}
+
+export interface TicketTypesResponse {
+  eventId: string;
+  eventName: string;
+  validFrom: string;
+  validTo: string;
+  currency: string;
+  types: TicketTypeConfig[];
+}
+
+/** Lo que se envía al guardar: campo ausente = sin cambios, null = vuelve al valor del código. */
+export interface SaveTicketTypeInput {
+  key: TicketTypeKey;
+  enabled?: boolean;
+  label?: string | null;
+  description?: string | null;
+  price?: number | null;
+  cap?: number | null;
+  maxQty?: number | null;
+  quantities?: number[];
+  salesFrom?: string | null;
+  salesTo?: string | null;
+}
+
+/** GET /ticket/tickets/events/:eventId/ticket-types (público) */
+export const getTicketTypes = async (eventId: string) => {
+  const { data } = await apiClient.get<TicketTypesResponse>(
+    `/ticket/tickets/events/${encodeURIComponent(eventId)}/ticket-types`,
+    { withCredentials: true },
+  );
+  return data;
+};
+
+/** PUT /ticket/tickets/events/:eventId/ticket-types (admin) */
+export const saveTicketTypes = async (eventId: string, types: SaveTicketTypeInput[]) => {
+  const { data } = await apiClient.put<TicketTypesResponse>(
+    `/ticket/tickets/events/${encodeURIComponent(eventId)}/ticket-types`,
+    { types },
+    { withCredentials: true },
+  );
+  return data;
+};
+
 /** ────────── Taquilla (venta en sitio) ────────── */
 export interface BoxOfficeSaleInput {
   eventId: string;
