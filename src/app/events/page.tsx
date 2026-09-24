@@ -25,6 +25,7 @@ import {
   CreatePavilionDialog,
 } from "@components/views/events/CreateDialogs";
 import CreateConvocatoriaDialog from "@components/views/events/CreateConvocatoriaDialog";
+import PavilionSalesCard from "@components/views/events/PavilionSalesCard";
 import PavilionDetailCard from "@components/views/events/PavilionDetailCard";
 import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
 import PavilionArtistsManager from "@components/views/events/PavilionArtistsManager";
@@ -167,6 +168,14 @@ export default function EventsManagerPage() {
               />
             </CardContent>
           </Card>
+
+          {/* Cuánto vendió cada pabellón (métrica de la convocatoria) */}
+          {selectedEventId && (
+            <PavilionSalesCard
+              eventId={selectedEventId}
+              highlightPavilionId={selectedPavilion?.id ?? null}
+            />
+          )}
 
           {/* Detalle del pabellón (datos básicos) */}
           <PavilionDetailCard

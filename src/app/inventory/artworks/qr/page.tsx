@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  Autocomplete,
   Box, Card, CardContent, Typography, Stack, Button, TextField,
   FormControl, InputLabel, Select, MenuItem, CircularProgress,
 } from "@mui/material";
@@ -9,6 +10,9 @@ import { QrCode, Printer, RefreshCw } from "lucide-react";
 import QRCode from "qrcode";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useEvents } from "@/hooks/useEvents";
+import { usePavilions } from "@/hooks/usePavilions";
+import { listUsers } from "@services/user.service";
+import { useQuery } from "@tanstack/react-query";
 import { formatCOP } from "@/utils/money";
 
 const money = (n?: number, currency = "COP") => formatCOP(n, { code: true, currency });
@@ -20,11 +24,29 @@ export default function ArtworksQrPage() {
   const eventsQuery = useEvents();
   const [event, setEvent] = React.useState<string>("");
   const [shopUrl, setShopUrl] = React.useState<string>(DEFAULT_SHOP);
+  const [pavilion, setPavilion] = React.useState("");
+  const [artist, setArtist] = React.useState<{ id: string; label: string } | null>(null);
+  const [artistQ, setArtistQ] = React.useState("");
   const [qrById, setQrById] = React.useState<Record<string, string>>({});
+
+  // Imprimir por stand: los rótulos se arman por pabellón o por artista.
+  const { data: pavilions = [] } = usePavilions(event || undefined);
+  const { data: artistOpts = [] } = useQuery({
+    queryKey: ["users", "qr-artist", artistQ],
+    queryFn: async () =>
+      (await listUsers({ q: artistQ, limit: 20 })).users.map((u: any) => ({
+        id: String(u.id),
+        label: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
+      })),
+    enabled: artistQ.trim().length >= 2,
+    staleTime: 60_000,
+  });
   const [building, setBuilding] = React.useState(false);
 
   const { rows, isLoading, hasNextPage, loadMore, isFetchingNextPage } = useArtworksCursor({
     event: event || undefined,
+    pavilion: pavilion || undefined,
+    artist: artist?.id,
     limit: 60,
   });
 
@@ -74,7 +96,7 @@ export default function ArtworksQrPage() {
         <Box flex={1}>
           <Typography fontWeight={500} fontSize={20}>QR de obras (para imprimir)</Typography>
           <Typography variant="caption" color="text.secondary">
-            Cada QR lleva a la ficha de la obra en la tienda → compra en línea (antes, durante y después de la feria).
+            Un QR por obra: lleva a su ficha con botón de compra. Filtra por pabellón o artista para imprimir los rótulos de cada stand.
           </Typography>
         </Box>
         <Button variant="contained" disableElevation startIcon={<Printer size={16} />} onClick={() => window.print()}
@@ -94,6 +116,27 @@ export default function ArtworksQrPage() {
               ))}
             </Select>
           </FormControl>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Pabellón</InputLabel>
+            <Select value={pavilion} label="Pabellón" onChange={(e) => setPavilion(e.target.value)}>
+              <MenuItem value=""><em>Todos</em></MenuItem>
+              {(pavilions as any[]).map((p) => (
+                <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Autocomplete
+            size="small"
+            sx={{ minWidth: 220 }}
+            options={artistOpts}
+            value={artist}
+            onChange={(_, v) => setArtist(v)}
+            onInputChange={(_, v) => setArtistQ(v)}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            filterOptions={(x) => x}
+            noOptionsText={artistQ.trim().length < 2 ? "Escribe el nombre del artista" : "Sin resultados"}
+            renderInput={(params) => <TextField {...params} label="Artista" />}
+          />
           <TextField size="small" label="URL de la tienda (base)" value={shopUrl}
             onChange={(e) => setShopUrl(e.target.value)} fullWidth
             helperText="El QR apunta a  {tienda}/obra/{id}" />
@@ -124,6 +167,9 @@ export default function ArtworksQrPage() {
                 <div className="qr-title">{a.title || "Sin título"}</div>
                 {artist && <div className="qr-artist">{artist}</div>}
                 <div className="qr-price">{money(a.price, a.currency)}</div>
+                {a.reproducible && Number(a.stock) > 0 && (
+                  <div className="qr-artist">Edición de {a.stock} reproducciones</div>
+                )}
                 <div className="qr-id">Escanea para comprar en línea</div>
               </div>
             );
