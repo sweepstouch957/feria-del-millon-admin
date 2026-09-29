@@ -179,7 +179,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
             <ListItem disablePadding sx={{ display: "block" }}>
               <NavItem
                 inset={false}
-                active={pathname === "/events"}
+                active={pathname.startsWith("/events")}
                 onClick={() => router.push("/events")}
                 icon={<EventsIcon sx={{ fontSize: 18 }} />}
                 text={t("navigation.events")}

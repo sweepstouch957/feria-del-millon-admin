@@ -37,6 +37,8 @@ type Props = {
   onToggleStatus: (checked: boolean) => void;
   onSave: () => void;
   isSaving: boolean;
+  /** En /events/[id] la feria ya viene de la ruta: no hace falta el selector. */
+  hideSelector?: boolean;
 };
 
 export default function EventInfoCard({
@@ -50,15 +52,17 @@ export default function EventInfoCard({
   onToggleStatus,
   onSave,
   isSaving,
+  hideSelector = false,
 }: Props) {
   return (
     <Card variant="outlined" sx={{ borderRadius: 0, overflow: "hidden" }}>
       <CardHeader
-        title="Evento"
-        subheader="Información general del evento"
+        title="Información de la feria"
+        subheader="Nombre, fechas y rangos de precio"
         sx={{ pb: 1 }}
       />
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {!hideSelector && (
         <TextField
           select
           label="Selecciona evento"
@@ -88,10 +92,11 @@ export default function EventInfoCard({
             </MenuItem>
           )}
         </TextField>
+        )}
 
         {selectedEvent && eventForm && (
           <>
-            <Divider sx={{ my: 1 }} />
+            {!hideSelector && <Divider sx={{ my: 1 }} />}
 
             <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
               <Chip

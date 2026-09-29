@@ -40,10 +40,14 @@ const toEventFormState = (event: EventDoc): EventFormState => ({
   currency: event.currency ?? "COP",
 });
 
-export function useEventsManager() {
+/** `initialEventId` lo usa la página de detalle (/events/[id]): sin él el hook
+ *  auto-selecciona la primera feria, que es lo que quiere un listado. */
+export function useEventsManager(initialEventId?: string | null) {
   const queryClient = useQueryClient();
 
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(
+    initialEventId ?? null
+  );
   const [eventForm, setEventForm] = useState<EventFormState | null>(null);
 
   const {

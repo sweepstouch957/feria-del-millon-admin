@@ -143,7 +143,10 @@ const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
       "/solicitudes": "Solicitudes de artistas",
       "/account": t("navigation.myAccount"),
     };
-    return map[pathname] ?? "Feria del Millón";
+    if (map[pathname]) return map[pathname];
+    // /events/:id y otras rutas de detalle heredan el título de su sección
+    if (pathname.startsWith("/events/")) return t("navigation.events");
+    return "Feria del Millón";
   }, [pathname, t]);
 
   return (
