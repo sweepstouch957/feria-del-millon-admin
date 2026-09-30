@@ -99,6 +99,11 @@ function components(line: string, dim: string, bg: string, fg: string) {
 
     MuiIconButton: { styleOverrides: { root: { borderRadius: 999 } } },
 
+    // `spacing` de Stack se reparte con margin-left, así que al envolverse una
+    // fila la segunda columna arrancaba corrida (el "espacio al inicio" de los
+    // campos de fecha y precio). Con gap el hueco va entre elementos, no antes.
+    MuiStack: { defaultProps: { useFlexGap: true } },
+
     MuiChip: {
       styleOverrides: {
         root: { borderRadius: 999, fontFamily: JOST, fontWeight: 500, letterSpacing: "0.08em" },
