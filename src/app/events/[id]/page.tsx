@@ -6,16 +6,7 @@ import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus } from "lucide-react";
 
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  LinearProgress,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, LinearProgress, Stack, Typography } from "@mui/material";
 
 import { useEventsManager } from "@hooks/events/useEventsManager";
 import { usePavilionsManager } from "@hooks/events/usePavilionsManager";
@@ -26,9 +17,8 @@ import {
 } from "@components/views/events/CreateDialogs";
 import CreateConvocatoriaDialog from "@components/views/events/CreateConvocatoriaDialog";
 import PavilionSalesCard from "@components/views/events/PavilionSalesCard";
-import PavilionDetailCard from "@components/views/events/PavilionDetailCard";
 import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
-import PavilionArtistsManager from "@components/views/events/PavilionArtistsManager";
+import PavilionDialog from "@components/views/events/PavilionDialog";
 
 import PageHeader from "@components/ui/PageHeader";
 import KpiStrip from "@components/ui/KpiStrip";
@@ -102,6 +92,8 @@ export default function EventDetailPage() {
 
   const [newPavilionOpen, setNewPavilionOpen] = React.useState(false);
   const [newConvocatoriaOpen, setNewConvocatoriaOpen] = React.useState(false);
+  // La ficha del pabellón es una ventana: se abre desde su fila en la tabla.
+  const [pavilionOpen, setPavilionOpen] = React.useState(false);
 
   const notFound = !loadingEvents && events.length > 0 && !selectedEvent;
   const artistCount = pavilions.reduce((acc, p) => acc + (p.artistInfo?.length ?? 0), 0);
@@ -212,33 +204,11 @@ export default function EventDetailPage() {
             pavilions={pavilions}
             loadingPavilions={loadingPavilions}
             pavilionColumns={pavilionColumns}
-            onSelectPavilion={handleSelectPavilion}
+            onSelectPavilion={(id) => {
+              handleSelectPavilion(id);
+              setPavilionOpen(true);
+            }}
           />
-
-          <PavilionDetailCard
-            pavilionForm={pavilionForm}
-            onFieldChange={handlePavilionFieldChange}
-            onToggleActive={handleTogglePavilionActive}
-            onSave={handleSavePavilion}
-            isSaving={isSavingPavilion}
-          />
-
-          <Card variant="outlined" sx={{ borderRadius: 0 }}>
-            <CardHeader
-              title="Artistas del pabellón"
-              subheader={
-                selectedPavilion
-                  ? `Artistas de "${selectedPavilion.name}"`
-                  : "Selecciona un pabellón en la tabla para gestionar sus artistas"
-              }
-            />
-            <CardContent>
-              <PavilionArtistsManager
-                eventId={eventId}
-                pavilion={selectedPavilion ?? null}
-              />
-            </CardContent>
-          </Card>
 
           <PavilionSalesCard
             eventId={eventId}
@@ -246,6 +216,21 @@ export default function EventDetailPage() {
           />
         </Box>
       </Box>
+
+      <PavilionDialog
+        open={pavilionOpen && !!selectedPavilion}
+        onClose={() => setPavilionOpen(false)}
+        eventId={eventId}
+        pavilion={selectedPavilion ?? null}
+        pavilionForm={pavilionForm}
+        onFieldChange={handlePavilionFieldChange}
+        onToggleActive={handleTogglePavilionActive}
+        onSave={async () => {
+          await handleSavePavilion();
+          setPavilionOpen(false);
+        }}
+        isSaving={isSavingPavilion}
+      />
 
       <CreateConvocatoriaDialog
         open={newConvocatoriaOpen}

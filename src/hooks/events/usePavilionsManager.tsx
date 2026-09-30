@@ -190,6 +190,17 @@ export function usePavilionsManager(selectedEventId: string | null) {
       },
     },
     {
+      field: "artists",
+      headerName: "Artistas",
+      width: 110,
+      align: "right",
+      headerAlign: "right",
+      valueGetter: (params) => {
+        const row = (params as any)?.row as PavilionDoc | undefined;
+        return row?.artistInfo?.length ?? 0;
+      },
+    },
+    {
       field: "active",
       headerName: "Activo",
       width: 120,
@@ -197,6 +208,8 @@ export function usePavilionsManager(selectedEventId: string | null) {
         const row = params.row as PavilionDoc;
         return (
           <FormControlLabel
+            // El switch no abre la ficha: son dos acciones distintas sobre la misma fila.
+            onClick={(e) => e.stopPropagation()}
             control={
               <Switch
                 size="small"
