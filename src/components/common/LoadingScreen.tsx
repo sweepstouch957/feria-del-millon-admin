@@ -1,47 +1,28 @@
 "use client";
 
-import {
-  Box,
-  CircularProgress,
-  LinearProgress,
-  Typography,
-  Stack,
-  Paper,
-} from "@mui/material";
-import React from "react";
+import { Box, CircularProgress, Stack, Typography } from "@mui/material";
+import { FDM, eyebrow } from "@/app/theme";
 
-export default function LoadingScreen({
-  label = "Cargando…",
-}: {
-  label?: string;
-}) {
+/* Pantalla de espera de la sesión: tinta plena y una versalita, igual que la
+   del acceso. Sin tarjeta ni sombra. */
+
+export default function LoadingScreen({ label = "Cargando…" }: { label?: string }) {
   return (
     <Box
       sx={{
         minHeight: "100vh",
         display: "grid",
         placeItems: "center",
-        bgcolor: (t) => t.palette.background.default,
+        backgroundColor: FDM.panel,
+        px: 2,
       }}
     >
-      <Box sx={{ width: 360, maxWidth: "90vw" }}>
-        <LinearProgress sx={{ mb: 3, borderRadius: 0 }} />
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 0 }}>
-          <Stack alignItems="center" spacing={2}>
-            <CircularProgress size={48} />
-            <Typography variant="h6" fontWeight={500}>
-              {label}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              textAlign="center"
-            >
-              Preparando tu espacio de trabajo. Esto puede tomar unos segundos.
-            </Typography>
-          </Stack>
-        </Paper>
-      </Box>
+      <Stack alignItems="center" spacing={2.5}>
+        <CircularProgress size={26} sx={{ color: FDM.green }} />
+        <Typography sx={{ ...eyebrow, fontSize: 10, color: "rgba(245,244,239,0.65)" }}>
+          {label}
+        </Typography>
+      </Stack>
     </Box>
   );
 }

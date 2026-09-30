@@ -2,28 +2,31 @@
 
 import * as React from "react";
 import {
-  Box, Card, CardContent, Typography, Stack, Chip, Button, TextField, MenuItem,
+  Box, Card, CardContent, Typography, Stack, TextField, MenuItem,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   CircularProgress, LinearProgress,
 } from "@mui/material";
-import { ShoppingBag, RefreshCw, FileSpreadsheet } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, Plus } from "lucide-react";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
 import { useQuery } from "@tanstack/react-query";
 import { listOrders, listCustomers, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
 import { formatDate } from "@/utils/date";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
+import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 
-const STATUS: Record<OrderDoc["status"], { label: string; color: "default" | "success" | "warning" | "error" | "info" }> = {
-  created: { label: "Creado", color: "default" },
-  payment_processing: { label: "Procesando pago", color: "info" },
-  partial: { label: "Abono / fiado", color: "warning" },
-  paid: { label: "Pagado", color: "success" },
-  failed: { label: "Fallido", color: "error" },
-  canceled: { label: "Cancelado", color: "default" },
-  refunded: { label: "Reembolsado", color: "default" },
+const STATUS: Record<OrderDoc["status"], { label: string; tone: PillTone }> = {
+  created: { label: "Creado", tone: "mid" },
+  payment_processing: { label: "Procesando pago", tone: "mid" },
+  partial: { label: "Abono / fiado", tone: "warn" },
+  paid: { label: "Pagado", tone: "ok" },
+  failed: { label: "Fallido", tone: "bad" },
+  canceled: { label: "Cancelado", tone: "mid" },
+  refunded: { label: "Reembolsado", tone: "mid" },
 };
 
 export default function OrdersPage() {
@@ -64,29 +67,50 @@ export default function OrdersPage() {
     }
   };
 
-  const paidTotal = rows.filter((o) => o.status === "paid").reduce((a, o) => a + Number(o.total || 0), 0);
+  const paidRows = rows.filter((o) => o.status === "paid");
+  const paidTotal = paidRows.reduce((a, o) => a + Number(o.total || 0), 0);
+  const pendingTotal = rows
+    .filter((o) => o.status === "partial")
+    .reduce((a, o) => a + Number(o.total || 0), 0);
   const items = (o: OrderDoc) => (o.items || []).map((it: any) => it.title || it.artworkId).join(", ");
   const chip = (s: OrderDoc["status"]) => (
-    <Chip size="small" label={STATUS[s]?.label || s} color={STATUS[s]?.color || "default"} />
+    <StatusPill label={STATUS[s]?.label || s} tone={STATUS[s]?.tone || "mid"} />
   );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <ShoppingBag size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Pedidos</Typography>
-          <Typography variant="caption" color="text.secondary">Todas las ventas de obras, en línea y en caja.</Typography>
-        </Box>
-        <Button variant="outlined" startIcon={<FileSpreadsheet size={16} />} onClick={exportBuyers} disabled={exporting} sx={{ textTransform: "none" }}>
-          {exporting ? "Exportando…" : "Exportar compradores"}
-        </Button>
-        <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => refetch()} disabled={isFetching} sx={{ textTransform: "none" }}>
-          Actualizar
-        </Button>
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Pedidos"
+        title="Listado de pedidos"
+        description="Todas las ventas de obras, en línea y en caja."
+        actions={[
+          { label: "Crear pedido", kind: "pri", icon: <Plus size={14} />, href: "/orders/new" },
+          {
+            label: exporting ? "Exportando…" : "Exportar compradores",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            disabled: exporting,
+            onClick: exportBuyers,
+          },
+          {
+            label: "Actualizar",
+            kind: "sec",
+            icon: <RefreshCw size={14} />,
+            disabled: isFetching,
+            onClick: () => refetch(),
+          },
+        ]}
+      />
+
+      <KpiStrip
+        loading={isLoading}
+        items={[
+          { label: "Pedidos", value: rows.length },
+          { label: "Pagados", value: paidRows.length },
+          { label: "En cartera", value: money(pendingTotal) },
+          { label: "Total pagado", value: money(paidTotal), accent: true },
+        ]}
+      />
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
         <TextField size="small" label="Buscar comprador u obra" value={q} onChange={(e) => setQ(e.target.value)} sx={{ flex: 1 }} />
@@ -96,18 +120,7 @@ export default function OrdersPage() {
         </TextField>
       </Stack>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
-        <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
-          <Typography variant="caption" color="text.secondary">Pedidos</Typography>
-          <Typography fontWeight={500} fontSize={26}>{rows.length}</Typography>
-        </CardContent></Card>
-        <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
-          <Typography variant="caption" color="text.secondary">Total pagado</Typography>
-          <Typography fontWeight={500} fontSize={26} color="#3FA46E">{money(paidTotal)}</Typography>
-        </CardContent></Card>
-      </Stack>
-
-      <Card sx={{ borderRadius: 0 }}>
+      <Card>
         {isFetching && <LinearProgress />}
         <CardContent>
           {isLoading ? (

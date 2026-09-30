@@ -5,7 +5,9 @@ import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, Tabs, Tab,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, CircularProgress, LinearProgress,
 } from "@mui/material";
-import { BarChart3, FileSpreadsheet, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, RefreshCw } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
 import { useQuery } from "@tanstack/react-query";
 import { getSalesReport, type SalesBucket } from "@services/orders.service";
 import { useEvents } from "@/hooks/useEvents";
@@ -22,15 +24,6 @@ const VIEWS = [
   { key: "byArtist", label: "Por artista", col: "Artista" },
   { key: "byTechnique", label: "Por técnica", col: "Técnica" },
 ] as const;
-
-function Kpi({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
-  return (
-    <Card sx={{ borderRadius: 0, flex: 1, minWidth: 150 }}><CardContent>
-      <Typography variant="caption" color="text.secondary">{label}</Typography>
-      <Typography fontWeight={500} fontSize={24} color={color}>{value}</Typography>
-    </CardContent></Card>
-  );
-}
 
 export default function SalesReportPage() {
   const [f, setF] = React.useState({ event: "", from: "", to: "", pavilion: "", technique: "", artist: "" });
@@ -87,25 +80,35 @@ export default function SalesReportPage() {
     ]));
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3} useFlexGap>
-        <Box sx={{ width: 40, height: 40, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <BarChart3 size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Informe de ventas</Typography>
-          <Typography variant="caption" color="text.secondary">Obras pagadas, por día de pago (hora Colombia).</Typography>
-        </Box>
-        <Button variant="outlined" startIcon={<FileSpreadsheet size={16} />} onClick={exportSummary} disabled={!rows.length} sx={{ textTransform: "none" }}>
-          Exportar resumen
-        </Button>
-        <Button variant="outlined" startIcon={<FileSpreadsheet size={16} />} onClick={exportLines} disabled={!data?.lines?.length} sx={{ textTransform: "none" }}>
-          Exportar detalle
-        </Button>
-        <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => refetch()} disabled={isFetching} sx={{ textTransform: "none" }}>
-          Actualizar
-        </Button>
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Reportes"
+        title="Informe de ventas"
+        description="Obras pagadas, por día de pago (hora Colombia)."
+        actions={[
+          {
+            label: "Exportar resumen",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            disabled: !rows.length,
+            onClick: exportSummary,
+          },
+          {
+            label: "Exportar detalle",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            disabled: !data?.lines?.length,
+            onClick: exportLines,
+          },
+          {
+            label: "Actualizar",
+            kind: "sec",
+            icon: <RefreshCw size={14} />,
+            disabled: isFetching,
+            onClick: () => refetch(),
+          },
+        ]}
+      />
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} mb={3} useFlexGap flexWrap="wrap">
         <TextField size="small" select label="Feria" value={f.event} onChange={set("event")} sx={{ minWidth: 180 }}>
@@ -128,17 +131,21 @@ export default function SalesReportPage() {
         </TextField>
       </Stack>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3} useFlexGap flexWrap="wrap">
-        <Kpi label="Total vendido" value={money(data?.total)} color="#3FA46E" />
-        <Kpi label="Obras vendidas" value={data?.units ?? 0} />
-        <Kpi label="Pedidos" value={data?.orders ?? 0} />
-        <Kpi label="Caja / En línea" value={`${money(data?.byDay.reduce((a, r) => a + r.caja, 0))} / ${money(data?.byDay.reduce((a, r) => a + r.online, 0))}`} />
-      </Stack>
+      <KpiStrip
+        loading={isLoading}
+        items={[
+          { label: "Total vendido", value: money(data?.total), accent: true },
+          { label: "Obras vendidas", value: data?.units ?? 0 },
+          { label: "Pedidos", value: data?.orders ?? 0 },
+          { label: "En caja", value: money(data?.byDay.reduce((a, r) => a + r.caja, 0)) },
+          { label: "En línea", value: money(data?.byDay.reduce((a, r) => a + r.online, 0)) },
+        ]}
+      />
 
-      <Card sx={{ borderRadius: 0 }}>
+      <Card>
         {isFetching && <LinearProgress />}
-        <Tabs value={view} onChange={(_, v) => setView(v)} variant="scrollable" sx={{ px: 2 }}>
-          {VIEWS.map((v) => <Tab key={v.key} value={v.key} label={v.label} sx={{ textTransform: "none" }} />)}
+        <Tabs value={view} onChange={(_, v) => setView(v)} variant="scrollable" sx={{ px: 2.5 }}>
+          {VIEWS.map((v) => <Tab key={v.key} value={v.key} label={v.label} />)}
         </Tabs>
         <CardContent>
           {isLoading ? (

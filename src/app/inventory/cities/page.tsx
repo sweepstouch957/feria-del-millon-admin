@@ -1,23 +1,18 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import {
-  Box, Paper, Typography, Stack, Chip, TextField,
-  InputAdornment, Skeleton, alpha, Tooltip,
-} from "@mui/material";
+import { Box, Card, Typography, Stack, TextField, InputAdornment } from "@mui/material";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { useTheme } from "@mui/material/styles";
-import { Search, MapPin, CheckCircle2, XCircle, Globe } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
 import { useCities } from "@/hooks/useCities";
 import type { CityDoc } from "@/services/city.service";
 import { formatDate } from "@/utils/date";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
-
-const GREEN = "#3FA46E";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
+import StatusPill from "@/components/ui/StatusPill";
 
 export default function CitiesPage() {
-  const theme   = useTheme();
-  const dark    = theme.palette.mode === "dark";
   const { data: cities = [], isLoading } = useCities();
 
   const [search, setSearch] = useState("");
@@ -38,8 +33,8 @@ export default function CitiesPage() {
       headerName: "ID",
       width: 72,
       renderCell: ({ value }) => (
-        <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.disabled", fontFamily: "monospace" }}>
-          #{value}
+        <Typography sx={{ fontSize: 12.5, color: "text.secondary", fontVariantNumeric: "tabular-nums" }}>
+          {value}
         </Typography>
       ),
     },
@@ -49,16 +44,9 @@ export default function CitiesPage() {
       flex: 1,
       minWidth: 180,
       renderCell: ({ value }) => (
-        <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.25} height="100%">
-          <Box sx={{
-            width: 28, height: 28, borderRadius: 0, flexShrink: 0,
-            bgcolor: alpha(GREEN, 0.1),
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: GREEN,
-          }}>
-            <MapPin size={13} />
-          </Box>
-          <Typography sx={{ fontSize: 13.5, fontWeight: 500, color: "text.primary" }}>{value}</Typography>
+        <Stack direction="row" alignItems="center" gap={1.25} height="100%">
+          <MapPin size={13} strokeWidth={1.4} style={{ opacity: 0.45, flexShrink: 0 }} />
+          <Typography sx={{ fontSize: 14 }}>{value}</Typography>
         </Stack>
       ),
     },
@@ -67,110 +55,44 @@ export default function CitiesPage() {
       headerName: "Estado",
       width: 130,
       renderCell: ({ value }) => (
-        <Chip
-          icon={value
-            ? <CheckCircle2 size={12} style={{ marginLeft: 6 }} />
-            : <XCircle size={12} style={{ marginLeft: 6 }} />
-          }
-          label={value ? "Activa" : "Inactiva"}
-          size="small"
-          sx={{
-            fontWeight: 500, fontSize: 11,
-            bgcolor: value ? alpha(GREEN, 0.12) : alpha("#B4472A", 0.1),
-            color:   value ? GREEN             : "#B4472A",
-            border: `1px solid ${value ? alpha(GREEN, 0.3) : alpha("#B4472A", 0.25)}`,
-            "& .MuiChip-icon": { color: "inherit" },
-          }}
-        />
+        <StatusPill label={value ? "Activa" : "Inactiva"} tone={value ? "ok" : "bad"} />
       ),
     },
     {
       field: "createdAt",
       headerName: "Registrada",
       width: 150,
-      renderCell: ({ value }) => value
-        ? <Typography sx={{ fontSize: 12, color: "text.disabled" }}>
-            {formatDate(value, { day: "2-digit", month: "short", year: "numeric" })}
-          </Typography>
-        : <Typography sx={{ fontSize: 12, color: "text.disabled" }}>—</Typography>,
+      renderCell: ({ value }) => (
+        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+          {value ? formatDate(value, { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+        </Typography>
+      ),
     },
   ];
 
   return (
     <Box sx={{ pb: 4 }}>
 
-      {/* Header */}
-      <Stack direction="row" flexWrap="wrap" alignItems="flex-end" justifyContent="space-between" mb={3}>
-        <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
-            Inventario
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
-            Ciudades
-          </Typography>
-          <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
-            Catálogo de ciudades de Colombia disponibles en el sistema
-          </Typography>
-        </Box>
+      <PageHeader
+        crumb="Inventario"
+        title="Ciudades"
+        description="Catálogo oficial de municipios DANE habilitados para la feria."
+        badge={<StatusPill label="Colombia · DANE" tone="mid" />}
+      />
 
-        <Tooltip title="Catálogo oficial de municipios DANE">
-          <Chip
-            icon={<Globe size={12} style={{ marginLeft: 6 }} />}
-            label="Colombia · DANE"
-            size="small"
-            sx={{
-              bgcolor: alpha("#6B8F7A", 0.1), color: "#6B8F7A",
-              border: `1px solid ${alpha("#6B8F7A", 0.3)}`,
-              fontWeight: 500, fontSize: 11,
-              "& .MuiChip-icon": { color: "inherit" },
-            }}
-          />
-        </Tooltip>
-      </Stack>
+      <KpiStrip
+        loading={isLoading}
+        min={150}
+        items={[
+          { label: "Total", value: cities.length },
+          { label: "Activas", value: activeCount, accent: true },
+          { label: "Inactivas", value: inactiveCount },
+        ]}
+      />
 
-      {/* Stat chips */}
-      <Stack direction="row" gap={1.5} mb={3} flexWrap="wrap">
-        {[
-          { label: "Total",    value: cities.length,  color: "#8C6A3F" },
-          { label: "Activas",  value: activeCount,    color: GREEN     },
-          { label: "Inactivas",value: inactiveCount,  color: "#B4472A" },
-        ].map(s => (
-          <Paper
-            key={s.label}
-            sx={{
-              px: 2, py: 1.25, borderRadius: 0,
-              bgcolor: dark ? "#161614" : "#F7F6F2",
-              border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-              display: "flex", alignItems: "center", gap: 1.5,
-              minWidth: 100,
-            }}
-          >
-            {isLoading
-              ? <Skeleton variant="text" width={60} height={28} />
-              : <>
-                  <Typography sx={{ fontSize: 22, fontWeight: 500, letterSpacing: -1, color: s.color, lineHeight: 1 }}>
-                    {s.value}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: "text.secondary", fontWeight: 500 }}>
-                    {s.label}
-                  </Typography>
-                </>
-            }
-          </Paper>
-        ))}
-      </Stack>
-
-      {/* Search + Table */}
-      <Paper sx={{
-        borderRadius: 0,
-        bgcolor: dark ? "#161614" : "#F7F6F2",
-        border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-        boxShadow: "none",
-        overflow: "hidden",
-      }}>
-
-        {/* Search bar */}
-        <Box sx={{ p: 2, borderBottom: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+      {/* Buscador + tabla */}
+      <Card sx={{ overflow: "hidden" }}>
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <TextField
             fullWidth
             size="small"
@@ -180,21 +102,11 @@ export default function CitiesPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search size={15} style={{ color: dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)" }} />
+                  <Search size={15} strokeWidth={1.4} style={{ opacity: 0.45 }} />
                 </InputAdornment>
               ),
             }}
-            sx={{
-              maxWidth: 340,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 0,
-                bgcolor: dark ? "rgba(255,255,255,.04)" : "#f5f5f5",
-                fontSize: 13.5,
-                "& fieldset": { borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)" },
-                "&:hover fieldset": { borderColor: dark ? "rgba(255,255,255,.2)" : "rgba(0,0,0,.2)" },
-                "&.Mui-focused fieldset": { borderColor: GREEN },
-              },
-            }}
+            sx={{ maxWidth: 340 }}
           />
           {search && (
             <Typography sx={{ fontSize: 11.5, color: "text.disabled", mt: 1 }}>
@@ -210,19 +122,7 @@ export default function CitiesPage() {
           cards={filtered.map((c: any) => ({
             id: String(c.id ?? c._id ?? c.legacyId),
             title: c.name,
-            badge: (
-              <Chip
-                label={c.active ? "Activa" : "Inactiva"}
-                size="small"
-                sx={{
-                  fontWeight: 500,
-                  fontSize: 11,
-                  bgcolor: c.active ? alpha(GREEN, 0.12) : alpha("#B4472A", 0.1),
-                  color: c.active ? GREEN : "#B4472A",
-                  border: `1px solid ${c.active ? alpha(GREEN, 0.3) : alpha("#B4472A", 0.25)}`,
-                }}
-              />
-            ),
+            badge: <StatusPill label={c.active ? "Activa" : "Inactiva"} tone={c.active ? "ok" : "bad"} />,
             fields: [
               { label: "Código", value: c.legacyId },
               {
@@ -244,32 +144,10 @@ export default function CitiesPage() {
           disableRowSelectionOnClick
           disableColumnMenu
           rowHeight={52}
-          sx={{
-            border: "none",
-            "& .MuiDataGrid-columnHeaders": {
-              bgcolor: dark ? "rgba(255,255,255,.03)" : "#F7F6F2",
-              borderBottom: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-              borderRadius: 0,
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: 11, fontWeight: 500, letterSpacing: .06,
-              textTransform: "uppercase", color: "text.secondary",
-            },
-            "& .MuiDataGrid-row": {
-              "&:hover": { bgcolor: dark ? "rgba(255,255,255,.025)" : "rgba(0,0,0,.018)" },
-              "&.Mui-selected": { bgcolor: alpha(GREEN, 0.06) },
-            },
-            "& .MuiDataGrid-cell": {
-              borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}`,
-            },
-            "& .MuiDataGrid-footerContainer": {
-              borderTop: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-            },
-            "& .MuiDataGrid-virtualScroller": { minHeight: 200 },
-          }}
+          sx={{ border: "none", "& .MuiDataGrid-virtualScroller": { minHeight: 200 } }}
         />
         </ResponsiveRows>
-      </Paper>
+      </Card>
     </Box>
   );
 }

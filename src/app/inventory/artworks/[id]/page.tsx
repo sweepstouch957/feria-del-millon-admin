@@ -42,6 +42,8 @@ import { patchArtwork } from "@services/artworks.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadCampaignImage } from "@services/upload.service";
 import { formatCOP } from "@/utils/money";
+import PageHeader from "@/components/ui/PageHeader";
+import StatusPill from "@/components/ui/StatusPill";
 
 /* =========================
    Helpers
@@ -281,49 +283,24 @@ export default function ArtworkDetailPage() {
   const displayImage = localPreview || form.image || art.image || "";
 
   return (
-    <Box sx={{ p: { xs: 1, md: 3 }, maxWidth: 1300, mx: "auto" }}>
-      <Button
-        startIcon={<ArrowLeft size={16} />}
-        variant="text"
-        sx={{ mb: 2 }}
-        onClick={() => router.push("/inventory/artworks")}
-      >
-        Volver al listado
-      </Button>
+    <Box>
+      <PageHeader
+        crumb="Inventario"
+        back="/inventory/artworks"
+        backLabel="Artes"
+        title={art.title || "Obra"}
+        badge={
+          <StatusPill
+            label={
+              art.status === "published" ? "Publicada" : art.status === "draft" ? "Borrador" : "Archivada"
+            }
+            tone={art.status === "published" ? "ok" : "mid"}
+          />
+        }
+        description={art.artistInfo?.firstName ? `${art.artistInfo.firstName} ${art.artistInfo.lastName ?? ""}`.trim() : undefined}
+      />
 
-      <Card
-        elevation={0}
-        sx={{
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 0,
-          overflow: "hidden",
-        }}
-      >
-        <CardHeader
-          title={
-            <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
-              <Typography variant="h5" fontWeight={500}>
-                Gestión de Obra
-              </Typography>
-              <Chip
-                label={
-                  art.status === "published"
-                    ? "Publicada"
-                    : art.status === "draft"
-                    ? "Borrador"
-                    : "Archivada"
-                }
-                color={art.status === "published" ? "success" : "default"}
-                size="small"
-              />
-            </Stack>
-          }
-          subheader={`ID: ${art._id ?? id}`}
-        />
-
-        <Divider />
-
+      <Card sx={{ overflow: "hidden" }}>
         <CardContent>
           <Stack
             direction={{ xs: "column", md: "row" }}

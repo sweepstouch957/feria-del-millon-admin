@@ -5,18 +5,23 @@ import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress,
 } from "@mui/material";
-import { Users, FileSpreadsheet, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getAttendanceReport, getTicketDays, type AttendanceBucket } from "@services/ticket.service";
 import { toCsv, downloadCsv } from "@/utils/csv";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
+import { eyebrow } from "@/app/theme";
 
 const todayCo = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 
 function BucketTable({ title, rows }: { title: string; rows: AttendanceBucket[] }) {
   return (
-    <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
-      <Typography fontWeight={500} mb={1}>{title}</Typography>
+    <Card sx={{ flex: 1 }}><CardContent>
+      <Typography sx={{ fontSize: 17, letterSpacing: "0.01em", pb: 1.5, mb: 1, borderBottom: "1px solid", borderColor: "divider" }}>
+        {title}
+      </Typography>
       <TableContainer component={Paper} elevation={0}>
         <Table size="small">
           <TableHead><TableRow>
@@ -77,40 +82,46 @@ function Attendance({ eventId }: { eventId: string }) {
   const t = data?.totals;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3} useFlexGap>
-        <Box sx={{ width: 40, height: 40, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Users size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Informe de asistentes</Typography>
-          <Typography variant="caption" color="text.secondary">Por día: invitación, preventa y taquilla. Se actualiza cada minuto.</Typography>
-        </Box>
-        <TextField select size="small" label="Día" value={date} onChange={(e) => setDate(e.target.value)} sx={{ minWidth: 180 }}>
-          {!daysRes?.days.some((d) => d.date === date) && <MenuItem value={date}>{date}</MenuItem>}
-          {(daysRes?.days || []).map((d) => <MenuItem key={d.date} value={d.date}>{d.display || d.date}</MenuItem>)}
-        </TextField>
-        <Button variant="outlined" startIcon={<FileSpreadsheet size={16} />} onClick={exportCsv} disabled={!data?.rows.length} sx={{ textTransform: "none" }}>
-          Exportar Excel
-        </Button>
-        <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => refetch()} disabled={isFetching} sx={{ textTransform: "none" }}>
-          Actualizar
-        </Button>
-      </Stack>
-      {isFetching && <LinearProgress sx={{ mb: 2 }} />}
+    <Box>
+      <PageHeader
+        crumb="Boletos"
+        title="Informe de asistentes"
+        description="Por día: invitación, preventa y taquilla. Se actualiza cada minuto."
+        actions={[
+          {
+            label: "Exportar Excel",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            disabled: !data?.rows.length,
+            onClick: exportCsv,
+          },
+          {
+            label: "Actualizar",
+            kind: "sec",
+            icon: <RefreshCw size={14} />,
+            disabled: isFetching,
+            onClick: () => refetch(),
+          },
+        ]}
+      >
+        <Stack direction="row" alignItems="center" gap={1.5} flexWrap="wrap">
+          <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>Día</Typography>
+          <TextField select size="small" value={date} onChange={(e) => setDate(e.target.value)} sx={{ minWidth: 190 }}>
+            {!daysRes?.days.some((d) => d.date === date) && <MenuItem value={date}>{date}</MenuItem>}
+            {(daysRes?.days || []).map((d) => <MenuItem key={d.date} value={d.date}>{d.display || d.date}</MenuItem>)}
+          </TextField>
+        </Stack>
+      </PageHeader>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
-        {[
-          ["Entradas válidas", t?.tickets ?? 0],
-          ["Personas esperadas", t?.persons ?? 0],
-          ["Ingresaron", t?.attended ?? 0],
-        ].map(([label, v]) => (
-          <Card key={label} sx={{ borderRadius: 0, flex: 1 }}><CardContent>
-            <Typography variant="caption" color="text.secondary">{label}</Typography>
-            <Typography fontWeight={500} fontSize={26}>{v}</Typography>
-          </CardContent></Card>
-        ))}
-      </Stack>
+      <Box sx={{ height: 2, mb: 2 }}>{isFetching && <LinearProgress />}</Box>
+
+      <KpiStrip
+        items={[
+          { label: "Entradas válidas", value: t?.tickets ?? 0 },
+          { label: "Personas esperadas", value: t?.persons ?? 0 },
+          { label: "Ingresaron", value: t?.attended ?? 0, accent: true },
+        ]}
+      />
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <BucketTable title="Por categoría" rows={data?.byCategory || []} />

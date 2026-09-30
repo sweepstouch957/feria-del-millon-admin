@@ -40,6 +40,8 @@ import {
   type Convocatoria, type ConvocatoriaStatus,
 } from "@services/events.service";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
 
 /* ── HEIC → JPEG via Cloudinary ────────────────────────────────────────────── */
 function resolveImgUrl(url?: string): string {
@@ -1168,77 +1170,49 @@ export default function SolicitudesPage() {
 
   const byStatus = stats?.byStatus || {};
 
+  // Cada celda de la franja filtra la tabla por ese estado (total y pagadas no).
   const KPI_CONFIG = [
-    { key: "__total__",        label: "Total",          val: stats?.total ?? 0,                      color: isDark ? '#DEDBD2' : '#26241F',  bg: isDark ? 'rgba(255,255,255,0.04)' : '#F7F6F2',  border: isDark ? 'rgba(255,255,255,0.1)' : '#DEDBD2'    },
-    { key: "__paid__",         label: "Pagadas",        val: stats?.paid  ?? 0,                      color: isDark ? '#3FA46E' : '#3FA46E',  bg: isDark ? 'rgba(34,197,94,0.08)' : '#EEF5F1',    border: isDark ? 'rgba(34,197,94,0.2)' : '#D7E8DF'      },
-    { key: "pending_payment",  label: "Sin pago",       val: byStatus["pending_payment"]  ?? 0,      color: isDark ? '#fb923c' : '#c2410c',  bg: isDark ? 'rgba(251,146,60,0.08)' : '#fff7ed',   border: isDark ? 'rgba(251,146,60,0.2)' : '#fed7aa'     },
-    { key: "draft",            label: "Borrador",       val: byStatus["draft"]            ?? 0,      color: isDark ? '#818cf8' : '#4338ca',  bg: isDark ? 'rgba(129,140,248,0.08)' : '#eef2ff',  border: isDark ? 'rgba(129,140,248,0.2)' : '#c7d2fe'    },
-    { key: "submitted",        label: "Enviadas",       val: byStatus["submitted"]        ?? 0,      color: isDark ? '#38bdf8' : '#0369a1',  bg: isDark ? 'rgba(14,165,233,0.08)' : '#f0f9ff',   border: isDark ? 'rgba(14,165,233,0.2)' : '#bae6fd'     },
-    { key: "under_review",     label: "En revisión",    val: byStatus["under_review"]     ?? 0,      color: isDark ? '#8C6A3F' : '#6d28d9',  bg: isDark ? 'rgba(167,139,250,0.08)' : '#F4F1EA',  border: isDark ? 'rgba(167,139,250,0.2)' : '#ddd6fe'    },
-    { key: "revision_requested", label: "Con corrección", val: byStatus["revision_requested"] ?? 0, color: isDark ? '#C9902B' : '#92400e',  bg: isDark ? 'rgba(251,191,36,0.08)' : '#F2E8CE',   border: isDark ? 'rgba(251,191,36,0.2)' : '#E4CE94'     },
-    { key: "accepted",         label: "Aceptadas",      val: byStatus["accepted"]         ?? 0,      color: isDark ? '#3FA46E' : '#065f46',  bg: isDark ? 'rgba(74,222,128,0.1)' : '#ecfdf5',    border: isDark ? 'rgba(74,222,128,0.25)' : '#6ee7b7'    },
-    { key: "rejected",         label: "Rechazadas",     val: byStatus["rejected"]         ?? 0,      color: isDark ? '#f87171' : '#991b1b',  bg: isDark ? 'rgba(239,68,68,0.08)' : '#F7EDE9',    border: isDark ? 'rgba(239,68,68,0.2)' : '#D79683'      },
+    { key: "__total__", label: "Total", val: stats?.total ?? 0 },
+    { key: "__paid__", label: "Pagadas", val: stats?.paid ?? 0, accent: true },
+    { key: "pending_payment", label: "Sin pago", val: byStatus["pending_payment"] ?? 0 },
+    { key: "draft", label: "Borrador", val: byStatus["draft"] ?? 0 },
+    { key: "submitted", label: "Enviadas", val: byStatus["submitted"] ?? 0 },
+    { key: "under_review", label: "En revisión", val: byStatus["under_review"] ?? 0 },
+    { key: "revision_requested", label: "Con corrección", val: byStatus["revision_requested"] ?? 0 },
+    { key: "accepted", label: "Aceptadas", val: byStatus["accepted"] ?? 0 },
+    { key: "rejected", label: "Rechazadas", val: byStatus["rejected"] ?? 0 },
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
-      {/* Cierre del proceso: comunicar la resolución a todos los decididos */}
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={1.5}
-        mb={2}
+    <Box>
+      <PageHeader
+        crumb="Comunidad"
+        title="Solicitudes"
+        description="Postulaciones a la convocatoria: calificación, pago y resolución."
       >
-        <Typography variant="h6" fontWeight={500}>
-          Solicitudes
-        </Typography>
         <SendResolutionButton />
-      </Stack>
+      </PageHeader>
 
-      {/* Global KPI bar */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "repeat(3,1fr)", sm: "repeat(5,1fr)", md: "repeat(9,1fr)" },
-          gap: 1.5,
-          mb: 3,
-        }}
-      >
-        {KPI_CONFIG.map((s) => (
-          <Box
-            key={s.key}
-            onClick={() => {
-              if (s.key === "__total__" || s.key === "__paid__") return;
-              setFilterStatus(s.key);
-              setPagination({ page: 0, pageSize: 20 });
-            }}
-            sx={{
-              background: s.bg,
-              border: `1px solid ${s.border}`,
-              borderRadius: 0,
-              px: 2,
-              py: 1.75,
-              cursor: (s.key === "__total__" || s.key === "__paid__") ? "default" : "pointer",
-              transition: "all .18s",
-              "&:hover": (s.key === "__total__" || s.key === "__paid__") ? {} : {
-                transform: "translateY(-2px)",
-                boxShadow: `0 6px 20px ${s.border}`,
-              },
-            }}
-          >
-            <Typography
-              sx={{ color: s.color, textTransform: "uppercase", fontSize: 9, fontWeight: 500, letterSpacing: .6, mb: 0.5, opacity: 0.75 }}
-            >{s.label}</Typography>
-            <Typography sx={{ color: s.color, fontWeight: 500, fontSize: 22, lineHeight: 1 }}>
-              {stats ? s.val : "—"}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
+      <KpiStrip
+        min={130}
+        items={KPI_CONFIG.map((s) => {
+          const fixed = s.key === "__total__" || s.key === "__paid__";
+          return {
+            label: s.label,
+            value: stats ? s.val : "—",
+            accent: s.accent,
+            selected: filterStatus === s.key,
+            onClick: fixed
+              ? undefined
+              : () => {
+                  setFilterStatus(filterStatus === s.key ? "" : s.key);
+                  setPagination({ page: 0, pageSize: 20 });
+                },
+          };
+        })}
+      />
 
-      <Card sx={{ borderRadius: 0, boxShadow: "none" }}>
+      <Card>
         <CardContent>
           <Stack spacing={2}>
             {/* Filters */}
@@ -1304,30 +1278,10 @@ export default function SolicitudesPage() {
                 </FormControl>
               ))}
               <Box flex={1} />
-              <Button
-                onClick={openConfig}
-                variant="outlined"
-                startIcon={<SettingsIcon size={16} />}
-                sx={{ fontWeight: 500, textTransform: "none", borderRadius: 0 }}
-              >
+              <Button onClick={openConfig} variant="outlined" size="small" startIcon={<SettingsIcon size={14} />}>
                 Convocatoria
               </Button>
-              <Button
-                onClick={openExport}
-                disableElevation
-                startIcon={<SheetIcon size={16} />}
-                sx={{
-                  color: "#fff",
-                  fontWeight: 500,
-                  px: 2.2,
-                  borderRadius: 0,
-                  textTransform: "none",
-                  bgcolor: "#3FA46E",
-                  boxShadow: "none",
-                  transition: "background .18s",
-                  "&:hover": { bgcolor: "#14513C", boxShadow: "none" },
-                }}
-              >
+              <Button onClick={openExport} variant="contained" color="secondary" size="small" startIcon={<SheetIcon size={14} />}>
                 Exportar Excel
               </Button>
               <Button
@@ -1737,11 +1691,7 @@ export default function SolicitudesPage() {
             onClick={handleExport}
             disabled={exportLoading || !!exportError || !exportCounts || (exportCounts?.[exportSeg] ?? 0) === 0}
             startIcon={<DownloadIcon size={16} />}
-            sx={{
-              fontWeight: 500, textTransform: "none", boxShadow: "none",
-              bgcolor: "#3FA46E",
-              "&:hover": { bgcolor: "#14513C", boxShadow: "none" },
-            }}
+            color="secondary"
           >
             Descargar Excel{exportCounts ? ` (${exportCounts[exportSeg]})` : ""}
           </Button>

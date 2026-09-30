@@ -16,13 +16,16 @@ import {
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/provider/authProvider";
 import { getUserById, updateUser, type UserDTO, type Roles as RolesMap } from "@services/user.service";
+import PageHeader from "@/components/ui/PageHeader";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
+/* Tokens del sistema editorial. El filete y el texto apagado se derivan del
+   color de texto en curso, así sirven igual en claro y en oscuro. */
 const G   = "#3FA46E";
-const GD  = "#3FA46E";
-const S1  = "#161614";
-const BR  = "rgba(255,255,255,0.07)";
-const TM  = "rgba(255,255,255,0.38)";
+const GD  = "#14513C";
+const S1  = "background.paper";
+const BR  = "color-mix(in srgb, currentColor 16%, transparent)";
+const TM  = "color-mix(in srgb, currentColor 55%, transparent)";
 
 // ── Role config ───────────────────────────────────────────────────────────────
 const ROLES: { key: keyof RolesMap; label: string; color: string }[] = [
@@ -209,18 +212,7 @@ export default function AccountPage() {
   return (
     <Box sx={{ pb: 6 }}>
 
-      {/* ── Page header ──────────────────────────────────────────────────── */}
-      <Box sx={{ mb: 4 }}>
-        <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
-          {t("navigation.account")}
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
-          {t("account.title")}
-        </Typography>
-        <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
-          {t("account.subtitle")}
-        </Typography>
-      </Box>
+      <PageHeader crumb="Cuenta" title={t("account.title")} description={t("account.subtitle")} />
 
       <Stack direction={{ xs: "column", lg: "row" }} gap={3} alignItems="flex-start">
 
@@ -281,8 +273,8 @@ export default function AccountPage() {
                         position: "absolute", bottom: 4, right: 4,
                         width: 14, height: 14, borderRadius: "50%",
                         bgcolor: profile.active ? G : "#55524C",
-                        border: `2.5px solid ${S1}`,
-                        boxShadow: profile.active ? `0 0 8px ${G}` : "none",
+                        border: "2.5px solid",
+                        borderColor: "background.paper",
                       }} />
                     </Box>
 

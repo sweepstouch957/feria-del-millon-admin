@@ -14,6 +14,10 @@ export type Kpi = {
   sub?: React.ReactNode;
   /** Tiñe la cifra con el acento (para totales). */
   accent?: boolean;
+  /** Si la celda filtra la tabla de abajo, se vuelve pulsable. */
+  onClick?: () => void;
+  /** Marca la celda como el filtro vigente. */
+  selected?: boolean;
 };
 
 export default function KpiStrip({
@@ -45,6 +49,9 @@ export default function KpiStrip({
         return (
           <Box
             key={k.label}
+            component={k.onClick ? "button" : "div"}
+            type={k.onClick ? "button" : undefined}
+            onClick={k.onClick}
             sx={{
               minWidth: 0,
               px: 2.25,
@@ -52,8 +59,19 @@ export default function KpiStrip({
               pb: 2,
               display: "flex",
               flexDirection: "column",
+              alignItems: "flex-start",
+              textAlign: "left",
               gap: 0.75,
+              border: 0,
+              font: "inherit",
+              color: "inherit",
               backgroundColor: "background.default",
+              ...(k.onClick && {
+                cursor: "pointer",
+                transition: "background-color .2s ease, box-shadow .2s ease",
+                boxShadow: k.selected ? "inset 0 -2px 0 currentColor" : "none",
+                "&:hover": { backgroundColor: "action.hover" },
+              }),
             }}
           >
             <Typography sx={{ ...eyebrow, fontSize: 9.5, letterSpacing: "0.22em", color: "text.secondary" }}>

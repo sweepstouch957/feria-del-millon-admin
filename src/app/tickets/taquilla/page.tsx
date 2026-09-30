@@ -4,7 +4,8 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, ToggleButton, ToggleButtonGroup, Alert,
 } from "@mui/material";
-import { Ticket as TicketIcon, Banknote, CreditCard } from "lucide-react";
+import { Banknote, CreditCard } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -99,19 +100,15 @@ function BoxOffice({ eventId }: { eventId: string }) {
   const valid = buyer.name.trim() && /\S+@\S+\.\S+/.test(buyer.email) && (!spec.pickDay || date) && quantity >= 1;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <TicketIcon size={20} />
-        </Box>
-        <Box>
-          <Typography fontWeight={500} fontSize={20}>Taquilla</Typography>
-          <Typography variant="caption" color="text.secondary">Venta de entradas en sitio. El asistente recibe su QR por correo al instante.</Typography>
-        </Box>
-      </Stack>
+    <Box sx={{ maxWidth: 920, mx: "auto" }}>
+      <PageHeader
+        crumb="Boletos"
+        title="Taquilla"
+        description="Venta de entradas en sitio. El asistente recibe su QR por correo al instante."
+      />
 
       {sold ? (
-        <Card sx={{ borderRadius: 0 }}><CardContent>
+        <Card><CardContent>
           <Alert severity="success" sx={{ mb: 2 }}>
             {sold.length} entrada(s) emitidas · {formatCOP(total, { code: true })} · enviadas a {buyer.email}
           </Alert>
@@ -123,10 +120,10 @@ function BoxOffice({ eventId }: { eventId: string }) {
               </Box>
             ))}
           </Stack>
-          <Button variant="contained" onClick={next} sx={{ textTransform: "none" }}>Nueva venta</Button>
+          <Button variant="contained" color="secondary" onClick={next}>Nueva venta</Button>
         </CardContent></Card>
       ) : (
-        <Card sx={{ borderRadius: 0 }}><CardContent>
+        <Card><CardContent>
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField select size="small" label="Tipo de entrada" value={type} onChange={(e) => setType(e.target.value as SellType)} sx={{ flex: 1 }}>
@@ -171,8 +168,10 @@ function BoxOffice({ eventId }: { eventId: string }) {
                 <ToggleButton value="card_offline" sx={{ textTransform: "none", gap: 1 }}><CreditCard size={16} /> Datáfono</ToggleButton>
               </ToggleButtonGroup>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Typography fontWeight={500} fontSize={22}>{formatCOP(total, { code: true })}</Typography>
-                <Button variant="contained" disabled={!valid || sale.isPending} onClick={() => sale.mutate()} sx={{ textTransform: "none" }}>
+                <Typography sx={{ fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" }}>
+                  {formatCOP(total, { code: true })}
+                </Typography>
+                <Button variant="contained" color="secondary" disabled={!valid || sale.isPending} onClick={() => sale.mutate()}>
                   {sale.isPending ? "Registrando…" : "Cobrar y emitir"}
                 </Button>
               </Stack>

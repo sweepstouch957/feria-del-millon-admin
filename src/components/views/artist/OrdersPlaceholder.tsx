@@ -1,30 +1,27 @@
 "use client";
 
-import { Box, Typography, Paper } from "@mui/material";
+import { Box, Card, Typography } from "@mui/material";
+import PageHeader from "@/components/ui/PageHeader";
+
+/* Ventas de las obras del artista. Todavía sin datos: el reporte por artista
+   existe en el panel de la feria, no en esta vista. */
 
 export default function OrdersPlaceholder() {
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        borderRadius: 0,
-        p: 4,
-        textAlign: "center",
-        color: "text.secondary",
-      }}
-    >
-      <Box sx={{ maxWidth: 480, mx: "auto" }}>
-        <Typography variant="h6" gutterBottom>
-          Órdenes
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          Aquí aparecerán las órdenes asociadas a tus obras. Próximamente podrás
-          ver estados, compradores y descargar comprobantes.
-        </Typography>
-        <Typography variant="caption" color="text.disabled">
-          (Placeholder – sin datos por ahora)
-        </Typography>
-      </Box>
-    </Paper>
+    <Box>
+      <PageHeader
+        crumb="Artista"
+        title="Mis pedidos"
+        description="Las ventas de tus obras en la feria."
+      />
+      <Card sx={{ p: 5, textAlign: "center" }}>
+        <Box sx={{ maxWidth: 520, mx: "auto" }}>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            Aquí aparecerán las ventas de tus obras con su estado y su comprobante.
+            Mientras tanto, la feria te informa cada venta por correo.
+          </Typography>
+        </Box>
+      </Card>
+    </Box>
   );
 }

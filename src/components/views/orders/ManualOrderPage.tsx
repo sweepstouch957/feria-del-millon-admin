@@ -50,6 +50,7 @@
 
     import { useAuth } from "@/provider/authProvider";
     import { useActiveEvent } from "@hooks/events/useActiveEvent";
+    import PageHeader from "@/components/ui/PageHeader";
 
     const ManualOrderPage = () => {
         const { user } = useAuth();
@@ -269,10 +270,12 @@
         };
 
         return (
-            <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h5" fontWeight={500} mb={1}>
-                    Venta manual / POS
-                </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <PageHeader
+                    crumb="Pedidos"
+                    title="Crear pedido"
+                    description="Registro manual de una venta en caja."
+                />
 
                 <Grid container spacing={2}>
                     {/* IZQUIERDA: búsqueda + tabla */}

@@ -5,7 +5,9 @@ import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, Chip, Alert, Divider,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress,
 } from "@mui/material";
-import { Megaphone, Send, FileSpreadsheet, FlaskConical } from "lucide-react";
+import { Send, FileSpreadsheet, FlaskConical } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { eyebrow } from "@/app/theme";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -75,24 +77,23 @@ export default function CommunicationsPage() {
   const ready = subject.trim().length > 2 && body.trim().length > 10;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1000, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3} useFlexGap>
-        <Box sx={{ width: 40, height: 40, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Megaphone size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Comunicaciones</Typography>
-          <Typography variant="caption" color="text.secondary">
-            Newsletter, catálogos y promociones a las bases. Cada correo lleva enlace para darse de baja.
-          </Typography>
-        </Box>
-        <Button variant="outlined" startIcon={<FileSpreadsheet size={16} />} onClick={exportSubs} sx={{ textTransform: "none" }}>
-          Exportar boletín
-        </Button>
-      </Stack>
+    <Box sx={{ maxWidth: 1040, mx: "auto" }}>
+      <PageHeader
+        crumb="Contenido"
+        title="Comunicaciones"
+        description="Boletín, catálogos y promociones a las bases. Cada correo lleva enlace para darse de baja."
+        actions={[
+          {
+            label: "Exportar boletín",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            onClick: exportSubs,
+          },
+        ]}
+      />
 
-      <Card sx={{ borderRadius: 0, mb: 3 }}><CardContent>
-        <Typography variant="caption" color="text.secondary">¿A quién?</Typography>
+      <Card sx={{ mb: 3 }}><CardContent>
+        <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>¿A quién?</Typography>
         <Stack direction="row" flexWrap="wrap" gap={1} mt={1} mb={2}>
           {AUDIENCES.map((a) => (
             <Chip
@@ -140,11 +141,12 @@ export default function CommunicationsPage() {
         </Stack>
       </CardContent></Card>
 
-      <Card sx={{ borderRadius: 0 }}>
+      <Card>
         {send.isPending && <LinearProgress />}
         <CardContent>
-          <Typography fontWeight={500} mb={1}>Envíos anteriores</Typography>
-          <Divider sx={{ mb: 1 }} />
+          <Typography sx={{ fontSize: 17, letterSpacing: "0.01em", pb: 1.5, mb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
+            Envíos anteriores
+          </Typography>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
               <TableHead><TableRow>

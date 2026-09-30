@@ -13,6 +13,7 @@ import {
   type SiteConfig, type SectionKey,
 } from "@services/siteConfig.service";
 import { uploadCampaignImage } from "@services/upload.service";
+import PageHeader from "@/components/ui/PageHeader";
 import { Upload as UploadIcon, X as XIcon } from "lucide-react";
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
@@ -363,25 +364,22 @@ export default function PersonalizacionPage() {
   const cp = landing.convocatoriaPage;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
-      {/* Header */}
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(34,197,94,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <PaletteIcon size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Personalización del sitio</Typography>
-          <Typography variant="caption" color="text.secondary">Colores, textos, imágenes y secciones del landing</Typography>
-        </Box>
-        <Tooltip title="Restaurar valores por defecto">
-          <IconButton onClick={() => setCfg(SITE_DEFAULTS)}><ResetIcon size={18} /></IconButton>
-        </Tooltip>
-        <Button variant="contained" disableElevation onClick={handleSave} disabled={saving || dirtyCount === 0}
-          startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <SaveIcon size={16} />}
-          sx={{ fontWeight: 500, textTransform: "none", boxShadow: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C", boxShadow: "none" } }}>
-          {saving ? "Guardando…" : dirtyCount > 0 ? `Guardar todo (${dirtyCount})` : "Sin cambios"}
-        </Button>
-      </Stack>
+    <Box sx={{ maxWidth: 940, mx: "auto" }}>
+      <PageHeader
+        crumb="Contenido"
+        title="Personalización"
+        description="Textos, orden y visibilidad de la landing pública."
+        actions={[
+          { label: "Restaurar", kind: "sec", icon: <ResetIcon size={14} />, onClick: () => setCfg(SITE_DEFAULTS) },
+          {
+            label: saving ? "Guardando…" : dirtyCount > 0 ? `Publicar cambios (${dirtyCount})` : "Sin cambios",
+            kind: "pri",
+            icon: saving ? <CircularProgress size={13} color="inherit" /> : <SaveIcon size={14} />,
+            disabled: saving || dirtyCount === 0,
+            onClick: handleSave,
+          },
+        ]}
+      />
 
       {/* Buscador: 23 tarjetas en una página son muchas para recorrer a ojo. */}
       <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.5} mb={2.5}>
@@ -398,7 +396,7 @@ export default function PersonalizacionPage() {
           disableElevation
           onClick={() => setOnlyDirty((v) => !v)}
           disabled={dirtyCount === 0 && !onlyDirty}
-          sx={onlyDirty ? { bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } } : undefined}
+          color={onlyDirty ? "secondary" : "primary"}
         >
           Solo con cambios{dirtyCount > 0 ? ` (${dirtyCount})` : ""}
         </Button>

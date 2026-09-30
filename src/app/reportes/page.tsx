@@ -7,12 +7,15 @@ import {
   MenuItem, Card, CardContent, Typography, Stack, Button, Divider,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, CircularProgress,
 } from "@mui/material";
-import { BarChart3, Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getApplicationStats } from "@services/applications.service";
 import { getConvocatorias } from "@services/events.service";
 import { listOrders, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
+import { eyebrow } from "@/app/theme";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 
@@ -31,12 +34,12 @@ const isCaja = (o: OrderDoc) => {
   return m === "cash" || m === "card_offline" || o.invoice?.channel === "event_pos";
 };
 
-function KpiCard({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
+/** Título de bloque del informe. */
+function BlockTitle({ children }: { children: React.ReactNode }) {
   return (
-    <Card sx={{ borderRadius: 0, flex: 1, minWidth: 150 }}><CardContent>
-      <Typography variant="caption" color="text.secondary">{label}</Typography>
-      <Typography fontWeight={500} fontSize={24} color={color}>{value}</Typography>
-    </CardContent></Card>
+    <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary", mb: 1.5 }}>
+      {children}
+    </Typography>
   );
 }
 
@@ -114,83 +117,99 @@ export default function ReportesPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <BarChart3 size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Reportes</Typography>
-          <Typography variant="caption" color="text.secondary">Solicitudes, ventas (caja vs línea) y cartera de fiado.</Typography>
-        </Box>
-        <TextField
-          select
-          size="small"
-          value={conv}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConv(e.target.value)}
-          sx={{ minWidth: 200 }}
-          label="Convocatoria"
-        >
-          <MenuItem value="">Todas las ediciones</MenuItem>
-          {((convQ.data as any[]) ?? []).map((c) => (
-            <MenuItem key={c._id || c.id} value={c._id || c.id}>
-              {c.name || c.slug || "Convocatoria"}
-            </MenuItem>
-          ))}
-        </TextField>
-        <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => { appsQ.refetch(); ordersQ.refetch(); }} sx={{ textTransform: "none" }}>Actualizar</Button>
-        <Button variant="contained" disableElevation startIcon={<Download size={16} />} onClick={exportAll}
-          sx={{ textTransform: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>Exportar CSV</Button>
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Reportes"
+        title="Reportes"
+        description="Solicitudes, ventas (caja frente a línea) y cartera de fiado."
+        actions={[
+          {
+            label: "Actualizar",
+            kind: "sec",
+            icon: <RefreshCw size={14} />,
+            onClick: () => {
+              appsQ.refetch();
+              ordersQ.refetch();
+            },
+          },
+          { label: "Exportar CSV", kind: "pri", icon: <Download size={14} />, onClick: exportAll },
+        ]}
+      >
+        <Stack direction="row" alignItems="center" gap={1.5} flexWrap="wrap">
+          <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>Convocatoria</Typography>
+          <TextField
+            select
+            size="small"
+            value={conv}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConv(e.target.value)}
+            sx={{ minWidth: 220 }}
+          >
+            <MenuItem value="">Todas las ediciones</MenuItem>
+            {((convQ.data as any[]) ?? []).map((c) => (
+              <MenuItem key={c._id || c.id} value={c._id || c.id}>
+                {c.name || c.slug || "Convocatoria"}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
+      </PageHeader>
 
       {loading ? (
         <Box sx={{ p: 6, textAlign: "center" }}><CircularProgress /></Box>
       ) : (
-        <Stack spacing={3}>
+        <Stack gap={4}>
           {/* Solicitudes */}
           <Box>
-            <Typography fontWeight={500} fontSize={15} mb={1.5}>Solicitudes</Typography>
-            <Stack direction="row" flexWrap="wrap" gap={2} mb={2}>
-              <KpiCard label="Total solicitudes" value={apps?.total ?? 0} />
-              <KpiCard label="Inscripción pagada" value={apps?.paid ?? 0} color="#3FA46E" />
-              <KpiCard label="Aceptadas" value={byStatus["accepted"] ?? 0} color="#3FA46E" />
-              <KpiCard label="Rechazadas" value={byStatus["rejected"] ?? 0} color="#8A3520" />
-            </Stack>
-            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0, border: "1px solid", borderColor: "divider" }}>
+            <BlockTitle>Solicitudes</BlockTitle>
+            <KpiStrip
+              items={[
+                { label: "Total solicitudes", value: apps?.total ?? 0 },
+                { label: "Inscripción pagada", value: apps?.paid ?? 0, accent: true },
+                { label: "Aceptadas", value: byStatus["accepted"] ?? 0 },
+                { label: "Rechazadas", value: byStatus["rejected"] ?? 0 },
+              ]}
+            />
+            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
               <Table size="small">
-                <TableHead><TableRow><TableCell>Estado</TableCell><TableCell align="right">Cantidad</TableCell></TableRow></TableHead>
+                <TableHead><TableRow><TableCell>Estado</TableCell><TableCell align="right">Cantidad</TableCell><TableCell align="right">%</TableCell></TableRow></TableHead>
                 <TableBody>
                   {Object.entries(byStatus).map(([k, v]) => (
-                    <TableRow key={k}><TableCell>{STATUS_LABEL[k] || k}</TableCell><TableCell align="right">{v}</TableCell></TableRow>
+                    <TableRow key={k} hover>
+                      <TableCell>{STATUS_LABEL[k] || k}</TableCell>
+                      <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>{v}</TableCell>
+                      <TableCell align="right" sx={{ color: "text.secondary" }}>
+                        {apps?.total ? `${Math.round((Number(v) / apps.total) * 100)}%` : "0%"}
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
           </Box>
 
-          <Divider />
-
           {/* Ventas */}
           <Box>
-            <Typography fontWeight={500} fontSize={15} mb={1.5}>Ventas de obras</Typography>
-            <Stack direction="row" flexWrap="wrap" gap={2}>
-              <KpiCard label="Órdenes pagadas" value={paidOrders.length} />
-              <KpiCard label="Ingresos totales" value={money(revenue)} color="#3FA46E" />
-              <KpiCard label={`En caja (${cajaOrders.length})`} value={money(cajaRevenue)} />
-              <KpiCard label={`En línea (${onlineOrders.length})`} value={money(onlineRevenue)} />
-            </Stack>
+            <BlockTitle>Ventas de obras</BlockTitle>
+            <KpiStrip
+              items={[
+                { label: "Órdenes pagadas", value: paidOrders.length },
+                { label: "Ingresos totales", value: money(revenue), accent: true },
+                { label: `En caja (${cajaOrders.length})`, value: money(cajaRevenue) },
+                { label: `En línea (${onlineOrders.length})`, value: money(onlineRevenue) },
+              ]}
+            />
           </Box>
-
-          <Divider />
 
           {/* Cartera */}
           <Box>
-            <Typography fontWeight={500} fontSize={15} mb={1.5}>Cartera (fiado)</Typography>
-            <Stack direction="row" flexWrap="wrap" gap={2}>
-              <KpiCard label="Obras apartadas" value={partialOrders.length} />
-              <KpiCard label="Abonado" value={money(carteraAbonado)} />
-              <KpiCard label="Saldo pendiente" value={money(cartera)} color="#b45309" />
-            </Stack>
+            <BlockTitle>Cartera (fiado)</BlockTitle>
+            <KpiStrip
+              items={[
+                { label: "Obras apartadas", value: partialOrders.length },
+                { label: "Abonado", value: money(carteraAbonado) },
+                { label: "Saldo pendiente", value: money(cartera) },
+              ]}
+            />
           </Box>
         </Stack>
       )}

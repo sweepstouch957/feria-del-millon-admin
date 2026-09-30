@@ -20,6 +20,8 @@ import {
   type TechniqueDoc,
   type CreateTechniqueInput,
 } from "@services/techniques.service";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
 
 /* ─── Slugify helper ──────────────────────────────────────────────────────── */
 function slugify(str: string): string {
@@ -177,54 +179,42 @@ export default function TechniquesPage() {
   const inactiveCount = techniques.filter((t) => !t.active).length;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
-      {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3} flexWrap="wrap" gap={2}>
-        <Box>
-          <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={0.5}>
-            <Palette size={28} />
-            <Typography variant="h5" fontWeight={500} sx={{ letterSpacing: "-0.5px" }}>
-              Técnicas artísticas
-            </Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            Gestiona las técnicas disponibles para clasificar obras · {techniques.length} en total
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={18} />}
-          onClick={() => { setEditing(null); setFormOpen(true); }}
-          sx={{ textTransform: "none", fontWeight: 500, borderRadius: 0 }}
-        >
-          Nueva técnica
-        </Button>
-      </Stack>
+    <Box sx={{ maxWidth: 940, mx: "auto" }}>
+      <PageHeader
+        crumb="Inventario"
+        title="Técnicas"
+        description="Las técnicas con que se clasifican las obras del catálogo."
+        actions={[
+          {
+            label: "Nueva técnica",
+            kind: "pri",
+            icon: <Plus size={14} />,
+            onClick: () => {
+              setEditing(null);
+              setFormOpen(true);
+            },
+          },
+        ]}
+      />
 
-      {/* Stats */}
-      <Stack direction="row" flexWrap="wrap" spacing={2} mb={3}>
-        <Box sx={{ background: "#EEF5F1", border: "1px solid #D7E8DF", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={500} color="#3FA46E" sx={{ textTransform: "uppercase", fontSize: 10 }}>Activas</Typography>
-          <Typography variant="h5" fontWeight={500} color="#3FA46E">{activeCount}</Typography>
-        </Box>
-        <Box sx={{ background: "#F7EDE9", border: "1px solid #fecaca", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={500} color="#9E3B22" sx={{ textTransform: "uppercase", fontSize: 10 }}>Inactivas</Typography>
-          <Typography variant="h5" fontWeight={500} color="#9E3B22">{inactiveCount}</Typography>
-        </Box>
-        <Box sx={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 0, px: 3, py: 1.5, flex: 1 }}>
-          <Typography variant="caption" fontWeight={500} color="#0369a1" sx={{ textTransform: "uppercase", fontSize: 10 }}>Total</Typography>
-          <Typography variant="h5" fontWeight={500} color="#0369a1">{techniques.length}</Typography>
-        </Box>
-      </Stack>
+      <KpiStrip
+        loading={isLoading}
+        min={150}
+        items={[
+          { label: "Activas", value: activeCount, accent: true },
+          { label: "Inactivas", value: inactiveCount },
+          { label: "Total", value: techniques.length },
+        ]}
+      />
 
-      {/* Table */}
-      <Card sx={{ borderRadius: 0, boxShadow: "none" }}>
+      {/* Tabla */}
+      <Card>
         <CardContent sx={{ p: 0 }}>
           {isLoading ? (
             <Box sx={{ p: 6, textAlign: "center", color: "text.secondary" }}>Cargando técnicas…</Box>
           ) : techniques.length === 0 ? (
             <Box sx={{ p: 6, textAlign: "center" }}>
-              <Palette size={48} color="#d1d5db" />
+              <Palette size={44} strokeWidth={1.2} style={{ opacity: 0.25 }} />
               <Typography color="text.secondary" mt={2}>No hay técnicas creadas aún</Typography>
               <Button
                 variant="outlined" sx={{ mt: 2 }}
@@ -240,10 +230,10 @@ export default function TechniquesPage() {
                 display: { xs: "none", md: "grid" },
                 gridTemplateColumns: "40px 1fr 150px 80px 80px 120px",
                 gap: 1, px: 2.5, py: 1.5,
-                background: "#F7F6F2",
-                borderBottom: "1px solid #DEDBD2",
-                fontSize: 11, fontWeight: 500, color: "#615E58",
-                textTransform: "uppercase", letterSpacing: ".5px",
+                borderBottom: "1px solid",
+                borderColor: "divider",
+                fontSize: 9.5, fontWeight: 500, color: "text.secondary",
+                textTransform: "uppercase", letterSpacing: "0.22em",
               }}>
                 <span>#</span>
                 <span>Nombre</span>
@@ -266,18 +256,19 @@ export default function TechniquesPage() {
                     px: { xs: 1.5, md: 2.5 },
                     py: 1.5,
                     alignItems: "center",
-                    borderBottom: "1px solid #F0EEE7",
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
                     transition: "background .15s",
-                    "&:hover": { background: "#F7F6F2" },
-                    opacity: t.active ? 1 : 0.5,
+                    "&:hover": { backgroundColor: "action.hover" },
+                    opacity: t.active ? 1 : 0.55,
                   }}
                 >
                   <Typography variant="body2" color="text.secondary" fontSize={12} sx={{ display: { xs: "none", md: "block" } }}>{i + 1}</Typography>
                   <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-                    <Palette size={16} color={t.active ? "#7c3aed" : "#9ca3af"} />
-                    <Typography fontWeight={500} fontSize={14}>{t.name}</Typography>
+                    <Palette size={15} strokeWidth={1.4} style={{ opacity: t.active ? 0.6 : 0.35 }} />
+                    <Typography fontSize={14}>{t.name}</Typography>
                   </Stack>
-                  <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: 12, color: "#8E8A80" }}>
+                  <Typography variant="body2" sx={{ fontSize: 13, color: "text.secondary" }}>
                     {t.slug || "—"}
                   </Typography>
                   <Typography variant="body2" textAlign="center" fontWeight={500}>{t.order ?? 0}</Typography>
@@ -294,7 +285,7 @@ export default function TechniquesPage() {
                   <Stack direction="row" flexWrap="wrap" justifyContent="center" spacing={0.5}>
                     <Tooltip title={t.active ? "Desactivar" : "Activar"}>
                       <IconButton size="small" onClick={() => toggleMut.mutate(t.id)}>
-                        {t.active ? <ToggleRight size={16} color="#3FA46E" /> : <ToggleLeft size={16} color="#9ca3af" />}
+                        {t.active ? <ToggleRight size={16} color="#3FA46E" /> : <ToggleLeft size={16} style={{ opacity: 0.45 }} />}
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Editar">

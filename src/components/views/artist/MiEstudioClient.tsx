@@ -27,6 +27,7 @@ import QRModal from "./QrModal";
 import { useAuth } from "@/provider/authProvider";
 import { FIXED_PAVILION_ID } from "@/core/constants";
 import { useActiveEvent } from "@hooks/events/useActiveEvent";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default function MiEstudioClient() {
   const { user, isAuthLoading, isAuthenticated } = useAuth();
@@ -123,56 +124,24 @@ export default function MiEstudioClient() {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        background: "linear-gradient(to bottom, #f9fafb, #ffffff)",
-      }}
-    >
-      <Box
-        sx={{
-          maxWidth: "1120px",
-          mx: "auto",
-          px: { xs: 2, sm: 3, lg: 4 },
-          py: 4,
-          display: "flex",
-          flexDirection: "column",
-          gap: 3,
-        }}
-      >
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: { xs: "flex-start", md: "center" },
-            justifyContent: "space-between",
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 500, letterSpacing: "-0.03em" }}
-            >
-              Mi estudio de artista
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Crea, edita, comparte y administra tus obras
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            size="medium"
-            onClick={() => {
-              setEditingId(null);
-              setModalOpen(true);
-            }}
-            startIcon={<Plus className="w-4 h-4" />}
-          >
-            Nueva obra
-          </Button>
-        </Box>
+    <Box>
+      <Box sx={{ maxWidth: 1120, mx: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+        <PageHeader
+          crumb="Artista"
+          title="Mi estudio"
+          description="Crea, edita, comparte y administra tus obras."
+          actions={[
+            {
+              label: "Nueva obra",
+              kind: "pri",
+              icon: <Plus size={14} />,
+              onClick: () => {
+                setEditingId(null);
+                setModalOpen(true);
+              },
+            },
+          ]}
+        />
 
         {/* Filtros */}
         <Box
@@ -183,14 +152,8 @@ export default function MiEstudioClient() {
           }}
         >
           <Paper
-            elevation={1}
-            sx={{
-              borderRadius: 0,
-              border: "1px solid",
-              borderColor: "grey.100",
-              p: 2.5,
-              backdropFilter: "blur(8px)",
-            }}
+            variant="outlined"
+            sx={{ p: 2.5, backgroundColor: "background.default", backdropFilter: "blur(8px)" }}
           >
             <Box
               sx={{

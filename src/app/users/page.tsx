@@ -6,8 +6,10 @@ import {
   Box, Stack, Typography, TextField, InputAdornment, IconButton,
   Select, MenuItem, FormControl, InputLabel, Chip, Button, Tooltip,
   Dialog, DialogContent, DialogActions, Snackbar, Alert, LinearProgress,
-  Avatar, Paper, Skeleton, Tabs, Tab, Switch, Divider, CircularProgress, alpha,
+  Avatar, Card, Paper, Skeleton, Tabs, Tab, Switch, Divider, CircularProgress, alpha,
 } from "@mui/material";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import {
@@ -30,11 +32,13 @@ import {
 } from "@services/user.service";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
+/* Tokens del sistema editorial. El filete y el texto apagado se derivan del
+   color de texto en curso, así sirven igual en claro y en oscuro. */
 const G   = "#3FA46E";
-const GD  = "#3FA46E";
-const S1  = "#161614";
-const BR  = "rgba(255,255,255,0.07)";
-const TM  = "rgba(255,255,255,0.38)";
+const GD  = "#14513C";
+const S1  = "background.paper";
+const BR  = "color-mix(in srgb, currentColor 16%, transparent)";
+const TM  = "color-mix(in srgb, currentColor 55%, transparent)";
 
 // ── Role config ───────────────────────────────────────────────────────────────
 const ROLES: { key: keyof RolesMap; label: string; desc: string; color: string }[] = [
@@ -92,25 +96,6 @@ function RoleChips({ roles }: { roles?: RolesMap }) {
     <Stack direction="row" gap={0.5} flexWrap="wrap">
       {active.map(r => <RoleBadge key={r.key} roleKey={r.key} />)}
     </Stack>
-  );
-}
-
-// ── StatPill ──────────────────────────────────────────────────────────────────
-function StatPill({ label, value, color, loading }: { label: string; value: number; color: string; loading?: boolean }) {
-  return (
-    <Paper sx={{
-      px: 2, py: 1.25, borderRadius: 0,
-      bgcolor: S1, border: `1px solid ${BR}`,
-      display: "flex", alignItems: "center", gap: 1.5, minWidth: 90,
-    }}>
-      {loading
-        ? <Skeleton width={52} height={26} sx={{ borderRadius: 0 }} />
-        : <>
-            <Typography sx={{ fontSize: 22, fontWeight: 500, letterSpacing: -1, color, lineHeight: 1 }}>{value}</Typography>
-            <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500 }}>{label}</Typography>
-          </>
-      }
-    </Paper>
   );
 }
 
@@ -297,8 +282,8 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                   position: "absolute", bottom: 3, right: 3,
                   width: 12, height: 12, borderRadius: "50%",
                   bgcolor: form.active ? G : "#55524C",
-                  border: `2px solid ${S1}`,
-                  boxShadow: form.active ? `0 0 8px ${G}` : "none",
+                  border: "2px solid",
+                  borderColor: "background.paper",
                 }} />
               </Box>
 
@@ -876,63 +861,40 @@ export default function UsersPage() {
   return (
     <Box sx={{ pb: 4 }}>
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <Stack direction="row" flexWrap="wrap" alignItems="flex-end" justifyContent="space-between" mb={3}>
-        <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: G, textTransform: "uppercase", mb: 0.5 }}>
-            Administración
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
-            Usuarios
-          </Typography>
-          <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
-            Gestión de cuentas, roles y permisos del sistema
-          </Typography>
-        </Box>
-        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
-          <Button
-            onClick={() => setCreateOpen(true)}
-            startIcon={<UserPlus size={16} />}
-            sx={{
-              bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2,
-              "&:hover": { bgcolor: GD },
-            }}
-          >
-            Nueva cajera
-          </Button>
-          <Button
-            onClick={exportUsers}
-            disabled={exporting}
-            variant="outlined"
-            startIcon={<FileSpreadsheet size={16} />}
-            sx={{ fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2, textTransform: "none" }}
-          >
-            {exporting ? "Exportando…" : "Exportar Excel"}
-          </Button>
-          <Tooltip title="Actualizar">
-            <IconButton onClick={() => refetch()} sx={{
-              bgcolor: alpha("#fff", 0.04), border: `1px solid ${BR}`,
-              "&:hover": { bgcolor: alpha(G, 0.08), borderColor: alpha(G, 0.3), color: G },
-            }}>
-              <RefreshCcw size={18} />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Stack>
+      <PageHeader
+        crumb="Comunidad"
+        title="Usuarios"
+        description="Cuentas registradas, roles y permisos del panel."
+        actions={[
+          {
+            label: "Nueva cajera",
+            kind: "pri",
+            icon: <UserPlus size={14} />,
+            onClick: () => setCreateOpen(true),
+          },
+          {
+            label: exporting ? "Exportando…" : "Exportar Excel",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            disabled: exporting,
+            onClick: exportUsers,
+          },
+          { label: "Actualizar", kind: "sec", icon: <RefreshCcw size={14} />, onClick: () => refetch() },
+        ]}
+      />
 
-      {/* ── Stats ──────────────────────────────────────────────────────────── */}
-      <Stack direction="row" gap={1.5} mb={3} flexWrap="wrap">
-        <StatPill label="Total"       value={data?.total ?? 0} color="#8C6A3F" loading={isLoading} />
-        <StatPill label="Esta página" value={rows.length}      color="#6B8F7A" loading={isLoading} />
-        <StatPill label="Activos"     value={activeCount}      color={G}       loading={isLoading} />
-      </Stack>
+      <KpiStrip
+        loading={isLoading}
+        min={150}
+        items={[
+          { label: "Total", value: (data?.total ?? 0).toLocaleString("es-CO") },
+          { label: "En esta página", value: rows.length },
+          { label: "Activos", value: activeCount, accent: true },
+        ]}
+      />
 
-      {/* ── Filters ────────────────────────────────────────────────────────── */}
-      <Paper sx={{
-        p: 2, mb: 2, borderRadius: 0,
-        bgcolor: S1, border: `1px solid ${BR}`,
-        boxShadow: "none",
-      }}>
+      {/* ── Filtros ────────────────────────────────────────────────────────── */}
+      <Card sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: "column", sm: "row" }} gap={1.25} flexWrap="wrap" alignItems="center">
 
           {/* Search */}
@@ -1045,12 +1007,10 @@ export default function UsersPage() {
             {sortDir === "desc" ? "↓ Desc" : "↑ Asc"}
           </Button>
         </Stack>
-      </Paper>
+      </Card>
 
-      {/* Progress bar */}
-      {isFetching && (
-        <LinearProgress sx={{ mb: 1.5, borderRadius: 0, height: 2, "& .MuiLinearProgress-bar": { bgcolor: G } }} />
-      )}
+      {/* Progreso */}
+      {isFetching && <LinearProgress sx={{ mb: 1.5 }} />}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
       {isMobile ? (

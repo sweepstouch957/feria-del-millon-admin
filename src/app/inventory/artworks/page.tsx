@@ -50,6 +50,8 @@ import { usePavilions } from "@/hooks/usePavilions";
 import { setCatalogReveal, setInventoryClose } from "@services/events.service";
 import { formatCOP } from "@/utils/money";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
 
 const formatPrice = (price?: number, currency = "COP") =>
   price == null ? "—" : formatCOP(price, { code: true, currency });
@@ -118,91 +120,24 @@ export default function ArtworksCursorPage() {
   const totalPavilions = pavilionsQuery.data?.length ?? 0;
 
   return (
-    <Box sx={{ p: { xs: 1, md: 3 }, maxWidth: 1450, mx: "auto" }}>
-      {/* KPI Cards — stack responsivo sin Grid */}
-      <Stack
-        direction="row"
-        flexWrap="wrap"
-        gap={2}
-        justifyContent="space-between"
-        sx={{ mb: 3 }}
-      >
-        {[
-          {
-            icon: <ArtworksIcon size={20} />,
-            color: "primary.main",
-            label: "Obras publicadas",
-            value: totalArtworks,
-          },
-          {
-            icon: <ArtistsIcon size={20} />,
-            color: "success.main",
-            label: "Artistas en catálogo",
-            value: totalArtists,
-          },
-          {
-            icon: <EventIcon size={20} />,
-            color: "info.main",
-            label: "Eventos activos",
-            value: totalEvents,
-          },
-          {
-            icon: <PavilionIcon size={20} />,
-            color: "warning.main",
-            label: "Pabellones",
-            value: totalPavilions,
-          },
-        ].map((item) => (
-          <Card
-            key={item.label}
-            sx={{
-              flex: "1 1 240px",
-              borderRadius: 0,
-              border: "1px solid",
-              borderColor: "divider",
-              minWidth: 240,
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={2}>
-                <Box
-                  sx={{
-                    p: 1.2,
-                    borderRadius: "50%",
-                    bgcolor: item.color,
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  {item.icon}
-                </Box>
-                <Box>
-                  <Typography variant="h6" fontWeight={500}>
-                    {item.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.label}
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Inventario"
+        title="Artes"
+        description="Obras cargadas por los artistas y publicadas en el catálogo público."
+      />
+
+      <KpiStrip
+        items={[
+          { label: "Obras publicadas", value: totalArtworks },
+          { label: "Artistas en catálogo", value: totalArtists },
+          { label: "Ferias", value: totalEvents },
+          { label: "Pabellones", value: totalPavilions },
+        ]}
+      />
 
       {/* Tabla de obras */}
-      <Card
-        elevation={0}
-        sx={{
-          borderRadius: 0,
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "hidden",
-        }}
-      >
+      <Card sx={{ overflow: "hidden" }}>
         <CardHeader
           title={
             <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>

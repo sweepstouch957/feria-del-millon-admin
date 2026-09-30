@@ -6,7 +6,8 @@ import {
   Box, Card, CardContent, Typography, Stack, Button, TextField,
   FormControl, InputLabel, Select, MenuItem, CircularProgress,
 } from "@mui/material";
-import { QrCode, Printer, RefreshCw } from "lucide-react";
+import { Printer, RefreshCw } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 import QRCode from "qrcode";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useEvents } from "@/hooks/useEvents";
@@ -88,24 +89,24 @@ export default function ArtworksQrPage() {
   }, [rowsKey, base]);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3} className="no-print">
-        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <QrCode size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>QR de obras (para imprimir)</Typography>
-          <Typography variant="caption" color="text.secondary">
-            Un QR por obra: lleva a su ficha con botón de compra. Filtra por pabellón o artista para imprimir los rótulos de cada stand.
-          </Typography>
-        </Box>
-        <Button variant="contained" disableElevation startIcon={<Printer size={16} />} onClick={() => window.print()}
-          sx={{ textTransform: "none", bgcolor: "#3FA46E", "&:hover": { bgcolor: "#14513C" } }}>
-          Imprimir
-        </Button>
-      </Stack>
+    <Box>
+      <Box className="no-print">
+        <PageHeader
+          crumb="Inventario"
+          title="QR de obras"
+          description="Un QR por obra: lleva a su ficha con botón de compra. Filtra por pabellón o artista para imprimir los rótulos de cada stand."
+          actions={[
+            {
+              label: "Imprimir",
+              kind: "pri",
+              icon: <Printer size={14} />,
+              onClick: () => window.print(),
+            },
+          ]}
+        />
+      </Box>
 
-      <Card sx={{ borderRadius: 0, mb: 3 }} className="no-print"><CardContent>
+      <Card sx={{ mb: 3 }} className="no-print"><CardContent>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
           <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Evento</InputLabel>

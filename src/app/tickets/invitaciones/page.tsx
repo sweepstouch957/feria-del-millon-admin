@@ -5,7 +5,10 @@ import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, FormControlLabel, Checkbox, Chip,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, IconButton, Tooltip,
 } from "@mui/material";
-import { Mail, Send, UserPlus } from "lucide-react";
+import { Send, UserPlus } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
+import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -15,11 +18,11 @@ import { toCsv, downloadCsv, stamp } from "@/utils/csv";
 
 const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Aliado", "Artista", "Mentor", "Curador"];
 
-const STATUS: Record<string, { label: string; color: "default" | "success" | "info" | "warning" }> = {
-  invited: { label: "Pendiente", color: "warning" },
-  sold: { label: "Confirmada", color: "info" },
-  checked_in: { label: "Asistió", color: "success" },
-  canceled: { label: "Anulada", color: "default" },
+const STATUS: Record<string, { label: string; tone: PillTone }> = {
+  invited: { label: "Pendiente", tone: "warn" },
+  sold: { label: "Confirmada", tone: "mid" },
+  checked_in: { label: "Asistió", tone: "ok" },
+  canceled: { label: "Anulada", tone: "mid" },
 };
 
 /** "Nombre, correo" / "Nombre;correo" / "correo" por línea. */
@@ -88,20 +91,31 @@ function Invitations({ eventId }: { eventId: string }) {
     ]));
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto" }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Mail size={20} />
-        </Box>
-        <Box>
-          <Typography fontWeight={500} fontSize={20}>Invitaciones</Typography>
-          <Typography variant="caption" color="text.secondary">
-            El invitado recibe un correo con botón de confirmación; al confirmar recibe su QR.
-          </Typography>
-        </Box>
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Boletos"
+        title="Invitaciones"
+        description="El invitado recibe un correo con botón de confirmación; al confirmar recibe su QR."
+        actions={[
+          {
+            label: "Exportar Excel",
+            kind: "sec",
+            disabled: !list.length,
+            onClick: exportCsv,
+          },
+        ]}
+      />
 
-      <Card sx={{ borderRadius: 0, mb: 3 }}><CardContent>
+      <KpiStrip
+        items={[
+          { label: "Enviadas", value: list.length },
+          { label: "Confirmadas", value: list.filter((t) => t.status !== "invited").length },
+          { label: "Asistieron", value: list.filter((t) => t.status === "checked_in").length, accent: true },
+          { label: "En este envío", value: invitees.length },
+        ]}
+      />
+
+      <Card sx={{ mb: 3 }}><CardContent>
         <Stack spacing={2}>
           <TextField
             multiline minRows={4} size="small" label="Invitados (uno por línea: Nombre, correo)"
@@ -135,15 +149,12 @@ function Invitations({ eventId }: { eventId: string }) {
         </Stack>
       </CardContent></Card>
 
-      <Card sx={{ borderRadius: 0 }}>
+      <Card>
         {isFetching && <LinearProgress />}
         <CardContent>
-          <Stack direction="row" alignItems="center" mb={1}>
-            <Typography fontWeight={500} flex={1}>
-              Enviadas: {list.length} · Confirmadas: {list.filter((t) => t.status !== "invited").length}
-            </Typography>
-            <Button size="small" variant="outlined" onClick={exportCsv} disabled={!list.length} sx={{ textTransform: "none" }}>Exportar Excel</Button>
-          </Stack>
+          <Typography sx={{ fontSize: 17, letterSpacing: "0.01em", pb: 1.5, mb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
+            Invitaciones enviadas
+          </Typography>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
               <TableHead><TableRow>
@@ -162,7 +173,7 @@ function Invitations({ eventId }: { eventId: string }) {
                     <TableCell>{t.inviteCategory || "—"}</TableCell>
                     <TableCell>{t.companionName || "—"}</TableCell>
                     <TableCell align="right">{t.admits ?? 1}</TableCell>
-                    <TableCell><Chip size="small" label={STATUS[t.status]?.label || t.status} color={STATUS[t.status]?.color || "default"} /></TableCell>
+                    <TableCell><StatusPill label={STATUS[t.status]?.label || t.status} tone={STATUS[t.status]?.tone || "mid"} /></TableCell>
                     <TableCell align="right">
                       {t.status === "invited" && (
                         <Tooltip title="Reenviar correo">

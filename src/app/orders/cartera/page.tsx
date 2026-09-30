@@ -7,7 +7,9 @@ import {
   CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, Snackbar, Alert, LinearProgress,
 } from "@mui/material";
-import { Wallet, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listOrders, registerAbono, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
@@ -58,32 +60,32 @@ export default function CarteraPage() {
   const totalCartera = orders.reduce((a, o) => a + Number(o.layaway?.balanceDue || 0), 0);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5} mb={3}>
-        <Box sx={{ width: 40, height: 40, borderRadius: 0, bgcolor: "rgba(63,164,110,0.14)", color: "#3FA46E", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Wallet size={20} />
-        </Box>
-        <Box flex={1}>
-          <Typography fontWeight={500} fontSize={20}>Cartera — Fiado / Abonos</Typography>
-          <Typography variant="caption" color="text.secondary">Obras apartadas con saldo pendiente. Registra abonos hasta saldar.</Typography>
-        </Box>
-        <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => refetch()} disabled={isFetching} sx={{ textTransform: "none" }}>
-          Actualizar
-        </Button>
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Pedidos"
+        title="Cartera / Fiado"
+        description="Obras apartadas con saldo pendiente. Registra abonos hasta saldar."
+        actions={[
+          {
+            label: "Actualizar",
+            kind: "sec",
+            icon: <RefreshCw size={14} />,
+            disabled: isFetching,
+            onClick: () => refetch(),
+          },
+        ]}
+      />
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
-        <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
-          <Typography variant="caption" color="text.secondary">Cuentas por cobrar</Typography>
-          <Typography fontWeight={500} fontSize={26}>{orders.length}</Typography>
-        </CardContent></Card>
-        <Card sx={{ borderRadius: 0, flex: 1 }}><CardContent>
-          <Typography variant="caption" color="text.secondary">Saldo total pendiente</Typography>
-          <Typography fontWeight={500} fontSize={26} color="#3FA46E">{money(totalCartera)}</Typography>
-        </CardContent></Card>
-      </Stack>
+      <KpiStrip
+        loading={isLoading}
+        items={[
+          { label: "Cuentas por cobrar", value: orders.length },
+          { label: "Abonado", value: money(orders.reduce((a, o) => a + Number(o.layaway?.amountPaid || 0), 0)) },
+          { label: "Saldo total pendiente", value: money(totalCartera), accent: true },
+        ]}
+      />
 
-      <Card sx={{ borderRadius: 0 }}>
+      <Card>
         {isFetching && <LinearProgress />}
         <CardContent>
           {isLoading ? (
