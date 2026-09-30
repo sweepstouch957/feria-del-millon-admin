@@ -1,258 +1,267 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import {
-  AppBar,
-  Box,
-  Drawer,
-  IconButton,
-  Toolbar,
-  Typography,
-  Tooltip,
-} from "@mui/material";
-import { Menu as MenuIcon } from "@mui/icons-material";
-import { usePathname } from "next/navigation";
-import { useTranslation } from "react-i18next";
-import { useTheme } from "@mui/material/styles";
+import React, { useEffect, useMemo, useState } from "react";
+import { Box, Drawer, Tooltip } from "@mui/material";
+import { Menu as MenuIcon, Search as SearchIcon } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useThemeMode } from "@/provider/ThemeModeProvider";
 import { useAuth } from "@/provider/authProvider";
 
-import SearchBox from "./nav/SearchBox";
 import SidebarContent from "./nav/SidebarContent";
-import { drawerWidth } from "./layoutConfig";
-import LanguageSwitcher from "../ui/LanguageSwitcher";
-import ProfileMenu from "../ui/ProfileMenu";
+import {
+  drawerWidth,
+  railWidth,
+  mobileDrawerWidth,
+  headerHeight,
+  routeInfo,
+} from "./layoutConfig";
 
-/* ──── Animated Sun/Moon Toggle ──── */
-const ThemeToggleButton = () => {
+/* Marco del panel: lateral oscura + cabecera de 58px con miga de pan,
+   buscador, tema y cuenta. El contenido va centrado a 1440px con aire
+   generoso: las páginas solo aportan su encabezado y sus tarjetas. */
+
+const RAIL_KEY = "fdm-admin-rail";
+
+/** Botón de la cabecera: píldora de filete fino, como en el diseño. */
+const headerBtn = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 0.75,
+  height: 30,
+  px: 1.5,
+  background: "transparent",
+  color: "inherit",
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: 999,
+  cursor: "pointer",
+  font: "inherit",
+  fontSize: 9.5,
+  letterSpacing: "0.18em",
+  textTransform: "uppercase" as const,
+  whiteSpace: "nowrap" as const,
+  transition: "all .25s ease",
+  "&:hover": { borderColor: "primary.main", color: "primary.main" },
+};
+
+const initialsOf = (first?: string, last?: string, email?: string) => {
+  const a = (first ?? "").trim();
+  const b = (last ?? "").trim();
+  if (a || b) return `${a[0] ?? ""}${b[0] ?? ""}`.toUpperCase();
+  return (email ?? "").trim()[0]?.toUpperCase() ?? "·";
+};
+
+const MergedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const pathname = usePathname() || "";
+  const router = useRouter();
+  const { user } = useAuth();
   const { mode, toggleMode } = useThemeMode();
-  const isDark = mode === "dark";
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [rail, setRail] = useState(false);
+
+  // La preferencia de riel se lee después de montar: en SSR no hay localStorage
+  // y pintar un ancho y corregirlo luego haría saltar el layout.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(RAIL_KEY) === "1") setRail(true);
+    } catch {}
+  }, []);
+
+  const toggleRail = () => {
+    setRail((v) => {
+      try {
+        localStorage.setItem(RAIL_KEY, v ? "0" : "1");
+      } catch {}
+      return !v;
+    });
+  };
+
+  const { crumb, title } = useMemo(() => routeInfo(pathname), [pathname]);
+  const width = rail ? railWidth : drawerWidth;
 
   return (
-    <Tooltip title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"} arrow>
-      <IconButton
-        onClick={toggleMode}
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
+      {/* Lateral fija (escritorio) */}
+      <Box
+        component="aside"
         sx={{
-          width: 42,
-          height: 42,
-          borderRadius: "12px",
-          position: "relative",
-          overflow: "hidden",
-          border: (t) =>
-            t.palette.mode === "dark"
-              ? "1px solid rgba(255,255,255,0.1)"
-              : "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: (t) =>
-            t.palette.mode === "dark"
-              ? "rgba(255,255,255,0.05)"
-              : "rgba(0,0,0,0.03)",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          "&:hover": {
-            transform: "scale(1.08)",
-            backgroundColor: (t) =>
-              t.palette.mode === "dark"
-                ? "rgba(74,222,128,0.15)"
-                : "rgba(34,197,94,0.1)",
-            borderColor: (t) =>
-              t.palette.mode === "dark"
-                ? "rgba(74,222,128,0.3)"
-                : "rgba(34,197,94,0.3)",
-            boxShadow: (t) =>
-              t.palette.mode === "dark"
-                ? "0 0 20px rgba(74,222,128,0.15)"
-                : "0 0 20px rgba(34,197,94,0.1)",
+          display: { xs: "none", md: "block" },
+          flex: `0 0 ${width}px`,
+          width,
+          position: "sticky",
+          top: 0,
+          alignSelf: "flex-start",
+          height: "100vh",
+          transition: "flex-basis .25s ease, width .25s ease",
+        }}
+      >
+        <SidebarContent pathname={pathname} rail={rail} onToggleRail={toggleRail} />
+      </Box>
+
+      {/* Lateral en cajón (móvil) */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": {
+            width: mobileDrawerWidth,
+            border: 0,
+            backgroundImage: "none",
           },
         }}
       >
-        {/* Sun icon */}
+        <SidebarContent pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+      </Drawer>
+
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        {/* Cabecera */}
         <Box
+          component="header"
           sx={{
-            position: "absolute",
-            inset: 0,
-            display: "grid",
-            placeItems: "center",
-            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-            opacity: isDark ? 0 : 1,
-            transform: isDark ? "rotate(90deg) scale(0)" : "rotate(0) scale(1)",
+            position: "sticky",
+            top: 0,
+            zIndex: 40,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.75,
+            height: headerHeight,
+            px: { xs: 2, md: 3, lg: 4 },
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            backdropFilter: "blur(12px)",
+            backgroundColor: (t) =>
+              t.palette.mode === "dark" ? "rgba(12,12,11,0.92)" : "rgba(247,246,242,0.92)",
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9902B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="5" />
-            <line x1="12" y1="1" x2="12" y2="3" />
-            <line x1="12" y1="21" x2="12" y2="23" />
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-            <line x1="1" y1="12" x2="3" y2="12" />
-            <line x1="21" y1="12" x2="23" y2="12" />
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-          </svg>
-        </Box>
-        {/* Moon icon */}
-        <Box
-          sx={{
-            position: "absolute",
-            inset: 0,
-            display: "grid",
-            placeItems: "center",
-            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-            opacity: isDark ? 1 : 0,
-            transform: isDark ? "rotate(0) scale(1)" : "rotate(-90deg) scale(0)",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C6A3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
-        </Box>
-      </IconButton>
-    </Tooltip>
-  );
-};
-
-/* ──── Layout principal ──── */
-interface MergedLayoutProps {
-  children: React.ReactNode;
-}
-
-const MergedLayout: React.FC<MergedLayoutProps> = ({ children }) => {
-  const pathname = usePathname() || "";
-  const { t } = useTranslation();
-  const { isAuthenticated, isAuthLoading } = useAuth();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const muiTheme = useTheme();
-  const isDark = muiTheme.palette.mode === "dark";
-
-  const handleDrawerToggle = () => setMobileOpen((v) => !v);
-
-  // títulos dinámicos
-  const title = useMemo(() => {
-    const map: Record<string, string> = {
-      "/": t("navigation.dashboard"),
-      "/inventory": "Inventario",
-      "/inventory/artworks": "Artes",
-      "/artists": t("navigation.artists"),
-      "/users": t("navigation.users"),
-      "/cashiers": t("navigation.cashiers"),
-      "/events": t("navigation.events"),
-      "/tickets": t("navigation.tickets"),
-      "/tickets/validator": t("navigation.qrValidator"),
-      "/orders": "Pedidos",
-      "/orders/new": "Crear pedido",
-      "/my/artworks": "Mis obras",
-      "/my/orders": "Mis pedidos",
-      "/solicitudes": "Solicitudes de artistas",
-      "/account": t("navigation.myAccount"),
-    };
-    if (map[pathname]) return map[pathname];
-    // /events/:id y otras rutas de detalle heredan el título de su sección
-    if (pathname.startsWith("/events/")) return t("navigation.events");
-    return "Feria del Millón";
-  }, [pathname, t]);
-
-  return (
-    <Box sx={{ display: "flex" }}>
-      {/* APP BAR */}
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-          backgroundColor: isDark ? "#0B0B0A" : "#FFFFFF",
-          color: isDark ? "#F7F6F2" : "#0B0B0A",
-          borderBottom: isDark
-            ? "1px solid rgba(255,255,255,0.06)"
-            : "1px solid rgba(0,0,0,0.06)",
-          backdropFilter: "blur(12px)",
-          transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease",
-        }}
-      >
-        <Toolbar sx={{ minHeight: 76 }}>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: "none" } }}
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menú"
+            sx={{ ...headerBtn, display: { xs: "inline-flex", md: "none" }, px: 1.25 }}
           >
-            <MenuIcon />
-          </IconButton>
+            <MenuIcon size={14} strokeWidth={1.4} />
+          </Box>
 
-          <Typography
-            variant="h6"
-            noWrap
+          <Box
             sx={{
-              fontWeight: 500,
-              mr: 2,
-              display: { xs: "none", sm: "block" },
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              minWidth: 0,
+              fontSize: 10,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "text.secondary",
+              whiteSpace: "nowrap",
             }}
           >
-            {title}
-          </Typography>
-
-          <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-            <SearchBox placeholder={t("common.search")} />
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+              {crumb}
+            </Box>
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" }, opacity: 0.5 }}>
+              /
+            </Box>
+            <Box
+              component="span"
+              sx={{ color: "text.primary", overflow: "hidden", textOverflow: "ellipsis" }}
+            >
+              {title}
+            </Box>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <ThemeToggleButton />
-            <LanguageSwitcher />
-            {!isAuthLoading && isAuthenticated && <ProfileMenu />}
+          <Box sx={{ flex: 1 }} />
+
+          <Box
+            component="label"
+            sx={{
+              display: { xs: "none", lg: "flex" },
+              alignItems: "center",
+              gap: 1,
+              width: 230,
+              py: 0.5,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              color: "text.secondary",
+              "&:focus-within": { borderColor: "primary.main" },
+            }}
+          >
+            <SearchIcon size={14} strokeWidth={1.4} style={{ opacity: 0.55 }} />
+            <Box
+              component="input"
+              type="search"
+              placeholder="Buscar en el panel"
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key !== "Enter") return;
+                const q = (e.target as HTMLInputElement).value.trim();
+                if (q) router.push(`/users?q=${encodeURIComponent(q)}`);
+              }}
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: 0,
+                outline: "none",
+                color: "text.primary",
+                font: "inherit",
+                fontSize: 14,
+              }}
+            />
           </Box>
-        </Toolbar>
-      </AppBar>
 
-      {/* DRAWER */}
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
-        {/* Mobile */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
+          <Box component="button" type="button" onClick={toggleMode} sx={headerBtn}>
+            {mode === "dark" ? "Claro" : "Oscuro"}
+          </Box>
+
+          <Tooltip title="Mi cuenta">
+            <Box
+              component="button"
+              type="button"
+              onClick={() => router.push("/account")}
+              aria-label="Mi cuenta"
+              sx={{
+                flex: "0 0 auto",
+                width: 34,
+                height: 34,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 999,
+                border: "1px solid",
+                borderColor: "divider",
+                background: "transparent",
+                color: "inherit",
+                cursor: "pointer",
+                font: "inherit",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                transition: "all .25s ease",
+                "&:hover": { borderColor: "primary.main", color: "primary.main" },
+              }}
+            >
+              {initialsOf(user?.firstName, user?.lastName, user?.email)}
+            </Box>
+          </Tooltip>
+        </Box>
+
+        {/* Contenido */}
+        <Box
+          component="main"
           sx={{
-            display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-            },
+            flex: 1,
+            width: "100%",
+            maxWidth: 1440,
+            mx: "auto",
+            px: { xs: 2, md: 3, lg: 4 },
+            pt: { xs: 2.5, md: 3.5 },
+            pb: 6,
           }}
         >
-          <SidebarContent pathname={pathname} />
-        </Drawer>
-
-        {/* Desktop */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-            },
-          }}
-          open
-        >
-          <SidebarContent pathname={pathname} />
-        </Drawer>
-      </Box>
-
-      {/* MAIN */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: "76px",
-          backgroundColor: isDark ? "#0B0B0A" : "#F5F5F5",
-          minHeight: "calc(100vh - 76px)",
-          transition: "background-color 0.3s ease",
-        }}
-      >
-        {children}
+          {children}
+        </Box>
       </Box>
     </Box>
   );

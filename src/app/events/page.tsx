@@ -7,7 +7,6 @@ import { Plus, ChevronRight } from "lucide-react";
 
 import {
   Box,
-  Button,
   Card,
   Chip,
   LinearProgress,
@@ -25,6 +24,8 @@ import {
 import { listEvents, type EventStatus } from "@services/events.service";
 import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { CreateEventDialog } from "@components/views/events/CreateDialogs";
+import PageHeader from "@components/ui/PageHeader";
+import StatusPill, { type PillTone } from "@components/ui/StatusPill";
 
 /* Listado de ferias. Cada fila resume la feria y muestra SUS pabellones;
    toda la información editable vive en /events/[id]. */
@@ -36,11 +37,11 @@ const STATUS_LABEL: Record<EventStatus, string> = {
   archived: "Archivada",
 };
 
-const STATUS_COLOR: Record<EventStatus, "success" | "default" | "info" | "warning"> = {
-  active: "success",
-  draft: "default",
-  finalizado: "info",
-  archived: "warning",
+const STATUS_TONE: Record<EventStatus, PillTone> = {
+  active: "ok",
+  draft: "mid",
+  finalizado: "mid",
+  archived: "warn",
 };
 
 const day = (iso: string, opts: Intl.DateTimeFormatOptions) =>
@@ -99,7 +100,7 @@ function PavilionCell({
           size="small"
           variant={p.active ? "filled" : "outlined"}
           label={p.name}
-          sx={{ borderRadius: 0, fontSize: "0.7rem", maxWidth: 190 }}
+          sx={{ fontSize: "0.7rem", maxWidth: 190 }}
         />
       ))}
       {rest.length > 0 && (
@@ -108,7 +109,7 @@ function PavilionCell({
             size="small"
             variant="outlined"
             label={`+${rest.length}`}
-            sx={{ borderRadius: 0, fontSize: "0.7rem" }}
+            sx={{ fontSize: "0.7rem" }}
           />
         </Tooltip>
       )}
@@ -149,35 +150,22 @@ export default function EventsListPage() {
   const busy = isFetching || pavilionQueries.some((q) => q.isFetching);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Stack
-        direction="row"
-        flexWrap="wrap"
-        alignItems="flex-end"
-        justifyContent="space-between"
-        gap={2}
-        mb={3}
-      >
-        <Box>
-          <Typography variant="h4" fontWeight={500}>
-            Ferias
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
-            Cada feria con sus pabellones. Abre una para editar su información,
-            sus pabellones y los artistas de cada uno.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={16} />}
-          onClick={() => setNewEventOpen(true)}
-          sx={{ borderRadius: 0 }}
-        >
-          Nueva feria
-        </Button>
-      </Stack>
+    <Box>
+      <PageHeader
+        crumb="Operación"
+        title="Ferias"
+        description="Cada feria con sus pabellones. Abre una para editar su información, sus pabellones y los artistas de cada uno."
+        actions={[
+          {
+            label: "Nueva feria",
+            kind: "pri",
+            icon: <Plus size={14} />,
+            onClick: () => setNewEventOpen(true),
+          },
+        ]}
+      />
 
-      <Box sx={{ height: 4, mb: 2 }}>{busy && <LinearProgress />}</Box>
+      <Box sx={{ height: 2, mb: 2 }}>{busy && <LinearProgress />}</Box>
 
       <Card variant="outlined" sx={{ borderRadius: 0 }}>
         <TableContainer>
@@ -236,11 +224,9 @@ export default function EventsListPage() {
                     </TableCell>
 
                     <TableCell>
-                      <Chip
-                        size="small"
+                      <StatusPill
                         label={STATUS_LABEL[event.status] ?? event.status}
-                        color={STATUS_COLOR[event.status] ?? "default"}
-                        sx={{ borderRadius: 0 }}
+                        tone={STATUS_TONE[event.status] ?? "mid"}
                       />
                     </TableCell>
 

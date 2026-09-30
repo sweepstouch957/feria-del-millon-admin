@@ -2,408 +2,332 @@
 
 import React from "react";
 import { useQueries } from "@tanstack/react-query";
-import {
-  Box, Paper, Typography, Stack, Chip,
-  LinearProgress, Skeleton, Divider, ButtonBase, alpha,
-} from "@mui/material";
-import { PieChart } from "@mui/x-charts/PieChart";
+import { Box, Card, LinearProgress, Skeleton, Stack, Typography } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useTheme } from "@mui/material/styles";
-import Link from "next/link";
-import {
-  Users, Palette, FileText, DollarSign,
-  ArrowRight, Ticket, ClipboardList,
-} from "lucide-react";
+
 import { listApplications, type ApplicationListResponse } from "@/services/applications.service";
 import { listUsers, type UsersSearchResponse } from "@/services/user.service";
 import { listOrders, type OrderDoc } from "@/services/orders.service";
 import { formatCOP } from "@/utils/money";
-import { FDM } from "@/app/theme";
+import { FDM, eyebrow } from "@/app/theme";
+import PageHeader from "@/components/ui/PageHeader";
+import KpiStrip from "@/components/ui/KpiStrip";
+import StatusPill from "@/components/ui/StatusPill";
 
-/* ── constants ── */
-// Colores de marca: los mismos que el theme y el sitio público.
-const GREEN       = FDM.green;
+/* Tablero: de dónde viene el dinero y en qué estado está la convocatoria.
+   Todo en filetes y versalitas, sin tarjetas de color ni sombras. */
+
 const APP_FEE_COP = 40_000;
 
 const fmt = (n: number) => formatCOP(n);
-
 const fmtShort = (n: number) => {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
   return fmt(n);
 };
 
 const STATUS_CFG = [
-  { key: "pending_payment", label: "Pago pendiente", color: "#C9902B" },
-  { key: "draft",           label: "Borrador",        color: "#6b7280" },
-  { key: "submitted",       label: "Enviada",         color: FDM.greenDeep },
-  { key: "under_review",    label: "En revisión",     color: "#8C6A3F" },
-  { key: "accepted",        label: "Aceptada",        color: GREEN     },
-  { key: "rejected",        label: "Rechazada",       color: "#B4472A" },
+  { key: "pending_payment", label: "Pago pendiente" },
+  { key: "draft", label: "Borrador" },
+  { key: "submitted", label: "Enviada" },
+  { key: "under_review", label: "En revisión" },
+  { key: "accepted", label: "Aceptada" },
+  { key: "rejected", label: "Rechazada" },
 ] as const;
 
 const METHOD_LABELS: Record<string, string> = {
-  cash: "Efectivo", card_offline: "Datáfono", whatsapp: "WhatsApp",
-  credit_card: "Tarjeta", pse: "PSE", mercadopago: "MercadoPago", itau_mock: "Itaú",
+  cash: "Efectivo",
+  card_offline: "Datáfono",
+  whatsapp: "WhatsApp",
+  credit_card: "Tarjeta",
+  pse: "PSE",
+  mercadopago: "MercadoPago",
+  itau_mock: "Itaú",
 };
 
-const NAV_ITEMS = [
-  { label: "Solicitudes", sub: "Revisar postulaciones", href: "/solicitudes", color: FDM.greenDeep, icon: ClipboardList },
-  { label: "Usuarios",    sub: "Gestionar cuentas",    href: "/users",       color: "#8C6A3F", icon: Users        },
-  { label: "Tickets",     sub: "Venta y validación",   href: "/tickets",     color: "#C9902B", icon: Ticket       },
-  { label: "Artistas",    sub: "Portafolios y obras",  href: "/users",       color: GREEN,     icon: Palette      },
-];
+/** Título de panel: cuerpo 17 y un filete abajo, como en el diseño. */
+function PanelTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <Stack
+      direction="row"
+      alignItems="baseline"
+      justifyContent="space-between"
+      gap={1.5}
+      sx={{ pb: 1.5, mb: 0.5, borderBottom: "1px solid", borderColor: "divider" }}
+    >
+      <Typography sx={{ fontSize: 17, letterSpacing: "0.01em" }}>{children}</Typography>
+      {aside && (
+        <Typography sx={{ ...eyebrow, fontSize: 9.5, letterSpacing: "0.22em", color: "text.secondary" }}>
+          {aside}
+        </Typography>
+      )}
+    </Stack>
+  );
+}
 
-/* ── shared card style ── */
-const card = (dark: boolean) => ({
-  p: 2.5, borderRadius: 0,
-  bgcolor: dark ? "#161614" : "#F7F6F2",
-  border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-  boxShadow: "none",
-});
-
-/* ══════════════════════════════════════════════════════════════════ */
 export default function HomeClient() {
   const theme = useTheme();
-  const dark  = theme.palette.mode === "dark";
+  const dark = theme.palette.mode === "dark";
 
   const results = useQueries({
     queries: [
-      /* 0  — total applications */
-      { queryKey: ["dash","apps","all"],    queryFn: () => listApplications({ limit: 1 }),            staleTime: 60_000 },
-      /* 1–6 — per-status */
-      ...STATUS_CFG.map(s => ({
-        queryKey: ["dash","apps", s.key],
-        queryFn:  () => listApplications({ status: s.key, limit: 1 }),
+      { queryKey: ["dash", "apps", "all"], queryFn: () => listApplications({ limit: 1 }), staleTime: 60_000 },
+      ...STATUS_CFG.map((s) => ({
+        queryKey: ["dash", "apps", s.key],
+        queryFn: () => listApplications({ status: s.key, limit: 1 }),
         staleTime: 60_000,
       })),
-      /* 7  — paid applications */
-      { queryKey: ["dash","apps","paid"],   queryFn: () => listApplications({ isPaid: true, limit: 1 }), staleTime: 60_000 },
-      /* 8  — total users */
-      { queryKey: ["dash","users","total"], queryFn: () => listUsers({ limit: 1 }),                    staleTime: 60_000 },
-      /* 9  — artists */
-      { queryKey: ["dash","users","art"],   queryFn: () => listUsers({ roles: ["artista"], limit: 1 }), staleTime: 60_000 },
-      /* 10 — paid orders */
-      { queryKey: ["dash","orders","paid"], queryFn: () => listOrders({ status: "paid" }),             staleTime: 60_000 },
+      { queryKey: ["dash", "apps", "paid"], queryFn: () => listApplications({ isPaid: true, limit: 1 }), staleTime: 60_000 },
+      { queryKey: ["dash", "users", "total"], queryFn: () => listUsers({ limit: 1 }), staleTime: 60_000 },
+      { queryKey: ["dash", "users", "art"], queryFn: () => listUsers({ roles: ["artista"], limit: 1 }), staleTime: 60_000 },
+      { queryKey: ["dash", "orders", "paid"], queryFn: () => listOrders({ status: "paid" }), staleTime: 60_000 },
     ],
   });
 
-  const loading = results.some(r => r.isLoading);
+  const loading = results.some((r) => r.isLoading);
 
-  /* derived values — cast each result to its known type */
-  const appData   = (r: typeof results[0]) => r.data as ApplicationListResponse | undefined;
-  const usrData   = (r: typeof results[0]) => r.data as UsersSearchResponse   | undefined;
-  const ordData   = (r: typeof results[0]) => r.data as OrderDoc[]             | undefined;
+  const appData = (r: (typeof results)[0]) => r.data as ApplicationListResponse | undefined;
+  const usrData = (r: (typeof results)[0]) => r.data as UsersSearchResponse | undefined;
+  const ordData = (r: (typeof results)[0]) => r.data as OrderDoc[] | undefined;
 
-  const totalApps    = appData(results[0])?.total ?? 0;
+  const totalApps = appData(results[0])?.total ?? 0;
   const statusCounts = STATUS_CFG.map((s, i) => ({ ...s, count: appData(results[i + 1])?.total ?? 0 }));
-  const paidApps     = appData(results[7])?.total ?? 0;
-  const totalUsers   = usrData(results[8])?.total ?? 0;
+  const paidApps = appData(results[7])?.total ?? 0;
+  const totalUsers = usrData(results[8])?.total ?? 0;
   const totalArtists = usrData(results[9])?.total ?? 0;
-  const paidOrders   = ordData(results[10]) ?? [];
+  const paidOrders = ordData(results[10]) ?? [];
 
-  const revenueApps   = paidApps * APP_FEE_COP;
+  const revenueApps = paidApps * APP_FEE_COP;
   const revenueOrders = paidOrders.reduce((s: number, o: OrderDoc) => s + (o.total || 0), 0);
-  const totalRevenue  = revenueApps + revenueOrders;
+  const totalRevenue = revenueApps + revenueOrders;
+  const shareApps = totalRevenue > 0 ? (revenueApps / totalRevenue) * 100 : 0;
 
-  const acceptedCount = statusCounts.find(s => s.key === "accepted")?.count ?? 0;
-  const inProcess     = (statusCounts.find(s => s.key === "under_review")?.count ?? 0)
-                      + (statusCounts.find(s => s.key === "submitted")?.count ?? 0);
+  const acceptedCount = statusCounts.find((s) => s.key === "accepted")?.count ?? 0;
+  const inProcess =
+    (statusCounts.find((s) => s.key === "under_review")?.count ?? 0) +
+    (statusCounts.find((s) => s.key === "submitted")?.count ?? 0);
 
-  const methodBreakdown = paidOrders.reduce<Record<string, number>>((acc: Record<string,number>, o: OrderDoc) => {
+  const methodBreakdown = paidOrders.reduce<Record<string, number>>((acc, o: OrderDoc) => {
     const m = o.payment?.method || "otro";
     acc[m] = (acc[m] || 0) + (o.total || 0);
     return acc;
   }, {});
   const hasMethodData = Object.keys(methodBreakdown).length > 0;
 
-  /* ── render ── */
+  const pct = (n: number) => (totalApps > 0 ? Math.round((n / totalApps) * 100) : 0);
+
   return (
-    <Box sx={{ pb: 5 }}>
+    <Box>
+      <PageHeader
+        crumb="General"
+        title="Tablero"
+        badge={!loading ? <StatusPill label="En vivo" tone="ok" dot /> : undefined}
+        description="Feria del Millón · resumen de inscripciones, solicitudes y ventas."
+      />
 
-      {/* Header */}
-      <Stack direction="row" flexWrap="wrap" alignItems="flex-end" justifyContent="space-between" mb={3}>
-        <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: GREEN, textTransform: "uppercase", mb: 0.5 }}>
-            Panel de control
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 500, letterSpacing: -1.5, color: "text.primary", lineHeight: 1 }}>
-            Feria del Millón
-          </Typography>
-        </Box>
-        {!loading && (
-          <Chip
-            label="En vivo"
-            size="small"
-            sx={{ bgcolor: alpha(GREEN, 0.1), color: GREEN, fontWeight: 500, border: `1px solid ${alpha(GREEN, 0.3)}`, fontSize: 11 }}
-          />
-        )}
-      </Stack>
+      <Box sx={{ height: 2, mb: 2 }}>{loading && <LinearProgress />}</Box>
 
-      {loading && (
-        <LinearProgress sx={{
-          mb: 3, borderRadius: 0, height: 3,
-          bgcolor: alpha(GREEN, 0.1),
-          "& .MuiLinearProgress-bar": { bgcolor: GREEN },
-        }} />
-      )}
+      <KpiStrip
+        loading={loading}
+        items={[
+          {
+            label: "Ingresos totales",
+            value: fmtShort(totalRevenue),
+            sub: `${fmtShort(revenueApps)} inscripciones · ${fmtShort(revenueOrders)} obras`,
+            accent: true,
+          },
+          {
+            label: "Solicitudes",
+            value: totalApps.toLocaleString("es-CO"),
+            sub: `${acceptedCount} aceptadas · ${inProcess} en proceso`,
+          },
+          {
+            label: "Artistas",
+            value: totalArtists.toLocaleString("es-CO"),
+            sub: `${paidApps} con pago confirmado`,
+          },
+          {
+            label: "Usuarios",
+            value: totalUsers.toLocaleString("es-CO"),
+            sub: "Todos los roles registrados",
+          },
+        ]}
+      />
 
-      {/* ── KPI Cards ── */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4,1fr)" }, gap: 2, mb: 3 }}>
-        <KpiCard
-          label="Ingresos totales"
-          value={loading ? null : fmtShort(totalRevenue)}
-          sub={`${fmtShort(revenueApps)} inscripciones · ${fmtShort(revenueOrders)} obras`}
-          icon={<DollarSign size={18} />}
-          accent={GREEN} dark={dark}
-        />
-        <KpiCard
-          label="Solicitudes"
-          value={loading ? null : String(totalApps)}
-          sub={`${acceptedCount} aceptadas · ${inProcess} en proceso`}
-          icon={<FileText size={18} />}
-          accent={FDM.greenDeep} dark={dark}
-        />
-        <KpiCard
-          label="Artistas"
-          value={loading ? null : String(totalArtists)}
-          sub={`${paidApps} con pago confirmado`}
-          icon={<Palette size={18} />}
-          accent="#8C6A3F" dark={dark}
-        />
-        <KpiCard
-          label="Usuarios"
-          value={loading ? null : String(totalUsers)}
-          sub="Todos los roles registrados"
-          icon={<Users size={18} />}
-          accent="#C9902B" dark={dark}
-        />
-      </Box>
-
-      {/* ── Charts row ── */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1.6fr 1fr" }, gap: 2, mb: 3 }}>
-
-        {/* Applications funnel */}
-        <Paper sx={card(dark)}>
-          <Typography sx={{ fontWeight: 500, fontSize: 14, mb: 2.5, color: "text.primary", letterSpacing: -.3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          alignItems: "stretch",
+        }}
+      >
+        {/* Solicitudes por estado */}
+        <Card sx={{ flex: "2 1 460px", minWidth: "min(100%, 300px)", p: { xs: 2, md: 2.5 } }}>
+          <PanelTitle aside={`${totalApps.toLocaleString("es-CO")} en total`}>
             Solicitudes por estado
-          </Typography>
-          {loading ? (
-            <Stack spacing={1.5}>
-              {STATUS_CFG.map(s => <Skeleton key={s.key} variant="rectangular" height={34} sx={{ borderRadius: 0 }} />)}
-            </Stack>
-          ) : (
-            <Stack spacing={1.5}>
-              {statusCounts.map(s => (
-                <Box key={s.key}>
-                  <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center" mb={0.75}>
-                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: s.color, flexShrink: 0 }} />
-                      <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.secondary" }}>{s.label}</Typography>
-                    </Stack>
-                    <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
-                      <Typography sx={{ fontSize: 11, color: "text.disabled" }}>
-                        {totalApps > 0 ? `${Math.round((s.count / totalApps) * 100)}%` : "0%"}
-                      </Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 500, color: s.color, minWidth: 24, textAlign: "right" }}>
-                        {s.count}
-                      </Typography>
-                    </Stack>
+          </PanelTitle>
+
+          {loading
+            ? STATUS_CFG.map((s) => <Skeleton key={s.key} variant="text" height={38} />)
+            : statusCounts.map((s) => (
+                <Box
+                  key={s.key}
+                  sx={{
+                    py: 1.4,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    "&:last-of-type": { borderBottom: 0 },
+                  }}
+                >
+                  <Stack direction="row" alignItems="baseline" gap={1.25} sx={{ mb: 0.9 }}>
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {s.label}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {pct(s.count)}%
+                    </Typography>
+                    <Typography
+                      sx={{ fontSize: 14, fontVariantNumeric: "tabular-nums", minWidth: 36, textAlign: "right" }}
+                    >
+                      {s.count.toLocaleString("es-CO")}
+                    </Typography>
                   </Stack>
-                  <Box sx={{ height: 7, borderRadius: 0, bgcolor: alpha(s.color, 0.1), overflow: "hidden" }}>
-                    <Box sx={{
-                      height: "100%", borderRadius: 0, bgcolor: s.color,
-                      width: totalApps > 0 ? `${(s.count / totalApps) * 100}%` : "0%",
-                      transition: "width .7s cubic-bezier(.16,1,.3,1)",
-                    }} />
+                  <Box sx={{ height: 2, backgroundColor: "divider" }}>
+                    <Box
+                      sx={{
+                        height: "100%",
+                        width: `${pct(s.count)}%`,
+                        backgroundColor: "primary.main",
+                        transition: "width .7s cubic-bezier(.16,1,.3,1)",
+                      }}
+                    />
                   </Box>
                 </Box>
               ))}
-            </Stack>
-          )}
-        </Paper>
+        </Card>
 
-        {/* Revenue breakdown */}
-        <Paper sx={card(dark)}>
-          <Typography sx={{ fontWeight: 500, fontSize: 14, mb: 2, color: "text.primary", letterSpacing: -.3 }}>
-            Ingresos por fuente
-          </Typography>
-          {loading ? (
-            <Box display="flex" justifyContent="center" pt={1}>
+        {/* Ingresos por fuente */}
+        <Card sx={{ flex: "1 1 300px", minWidth: "min(100%, 280px)", p: { xs: 2, md: 2.5 } }}>
+          <PanelTitle>Ingresos por fuente</PanelTitle>
+
+          <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
+            {loading ? (
               <Skeleton variant="circular" width={150} height={150} />
-            </Box>
-          ) : totalRevenue > 0 ? (
-            <PieChart
-              height={165}
-              series={[{
-                data: [
-                  { id: 0, value: revenueApps,   label: "Inscripciones", color: GREEN    },
-                  { id: 1, value: revenueOrders, label: "Ventas obras",  color: FDM.greenDeep },
-                ],
-                innerRadius: 42, paddingAngle: 2, cornerRadius: 0,
-                highlightScope: { fade: "global", highlight: "item" },
-              }]}
-              slotProps={{ legend: { hidden: true } as never }}
-            />
-          ) : (
-            <Box display="flex" alignItems="center" justifyContent="center" height={165}>
-              <Typography sx={{ fontSize: 12, color: "text.disabled" }}>Sin ingresos registrados aún</Typography>
-            </Box>
-          )}
+            ) : (
+              <Box
+                sx={{
+                  position: "relative",
+                  width: 150,
+                  height: 150,
+                  borderRadius: 999,
+                  background: `conic-gradient(${FDM.green} 0 ${shareApps}%, ${FDM.greenDeep} ${shareApps}% 100%)`,
+                  ...(totalRevenue === 0 && { background: theme.palette.divider }),
+                }}
+              >
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: "14px",
+                    borderRadius: 999,
+                    backgroundColor: "background.default",
+                    display: "grid",
+                    placeItems: "center",
+                  }}
+                >
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography sx={{ fontWeight: 200, fontSize: 28, lineHeight: 1 }}>
+                      {Math.round(shareApps)}%
+                    </Typography>
+                    <Typography sx={{ ...eyebrow, fontSize: 9, color: "text.secondary", mt: 0.5 }}>
+                      Inscripciones
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </Box>
 
-          <Divider sx={{ my: 2, borderColor: "divider" }} />
-          <Stack spacing={1}>
-            <RevenueRow
-              label="Inscripciones artistas"
-              amount={revenueApps}
-              color={GREEN}
-              badge={`${paidApps} pagos`}
-            />
-            <RevenueRow
-              label="Venta de obras"
-              amount={revenueOrders}
-              color={FDM.greenDeep}
-              badge={`${paidOrders.length ?? 0} órdenes`}
-            />
-            <Divider sx={{ borderColor: "divider", my: 0.5 }} />
-            <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center">
-              <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.primary" }}>Total</Typography>
-              <Typography sx={{ fontSize: 14, fontWeight: 500, color: GREEN }}>{fmt(totalRevenue)}</Typography>
+          <Stack>
+            {[
+              { label: "Inscripciones artistas", sub: `${paidApps} pagos`, amount: revenueApps, filled: true },
+              { label: "Venta de obras", sub: `${paidOrders.length} órdenes`, amount: revenueOrders, filled: false },
+            ].map((r) => (
+              <Stack
+                key={r.label}
+                direction="row"
+                alignItems="center"
+                gap={1.25}
+                sx={{ py: 1.15, borderTop: "1px solid", borderColor: "divider" }}
+              >
+                <Box
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 999,
+                    flex: "0 0 auto",
+                    backgroundColor: r.filled ? "primary.main" : "transparent",
+                    border: r.filled ? 0 : "1px solid",
+                    borderColor: "text.secondary",
+                  }}
+                />
+                <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>
+                  {r.label}{" "}
+                  <Typography component="span" variant="caption" color="text.secondary">
+                    · {r.sub}
+                  </Typography>
+                </Typography>
+                <Typography variant="body2" sx={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                  {fmt(r.amount)}
+                </Typography>
+              </Stack>
+            ))}
+            <Stack
+              direction="row"
+              alignItems="baseline"
+              gap={1.25}
+              sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "text.disabled" }}
+            >
+              <Typography sx={{ ...eyebrow, fontSize: 9.5, letterSpacing: "0.22em", flex: 1 }}>Total</Typography>
+              <Typography sx={{ fontSize: 20, fontWeight: 300, color: "primary.main", whiteSpace: "nowrap" }}>
+                {fmt(totalRevenue)}
+              </Typography>
             </Stack>
           </Stack>
-        </Paper>
+        </Card>
       </Box>
 
-      {/* ── Payment methods chart ── */}
+      {/* Métodos de pago (solo si hubo ventas de obra) */}
       {(hasMethodData || loading) && (
-        <Paper sx={{ ...card(dark), mb: 3 }}>
-          <Typography sx={{ fontWeight: 500, fontSize: 14, mb: 0.5, color: "text.primary", letterSpacing: -.3 }}>
-            Métodos de pago — ventas de obras
-          </Typography>
-          <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 2 }}>
-            Distribución de ingresos por canal de pago en órdenes pagadas
-          </Typography>
+        <Card sx={{ mt: 2, p: { xs: 2, md: 2.5 } }}>
+          <PanelTitle aside="Órdenes pagadas">Métodos de pago · venta de obras</PanelTitle>
           {loading ? (
-            <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 0 }} />
+            <Skeleton variant="rectangular" height={180} />
           ) : (
             <BarChart
-              height={190}
-              series={[{
-                data:  Object.values(methodBreakdown),
-                color: GREEN,
-                label: "Ingresos (COP)",
-              }]}
-              xAxis={[{
-                scaleType: "band",
-                data: Object.keys(methodBreakdown).map(m => METHOD_LABELS[m] || m),
-              }]}
+              height={210}
+              series={[{ data: Object.values(methodBreakdown), color: FDM.green, label: "Ingresos (COP)" }]}
+              xAxis={[
+                {
+                  scaleType: "band",
+                  data: Object.keys(methodBreakdown).map((m) => METHOD_LABELS[m] || m),
+                },
+              ]}
               yAxis={[{ valueFormatter: (v: number) => fmtShort(v) }]}
               sx={{
-                "& .MuiChartsAxis-tickLabel": { fill: dark ? "rgba(255,255,255,.45)" : "rgba(0,0,0,.45)", fontSize: 11 },
-                "& .MuiChartsAxis-line": { stroke: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)" },
+                "& .MuiChartsAxis-tickLabel": {
+                  fill: dark ? "rgba(240,239,234,.55)" : "rgba(11,11,10,.55)",
+                  fontSize: 11,
+                },
+                "& .MuiChartsAxis-line, & .MuiChartsAxis-tick": {
+                  stroke: theme.palette.divider,
+                },
               }}
             />
           )}
-        </Paper>
+        </Card>
       )}
-
-      {/* ── Quick navigation ── */}
-      <Typography sx={{ fontSize: 10, fontWeight: 500, letterSpacing: 3, color: "text.disabled", textTransform: "uppercase", mb: 1.5 }}>
-        Acceso rápido
-      </Typography>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4,1fr)" }, gap: 1.5 }}>
-        {NAV_ITEMS.map(n => <NavCard key={n.href + n.label} {...n} dark={dark} />)}
-      </Box>
-
     </Box>
-  );
-}
-
-/* ─────────── Sub-components ─────────── */
-
-function KpiCard({ label, value, sub, icon, accent, dark }: {
-  label: string; value: string | null; sub: string;
-  icon: React.ReactNode; accent: string; dark: boolean;
-}) {
-  return (
-    <Paper sx={{ ...card(dark), position: "relative", overflow: "hidden" }}>
-      <Box sx={{
-        position: "absolute", top: -24, right: -24,
-        width: 80, height: 80, borderRadius: "50%",
-        background: alpha(accent, 0.07), pointerEvents: "none",
-      }} />
-      <Box sx={{
-        width: 36, height: 36, borderRadius: 0, mb: 2,
-        bgcolor: alpha(accent, 0.12), color: accent,
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        {icon}
-      </Box>
-      {value === null ? (
-        <Skeleton variant="text" width={90} height={44} sx={{ mb: 0.5 }} />
-      ) : (
-        <Typography sx={{ fontSize: 32, fontWeight: 500, letterSpacing: -2, color: "text.primary", lineHeight: 1, mb: 0.75 }}>
-          {value}
-        </Typography>
-      )}
-      <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.primary", mb: 0.25 }}>{label}</Typography>
-      <Typography sx={{ fontSize: 11, color: "text.secondary", lineHeight: 1.4 }}>{sub}</Typography>
-    </Paper>
-  );
-}
-
-function RevenueRow({ label, amount, color, badge }: {
-  label: string; amount: number; color: string; badge: string;
-}) {
-  return (
-    <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1}>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
-        <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
-        <Typography sx={{ fontSize: 12, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {label}
-        </Typography>
-        <Chip
-          label={badge} size="small"
-          sx={{ height: 16, fontSize: 9, fontWeight: 500, px: 0.5, bgcolor: alpha(color, 0.1), color, flexShrink: 0 }}
-        />
-      </Stack>
-      <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: "text.primary", whiteSpace: "nowrap" }}>
-        {fmt(amount)}
-      </Typography>
-    </Stack>
-  );
-}
-
-function NavCard({ label, sub, href, color, icon: Icon, dark }: {
-  label: string; sub: string; href: string; color: string;
-  icon: React.ElementType; dark: boolean;
-}) {
-  return (
-    <ButtonBase
-      component={Link}
-      href={href}
-      sx={{
-        display: "flex", flexDirection: "column", alignItems: "flex-start",
-        p: 2, borderRadius: 0, textAlign: "left", width: "100%",
-        bgcolor: dark ? "rgba(255,255,255,.025)" : "#f9fafb",
-        border: `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
-        transition: "all .2s cubic-bezier(.16,1,.3,1)",
-        "&:hover": {
-          bgcolor: alpha(color, 0.08),
-          borderColor: alpha(color, 0.35),
-          transform: "translateY(-2px)",
-          boxShadow: `0 8px 24px ${alpha(color, 0.15)}`,
-        },
-      }}
-    >
-      <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" width="100%" mb={1}>
-        <Box sx={{ color, display: "flex", p: 0.75, borderRadius: 0, bgcolor: alpha(color, 0.1) }}>
-          <Icon size={16} />
-        </Box>
-        <Box sx={{ color: "text.disabled", display: "flex" }}><ArrowRight size={14} /></Box>
-      </Stack>
-      <Typography sx={{ fontSize: 13, fontWeight: 500, color: "text.primary", mb: 0.25 }}>{label}</Typography>
-      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{sub}</Typography>
-    </ButtonBase>
   );
 }

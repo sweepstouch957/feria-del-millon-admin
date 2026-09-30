@@ -1,63 +1,122 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Box,
-  Divider,
-  Toolbar,
-  List,
-  ListItem,
-  Typography,
-} from "@mui/material";
+import { Box, Tooltip } from "@mui/material";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useTranslation } from "react-i18next";
 import {
-  Dashboard as DashboardIcon,
-  Collections as CollectionsIcon,
-  GroupOutlined as UsersIcon,
-  Event as EventsIcon,
-  ConfirmationNumberOutlined as TicketsIcon,
-  AccountCircle as AccountIcon,
-} from "@mui/icons-material";
-import { NotebookIcon, Paintbrush2, QrCodeIcon, ShoppingBag, FileText as SolicitudesIcon, MapPin, Mail as MailIcon, Megaphone as MegaphoneIcon, Palette as PersonalizacionIcon, Wallet as CarteraIcon, BarChart3 as ReportesIcon } from "lucide-react";
+  LayoutDashboard,
+  Paintbrush2,
+  QrCode,
+  MapPin,
+  Layers,
+  Users,
+  FileText,
+  Palette,
+  Megaphone,
+  CalendarDays,
+  Ticket,
+  ShoppingBag,
+  BarChart3,
+  UserCircle,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
+
 import { LAYOUT_COLORS as C } from "../layoutConfig";
 import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
 import CollapsibleGroup from "./CollapsibleGroup";
 import { useAuth } from "@/provider/authProvider";
 
+/* Lateral del panel: tinta sobre papel, secciones en versalitas y el ítem
+   activo marcado con un filete de acento. Se puede contraer a riel (solo
+   iconos) para dejarle la página al contenido. */
+
 type SidebarContentProps = {
   pathname: string;
+  /** Contraída a solo iconos (escritorio). */
+  rail?: boolean;
+  onToggleRail?: () => void;
+  /** Cierra el cajón en móvil al navegar. */
+  onNavigate?: () => void;
 };
 
-const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
+const ICON = { strokeWidth: 1.3 as const, size: 16 };
+
+const SidebarContent: React.FC<SidebarContentProps> = ({
+  pathname,
+  rail = false,
+  onToggleRail,
+  onNavigate,
+}) => {
   const router = useRouter();
-  const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const roles = user?.roles || {};
   const isSuperUser = !!roles.superuser;
   const isArtist = !!roles.artista;
   const isCashier = !!roles.cajero;
-  const isBoxOffice = !!roles.taquilla;
-  const isEditor = !!roles.editor;
+  const isBoxOffice = !!(roles as { taquilla?: boolean }).taquilla;
+  const isEditor = !!(roles as { editor?: boolean }).editor;
 
-  const [inventoryOpen, setInventoryOpen] = useState(
-    pathname.startsWith("/inventory")
-  );
-  const [ordersOpen, setOrdersOpen] = useState(
-    pathname.startsWith("/orders")
-  );
-  const [ticketsOpen, setTicketsOpen] = useState(
-    pathname.startsWith("/tickets")
+  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/orders"));
+  const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));
+
+  const go = (href: string) => () => {
+    router.push(href);
+    onNavigate?.();
+  };
+
+  const item = (href: string, text: string, icon: React.ReactNode, exact = true) => (
+    <NavItem
+      key={href}
+      rail={rail}
+      active={exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)}
+      onClick={go(href)}
+      icon={icon}
+      text={text}
+    />
   );
 
-  const inventoryItems = [
-    { label: "Artes",     icon: <Paintbrush2 />, href: "/inventory/artworks" },
-    { label: "QR de obras", icon: <QrCodeIcon size={18} />, href: "/inventory/artworks/qr" },
-    { label: "Ciudades",  icon: <MapPin size={18} />, href: "/inventory/cities" },
-  ];
+  const kid = (href: string, text: string) => (
+    <NavItem key={href} inset active={pathname === href} onClick={go(href)} text={text} />
+  );
+
+  const ticketsGroup = (
+    <CollapsibleGroup
+      open={ticketsOpen}
+      setOpen={setTicketsOpen}
+      rail={rail}
+      onRailClick={go("/tickets")}
+      icon={<Ticket {...ICON} />}
+      text="Boletos"
+      active={pathname.startsWith("/tickets")}
+    >
+      {kid("/tickets", "Ver boletos")}
+      {kid("/tickets/validator", "Validador QR")}
+      {kid("/tickets/taquilla", "Taquilla")}
+      {kid("/tickets/asistentes", "Informe de asistentes")}
+      {kid("/tickets/invitaciones", "Invitaciones")}
+    </CollapsibleGroup>
+  );
+
+  const ordersGroup = (
+    <CollapsibleGroup
+      open={ordersOpen}
+      setOpen={setOrdersOpen}
+      rail={rail}
+      onRailClick={go("/orders")}
+      icon={<ShoppingBag {...ICON} />}
+      text="Pedidos"
+      active={pathname.startsWith("/orders")}
+    >
+      {kid("/orders", "Listado de pedidos")}
+      {kid("/orders/new", "Crear pedido")}
+      {kid("/orders/cartera", "Cartera / Fiado")}
+    </CollapsibleGroup>
+  );
 
   return (
     <Box
@@ -65,380 +124,196 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ pathname }) => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: `linear-gradient(180deg, ${C.bgStart} 0%, ${C.bgEnd} 100%)`,
+        backgroundColor: (t) => (t.palette.mode === "dark" ? C.panelDark : C.panel),
         color: C.text,
       }}
     >
-      {/* Brand */}
-      <Toolbar sx={{ minHeight: 76, px: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-          <Box sx={{ width: 120, height: 28, position: "relative" }}>
+      {/* Marca + contraer */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: rail ? "center" : "space-between",
+          gap: 1,
+          px: rail ? 0 : 1.75,
+          py: 2,
+          minHeight: 58,
+          borderBottom: `1px solid ${C.line}`,
+        }}
+      >
+        <Box
+          component="button"
+          type="button"
+          onClick={go("/")}
+          aria-label="Panel"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+            background: "transparent",
+            border: 0,
+            p: 0,
+            cursor: "pointer",
+            color: "inherit",
+          }}
+        >
+          <Box sx={{ position: "relative", width: rail ? 36 : 44, height: rail ? 15 : 18 }}>
             <Image
               src="/fdm-logo.png"
               alt="Feria del Millón"
               fill
-              sizes="120px"
+              sizes="44px"
               priority
-              style={{
-                objectFit: "contain",
-                filter: "invert(1) brightness(1.2)",
-              }}
-              onError={(e) => {
-                const parent = (e.target as HTMLImageElement).parentElement;
-                if (parent)
-                  parent.innerHTML =
-                    '<span style="font-weight:900;color:#EDEBE4">Feria del Millón</span>';
-              }}
+              style={{ objectFit: "contain", filter: "invert(1) contrast(1.3)" }}
             />
           </Box>
+          {!rail && (
+            <Box
+              component="span"
+              sx={{
+                fontSize: 9,
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                color: "rgba(245,244,239,0.6)",
+              }}
+            >
+              Panel
+            </Box>
+          )}
         </Box>
-      </Toolbar>
 
-      <Divider sx={{ borderColor: C.line }} />
-
-      {/* SUPERUSER */}
-      {isSuperUser && (
-        <>
-          {/* INVENTARIO */}
-          <SectionTitle label="Inventario" />
-          <List sx={{ py: 0 }}>
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                active={pathname === "/"}
-                onClick={() => router.push("/")}
-                icon={<DashboardIcon />}
-                text={t("navigation.dashboard")}
-              />
-            </ListItem>
-
-            <CollapsibleGroup
-              open={inventoryOpen}
-              setOpen={setInventoryOpen}
-              icon={<CollectionsIcon />}
-              text="Inventario"
-              active={pathname.startsWith("/inventory")}
+        {onToggleRail && (
+          <Tooltip title={rail ? "Expandir menú" : "Contraer menú"} placement="right">
+            <Box
+              component="button"
+              type="button"
+              onClick={onToggleRail}
+              aria-label={rail ? "Expandir menú" : "Contraer menú"}
+              sx={{
+                display: rail ? "none" : "grid",
+                placeItems: "center",
+                width: 26,
+                height: 26,
+                background: "transparent",
+                border: 0,
+                cursor: "pointer",
+                color: "rgba(245,244,239,0.55)",
+                "&:hover": { color: C.text },
+              }}
             >
-              {inventoryItems.map((it) => (
-                <NavItem
-                  key={it.href}
-                  inset
-                  active={pathname === it.href}
-                  onClick={() => router.push(it.href)}
-                  icon={it.icon}
-                  text={it.label}
-                />
-              ))}
-            </CollapsibleGroup>
-          </List>
-
-          {/* USERS */}
-          <SectionTitle label={t("navigation.users")} />
-          <List sx={{ py: 0 }}>
-            <NavItem
-              active={pathname === "/users"}
-              onClick={() => router.push("/users")}
-              icon={<UsersIcon sx={{ fontSize: 18 }} />}
-              text={t("navigation.users")}
-            />
-            <NavItem
-              active={pathname === "/solicitudes"}
-              onClick={() => router.push("/solicitudes")}
-              icon={<SolicitudesIcon size={18} />}
-              text="Solicitudes"
-            />
-            <NavItem
-              active={pathname === "/personalizacion"}
-              onClick={() => router.push("/personalizacion")}
-              icon={<PersonalizacionIcon size={18} />}
-              text="Personalización"
-            />
-            <NavItem
-              active={pathname === "/comunicaciones"}
-              onClick={() => router.push("/comunicaciones")}
-              icon={<MegaphoneIcon size={18} />}
-              text="Comunicaciones"
-            />
-            <NavItem
-              active={pathname === "/reportes"}
-              onClick={() => router.push("/reportes")}
-              icon={<ReportesIcon size={18} />}
-              text="Reportes"
-            />
-            <NavItem
-              active={pathname === "/reportes/ventas"}
-              onClick={() => router.push("/reportes/ventas")}
-              icon={<ReportesIcon size={18} />}
-              text="Informe de ventas"
-            />
-          </List>
-
-          {/* OPERATIONS - EVENTOS, BOLETOS, PEDIDOS */}
-          <SectionTitle label={t("navigation.operations")} />
-          <List sx={{ py: 0 }}>
-            {/* Eventos en un solo nivel */}
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                inset={false}
-                active={pathname.startsWith("/events")}
-                onClick={() => router.push("/events")}
-                icon={<EventsIcon sx={{ fontSize: 18 }} />}
-                text={t("navigation.events")}
-              />
-            </ListItem>
-
-            {/* Boletos como grupo: Ver boletos + Validador */}
-            <CollapsibleGroup
-              open={ticketsOpen}
-              setOpen={setTicketsOpen}
-              icon={<TicketsIcon sx={{ fontSize: 18 }} />}
-              text={t("navigation.tickets")}
-              active={pathname.startsWith("/tickets")}
-            >
-              <NavItem
-                inset
-                active={pathname === "/tickets"}
-                onClick={() => router.push("/tickets")}
-                icon={<TicketsIcon sx={{ fontSize: 18 }} />}
-                text="Ver boletos"
-              />
-              <NavItem
-                inset
-                active={pathname === "/tickets/validator"}
-                onClick={() => router.push("/tickets/validator")}
-                icon={<QrCodeIcon />}
-                text="Validador QR"
-              />
-              <NavItem
-                inset
-                active={pathname === "/tickets/taquilla"}
-                onClick={() => router.push("/tickets/taquilla")}
-                icon={<TicketsIcon sx={{ fontSize: 18 }} />}
-                text="Taquilla"
-              />
-              <NavItem
-                inset
-                active={pathname === "/tickets/asistentes"}
-                onClick={() => router.push("/tickets/asistentes")}
-                icon={<ReportesIcon size={18} />}
-                text="Informe de asistentes"
-              />
-              <NavItem
-                inset
-                active={pathname === "/tickets/invitaciones"}
-                onClick={() => router.push("/tickets/invitaciones")}
-                icon={<MailIcon size={18} />}
-                text="Invitaciones"
-              />
-            </CollapsibleGroup>
-
-            {/* Pedidos con sub-items */}
-            <CollapsibleGroup
-              open={ordersOpen}
-              setOpen={setOrdersOpen}
-              icon={<ShoppingBag />}
-              text="Pedidos"
-              active={pathname.startsWith("/orders")}
-            >
-              <NavItem
-                inset
-                active={pathname === "/orders"}
-                onClick={() => router.push("/orders")}
-                icon={<ShoppingBag />}
-                text="Listado de pedidos"
-              />
-              <NavItem
-                inset
-                active={pathname === "/orders/new"}
-                onClick={() => router.push("/orders/new")}
-                icon={<NotebookIcon />}
-                text="Crear pedido"
-              />
-              <NavItem
-                inset
-                active={pathname === "/orders/cartera"}
-                onClick={() => router.push("/orders/cartera")}
-                icon={<CarteraIcon />}
-                text="Cartera / Fiado"
-              />
-            </CollapsibleGroup>
-          </List>
-        </>
-      )}
-
-      {/* ARTISTA */}
-      {!isSuperUser && isArtist && (
-        <>
-          <SectionTitle label="Artista" />
-          <List sx={{ py: 0 }}>
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                active={pathname === "/"}
-                onClick={() => router.push("/")}
-                icon={<DashboardIcon />}
-                text={t("navigation.dashboard")}
-              />
-            </ListItem>
-
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                active={pathname === "/my/artworks"}
-                onClick={() => router.push("/my/artworks")}
-                icon={<Paintbrush2 />}
-                text="Mis obras"
-              />
-            </ListItem>
-
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                active={pathname === "/my/orders"}
-                onClick={() => router.push("/my/orders")}
-                icon={<ShoppingBag />}
-                text="Mis pedidos"
-              />
-            </ListItem>
-          </List>
-        </>
-      )}
-
-      {/* TAQUILLA (entradas) */}
-      {!isSuperUser && isBoxOffice && (
-        <>
-          <SectionTitle label="Taquilla" />
-          <List sx={{ py: 0 }}>
-            <NavItem
-              active={pathname === "/tickets/validator"}
-              onClick={() => router.push("/tickets/validator")}
-              icon={<QrCodeIcon />}
-              text="Validador QR"
-            />
-              <NavItem
-                active={pathname === "/tickets/taquilla"}
-                onClick={() => router.push("/tickets/taquilla")}
-                icon={<TicketsIcon sx={{ fontSize: 18 }} />}
-                text="Taquilla"
-              />
-              <NavItem
-                active={pathname === "/tickets/asistentes"}
-                onClick={() => router.push("/tickets/asistentes")}
-                icon={<ReportesIcon size={18} />}
-                text="Informe de asistentes"
-              />
-          </List>
-        </>
-      )}
-
-      {/* EDITOR (contenidos) */}
-      {!isSuperUser && isEditor && (
-        <>
-          <SectionTitle label="Contenidos" />
-          <List sx={{ py: 0 }}>
-            <NavItem
-              active={pathname === "/personalizacion"}
-              onClick={() => router.push("/personalizacion")}
-              icon={<PersonalizacionIcon size={18} />}
-              text="Personalización"
-            />
-            <NavItem
-              active={pathname === "/comunicaciones"}
-              onClick={() => router.push("/comunicaciones")}
-              icon={<MegaphoneIcon size={18} />}
-              text="Comunicaciones"
-            />
-          </List>
-        </>
-      )}
-
-      {/* CAJERO (caja de obras) */}
-      {!isSuperUser && isCashier && (
-        <>
-          <SectionTitle label={t("navigation.operations")} />
-          <List sx={{ py: 0 }}>
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                active={pathname === "/"}
-                onClick={() => router.push("/")}
-                icon={<DashboardIcon />}
-                text={t("navigation.dashboard")}
-              />
-            </ListItem>
-
-            <CollapsibleGroup
-              open={ordersOpen}
-              setOpen={setOrdersOpen}
-              icon={<ShoppingBag />}
-              text="Pedidos"
-              active={pathname.startsWith("/orders")}
-            >
-              <NavItem
-                inset
-                active={pathname === "/orders"}
-                onClick={() => router.push("/orders")}
-                icon={<ShoppingBag />}
-                text="Listado de pedidos"
-              />
-              <NavItem
-                inset
-                active={pathname === "/orders/new"}
-                onClick={() => router.push("/orders/new")}
-                icon={<NotebookIcon />}
-                text="Crear pedido"
-              />
-              <NavItem
-                inset
-                active={pathname === "/orders/cartera"}
-                onClick={() => router.push("/orders/cartera")}
-                icon={<CarteraIcon />}
-                text="Cartera / Fiado"
-              />
-            </CollapsibleGroup>
-          </List>
-        </>
-      )}
-
-      {/* Fallback sin rol mapeado */}
-      {!isSuperUser && !isArtist && !isCashier && !isBoxOffice && !isEditor && (
-        <>
-          <SectionTitle label="Navegación" />
-          <List sx={{ py: 0 }}>
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <NavItem
-                active={pathname === "/"}
-                onClick={() => router.push("/")}
-                icon={<DashboardIcon />}
-                text={t("navigation.dashboard")}
-              />
-            </ListItem>
-          </List>
-        </>
-      )}
-
-      <Box sx={{ flexGrow: 1 }} />
-
-      {/* ACCOUNT */}
-      <Divider sx={{ borderColor: C.line, mt: 1 }} />
-      <Box sx={{ px: 2.25, py: 1 }}>
-        <Typography
-          variant="overline"
-          sx={{
-            color: C.textMuted,
-            letterSpacing: 1.2,
-            fontWeight: 500,
-            fontSize: 11,
-          }}
-        >
-          {t("navigation.account")}
-        </Typography>
+              <PanelLeftClose size={14} strokeWidth={1.4} />
+            </Box>
+          </Tooltip>
+        )}
       </Box>
-      <List sx={{ py: 0, mb: 1 }}>
-        <ListItem disablePadding sx={{ display: "block" }}>
+
+      {/* Navegación */}
+      <Box
+        component="nav"
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          gap: "2px",
+          px: 1,
+          py: 1,
+          overflowY: "auto",
+        }}
+      >
+        {rail && onToggleRail && (
           <NavItem
-            active={pathname === "/account"}
-            onClick={() => router.push("/account")}
-            icon={<AccountIcon />}
-            text={t("navigation.myAccount")}
+            rail
+            onClick={onToggleRail}
+            icon={<PanelLeftOpen {...ICON} />}
+            text="Expandir menú"
           />
-        </ListItem>
-      </List>
+        )}
+
+        {isSuperUser && (
+          <>
+            {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
+
+            <SectionTitle label="Inventario" rail={rail} />
+            {item("/inventory/artworks", "Artes", <Paintbrush2 {...ICON} />)}
+            {item("/inventory/artworks/qr", "QR de obras", <QrCode {...ICON} />)}
+            {item("/inventory/cities", "Ciudades", <MapPin {...ICON} />)}
+            {item("/inventory/techniques", "Técnicas", <Layers {...ICON} />)}
+
+            <SectionTitle label="Comunidad" rail={rail} />
+            {item("/users", "Usuarios", <Users {...ICON} />)}
+            {item("/solicitudes", "Solicitudes", <FileText {...ICON} />)}
+
+            <SectionTitle label="Contenido" rail={rail} />
+            {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
+            {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
+
+            <SectionTitle label="Operación" rail={rail} />
+            {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
+            {ticketsGroup}
+            {ordersGroup}
+
+            <SectionTitle label="Reportes" rail={rail} />
+            {item("/reportes", "Reportes", <BarChart3 {...ICON} />)}
+            {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
+          </>
+        )}
+
+        {!isSuperUser && isArtist && (
+          <>
+            {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
+            <SectionTitle label="Artista" rail={rail} />
+            {item("/my/artworks", "Mis obras", <Paintbrush2 {...ICON} />)}
+            {item("/my/orders", "Mis pedidos", <ShoppingBag {...ICON} />)}
+          </>
+        )}
+
+        {!isSuperUser && isBoxOffice && (
+          <>
+            <SectionTitle label="Taquilla" rail={rail} />
+            {item("/tickets/validator", "Validador QR", <QrCode {...ICON} />)}
+            {item("/tickets/taquilla", "Taquilla", <Ticket {...ICON} />)}
+            {item("/tickets/asistentes", "Informe de asistentes", <BarChart3 {...ICON} />)}
+          </>
+        )}
+
+        {!isSuperUser && isEditor && (
+          <>
+            <SectionTitle label="Contenido" rail={rail} />
+            {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
+            {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
+          </>
+        )}
+
+        {!isSuperUser && isCashier && (
+          <>
+            {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
+            <SectionTitle label="Operación" rail={rail} />
+            {ordersGroup}
+          </>
+        )}
+
+        {!isSuperUser && !isArtist && !isCashier && !isBoxOffice && !isEditor &&
+          item("/", "Tablero", <LayoutDashboard {...ICON} />)}
+      </Box>
+
+      {/* Cuenta */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "2px",
+          p: 1,
+          borderTop: `1px solid ${C.line}`,
+        }}
+      >
+        {item("/account", "Mi cuenta", <UserCircle {...ICON} />)}
+        <NavItem
+          rail={rail}
+          onClick={() => logout()}
+          icon={<LogOut {...ICON} />}
+          text="Cerrar sesión"
+        />
+      </Box>
     </Box>
   );
 };
