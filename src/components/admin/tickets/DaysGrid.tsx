@@ -1,363 +1,243 @@
 "use client";
 
 import { useState } from "react";
-import { formatCOP } from "@/utils/money";
 import {
   Alert,
+  Box,
+  Button,
   Card,
-  CardContent,
-  CardHeader,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
   IconButton,
+  InputAdornment,
   LinearProgress,
+  Skeleton,
   Stack,
   Switch,
   TextField,
+  Tooltip,
   Typography,
-  Button,
-  MenuItem,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import {
-  Edit as EditIcon,
-  Refresh as RefreshIcon,
-  Add as AddIcon,
-} from "@mui/icons-material";
+import { Edit as EditIcon } from "@mui/icons-material";
+import { RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatCOP } from "@/utils/money";
+import { eyebrow } from "@/app/theme";
+import { getTicketDays, updateTicketDay, type TicketDaySummary } from "@services/ticket.service";
 
-import {
-  getTicketDays,
-  updateTicketDay,
-  type TicketDaySummary,
-} from "@services/ticket.service";
+/* Días de la feria: precio, capacidad y ocupación de cada uno. El interruptor
+   activa o apaga el día al instante; el lápiz abre la edición de precio y cupo. */
 
-type EditDayState = {
-  open: boolean;
-  day: TicketDaySummary | null;
-  cap: string;
-  price: string;
-  isActive: boolean;
+type Edit = { day: TicketDaySummary; cap: string; price: string; isActive: boolean } | null;
+
+const KIND: Record<string, { label: string; color: "default" | "secondary" | "warning" | "error" }> = {
+  opening: { label: "Apertura", color: "secondary" },
+  penultimate: { label: "Penúltimo día", color: "warning" },
+  last: { label: "Último día", color: "error" },
 };
 
+/** Color de la barra por ocupación: verde, ámbar desde 70 %, rojo desde 90 %. */
+const loadColor = (p: number): "success" | "warning" | "error" => (p >= 90 ? "error" : p >= 70 ? "warning" : "success");
+
 export function DaysGrid({ eventId }: { eventId: string }) {
-  const queryClient = useQueryClient();
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const qc = useQueryClient();
 
-  /** FUTURO: selección de evento */
-  const [selectedEvent, setSelectedEvent] = useState(eventId);
-
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["ticketDays", selectedEvent],
-    queryFn: () => getTicketDays(selectedEvent),
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["ticketDays", eventId],
+    queryFn: () => getTicketDays(eventId),
+    enabled: !!eventId,
   });
+  const [edit, setEdit] = useState<Edit>(null);
 
-  const [editState, setEditState] = useState<EditDayState>({
-    open: false,
-    day: null,
-    cap: "",
-    price: "",
-    isActive: true,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (payload: {
-      id: string;
-      cap: number;
-      price: number;
-      isActive: boolean;
-    }) =>
-      updateTicketDay(payload.id, {
-        cap: payload.cap,
-        price: payload.price,
-        isActive: payload.isActive,
-      }),
+  const update = useMutation({
+    mutationFn: (p: { id: string; cap: number; price: number; isActive: boolean }) =>
+      updateTicketDay(p.id, { cap: p.cap, price: p.price, isActive: p.isActive }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ticketDays", selectedEvent] });
-      setEditState((prev) => ({ ...prev, open: false }));
+      qc.invalidateQueries({ queryKey: ["ticketDays", eventId] });
+      setEdit(null);
     },
   });
 
   const days = data?.days ?? [];
+  const totalCap = days.reduce((a, d) => a + (d.cap || 0), 0);
+  const totalUsed = days.reduce((a, d) => a + d.sold + d.checked_in, 0);
+  const totalPct = totalCap > 0 ? Math.round((totalUsed / totalCap) * 100) : 0;
 
-  const handleOpenEdit = (day: TicketDaySummary) => {
-    setEditState({
-      open: true,
-      day,
-      cap: String(day.cap ?? ""),
-      price: String(day.price ?? ""),
-      isActive: day.isActive,
-    });
-  };
-
-  const handleCloseEdit = () => {
-    setEditState((prev) => ({ ...prev, open: false }));
-  };
-
-  const handleCapChange = (value: string) => {
-    const numeric = value.replace(/\D/g, "");
-    setEditState((prev) => ({ ...prev, cap: numeric }));
-  };
-
-  const handlePriceChange = (value: string) => {
-    const numeric = value.replace(/\D/g, "");
-    setEditState((prev) => ({ ...prev, price: numeric }));
-  };
-
-  const handleSaveEdit = () => {
-    if (!editState.day) return;
-
-    const capNumber = Number(editState.cap || 0);
-    const priceNumber = Number(editState.price || 0);
-
-    updateMutation.mutate({
-      id: editState.day.id,
-      cap: capNumber,
-      price: priceNumber,
-      isActive: editState.isActive,
-    });
-  };
-
-  const kindColor = (kind: string) => {
-    switch (kind) {
-      case "opening":
-        return "secondary";
-      case "penultimate":
-        return "warning";
-      case "last":
-        return "error";
-      default:
-        return "default";
-    }
-  };
-
-  const kindLabel = (kind: string) => {
-    switch (kind) {
-      case "opening":
-        return "Apertura";
-      case "penultimate":
-        return "Penúltimo día";
-      case "last":
-        return "Último día";
-      default:
-        return "Día regular";
-    }
-  };
+  const toggle = (day: TicketDaySummary) =>
+    update.mutate({ id: day.id, cap: day.cap, price: day.price, isActive: !day.isActive });
 
   return (
     <>
-      <Card
-        sx={{
-          borderRadius: 0,
-          border: "1px solid",
-          borderColor: "divider",
-          mb: 3,
-        }}
-      >
-        <CardHeader
-          title="Días del evento"
-          subheader="Configura capacidad, precio y estado por día."
-          action={
-            <Stack direction="row" flexWrap="wrap" spacing={1}>
-              {/* Botón “Agregar día” deshabilitado (futuro feature) */}
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                disabled
-                sx={{ textTransform: "none", opacity: 0.5 }}
-                title="Próximamente"
-              >
-                Nuevo día
-              </Button>
-
-              <IconButton onClick={() => refetch()} size="small">
-                <RefreshIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          }
-        />
-        <CardContent>
-          {/* Selector de Evento (para futuro multi-evento) */}
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
-            <TextField
-              select
-              label="Evento"
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
-              sx={{ width: { xs: "100%", sm: "50%" } }}
-            >
-              <MenuItem value={eventId}>Feria del Millón 2025</MenuItem>
-              {/* Aquí en el futuro se agregan más eventos */}
-            </TextField>
-          </Stack>
-
-          {isLoading && <Typography>Cargando días…</Typography>}
-          {isError && (
-            <Alert severity="error">
-              No se pudieron cargar los días de tickets.
-            </Alert>
-          )}
-
-          {!isLoading && !isError && days.length === 0 && (
-            <Typography variant="body2" color="text.secondary">
-              No hay días configurados.
+      <Card>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "stretch", sm: "flex-start" }}
+          gap={2}
+          sx={{ p: { xs: 2, md: 3 }, pb: 2 }}
+        >
+          <Box>
+            <Typography sx={{ ...eyebrow, color: "primary.main" }}>Capacidad</Typography>
+            <Typography variant="h5" sx={{ mt: 0.5 }}>Días de la feria</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Precio, cupo y estado de cada día.
             </Typography>
-          )}
+          </Box>
+          <Stack direction="row" alignItems="center" gap={2}>
+            {totalCap > 0 && (
+              <Box sx={{ minWidth: 180, flex: { xs: 1, sm: "none" } }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="caption" color="text.secondary">Ocupación total</Typography>
+                  <Typography variant="caption" sx={{ fontVariantNumeric: "tabular-nums" }}>{totalPct}%</Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={Math.min(100, totalPct)} color={loadColor(totalPct)} sx={{ height: 6, mt: 0.5 }} />
+                <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {totalUsed.toLocaleString("es-CO")} de {totalCap.toLocaleString("es-CO")}
+                </Typography>
+              </Box>
+            )}
+            <Tooltip title="Recargar">
+              <span>
+                <IconButton onClick={() => refetch()} disabled={isFetching} sx={{ border: 1, borderColor: "divider" }}>
+                  {isFetching ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+        </Stack>
 
-          <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Box sx={{ px: { xs: 2, md: 3 }, pb: { xs: 2, md: 3 } }}>
+          {isError && <Alert severity="error" action={<Button onClick={() => refetch()}>Reintentar</Button>}>No se pudieron cargar los días.</Alert>}
+          {update.isError && <Alert severity="error" sx={{ mb: 2 }}>No se pudo guardar el día. Intenta de nuevo.</Alert>}
+
+          <Grid container spacing={2}>
+            {isLoading &&
+              [0, 1, 2, 3].map((i) => (
+                <Grid key={i} size={{ xs: 12, sm: 6, lg: 3 }}><Skeleton variant="rectangular" height={176} /></Grid>
+              ))}
+
+            {!isLoading && !isError && days.length === 0 && (
+              <Grid size={12}>
+                <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: "center" }}>
+                  No hay días configurados. Se crean al guardar las fechas de la feria.
+                </Typography>
+              </Grid>
+            )}
+
             {days.map((day) => {
               const used = day.sold + day.checked_in;
-              const percent =
-                day.cap > 0 ? Math.round((used / day.cap) * 100) : 0;
-
+              const pct = day.cap > 0 ? Math.round((used / day.cap) * 100) : 0;
+              const kind = KIND[day.kind] ?? { label: "Día regular", color: "default" as const };
               return (
-                <Grid
-                  key={day.id}
-                  size={{
-                    xs: 12,
-                    sm: 6,
-                    md: 4,
-                  }}
-                >
-                  <Card
-                    variant="outlined"
+                <Grid key={day.id} size={{ xs: 12, sm: 6, lg: 3 }}>
+                  <Box
                     sx={{
-                      borderRadius: 0,
+                      border: 1,
+                      borderColor: "divider",
+                      p: 2,
                       height: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      borderColor:  "divider",
-                      boxShadow: 0,
+                      gap: 1.25,
+                      opacity: day.isActive ? 1 : 0.55,
+                      transition: "opacity .15s",
                     }}
                   >
-                    <CardContent sx={{ pb: 1.5 }}>
-                      <Stack
-                        direction="row" flexWrap="wrap"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        mb={1}
-                      >
-                        <Typography fontWeight={500} fontSize={15}>
-                          {day.display}
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                      <Typography variant="h6" sx={{ textTransform: "capitalize" }}>{day.display}</Typography>
+                      <Chip size="small" label={kind.label} color={kind.color} variant={kind.color === "default" ? "outlined" : "filled"} />
+                    </Stack>
+
+                    <Typography sx={{ fontSize: 24, fontVariantNumeric: "tabular-nums" }}>{formatCOP(day.price)}</Typography>
+
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                          {used.toLocaleString("es-CO")} / {day.cap.toLocaleString("es-CO")}
                         </Typography>
-                        <Chip
-                          size="small"
-                          label={kindLabel(day.kind)}
-                          color={kindColor(day.kind)}
-                        />
+                        <Typography variant="caption" sx={{ fontVariantNumeric: "tabular-nums" }}>{pct}%</Typography>
                       </Stack>
-
-                      <Typography variant="h6" fontWeight={500} sx={{ mb: 0.5 }}>
-                        {formatCOP(day.price)}
-                      </Typography>
-
+                      <LinearProgress variant="determinate" value={Math.min(100, pct)} color={loadColor(pct)} sx={{ height: 6, mt: 0.5 }} />
                       <Typography variant="caption" color="text.secondary">
-                        Capacidad: {day.cap.toLocaleString("es-CO")}
+                        {day.sold} vendidos · {day.checked_in} ingresaron
                       </Typography>
+                    </Box>
 
-                      <Stack
-                        direction="row" flexWrap="wrap"
-                        justifyContent="space-between"
-                        mt={1}
-                      >
-                        <Typography variant="caption">
-                          Vendidos/check-in: {used}
-                        </Typography>
-                        <Typography variant="caption">{percent}%</Typography>
-                      </Stack>
-
-                      <LinearProgress
-                        variant="determinate"
-                        value={percent}
-                        sx={{ borderRadius: 0, height: 8, mt: 0.4 }}
-                      />
-
-                      <Stack
-                        direction="row" flexWrap="wrap"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        mt={1.2}
-                      >
-                        <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
-                          <Typography variant="caption">Activo</Typography>
-                          <Switch
-                            size="small"
-                            checked={day.isActive}
-                            onChange={() =>
-                              handleOpenEdit({
-                                ...day,
-                                isActive: !day.isActive,
-                              })
-                            }
-                          />
-                        </Stack>
-
-                        <IconButton
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: "auto", pt: 0.5 }}>
+                      <Stack direction="row" alignItems="center" gap={0.5}>
+                        <Switch
                           size="small"
-                          onClick={() => handleOpenEdit(day)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                          checked={day.isActive}
+                          disabled={update.isPending}
+                          onChange={() => toggle(day)}
+                          inputProps={{ "aria-label": `${day.isActive ? "Desactivar" : "Activar"} ${day.display}` }}
+                        />
+                        <Typography variant="caption">{day.isActive ? "Activo" : "Inactivo"}</Typography>
                       </Stack>
-                    </CardContent>
-                  </Card>
+                      <Button
+                        size="small"
+                        startIcon={<EditIcon fontSize="small" />}
+                        onClick={() => setEdit({ day, cap: String(day.cap ?? ""), price: String(day.price ?? ""), isActive: day.isActive })}
+                      >
+                        Editar
+                      </Button>
+                    </Stack>
+                  </Box>
                 </Grid>
               );
             })}
           </Grid>
-        </CardContent>
+        </Box>
       </Card>
 
-      {/* EDIT DIALOG */}
-      <Dialog open={editState.open} onClose={handleCloseEdit} maxWidth="xs" fullWidth>
-        <DialogTitle>Editar día del evento</DialogTitle>
+      <Dialog open={!!edit} onClose={() => setEdit(null)} maxWidth="xs" fullWidth fullScreen={fullScreen}>
+        <DialogTitle>Editar día</DialogTitle>
         <DialogContent dividers>
-          {editState.day && (
-            <Stack spacing={2} mt={0.5}>
-              <Typography variant="body2" fontWeight={500}>
-                {editState.day.display}
-              </Typography>
-
+          {edit && (
+            <Stack spacing={2.5} sx={{ mt: 0.5 }}>
+              <Typography variant="h6" sx={{ textTransform: "capitalize" }}>{edit.day.display}</Typography>
               <TextField
-                label="Capacidad (boletos)"
-                value={editState.cap}
-                inputProps={{ inputMode: "numeric" }}
-                onChange={(e) => handleCapChange(e.target.value)}
+                label="Precio"
+                value={edit.price}
+                onChange={(e) => setEdit({ ...edit, price: e.target.value.replace(/\D/g, "") })}
+                slotProps={{
+                  htmlInput: { inputMode: "numeric" },
+                  input: { startAdornment: <InputAdornment position="start">$</InputAdornment>, endAdornment: <InputAdornment position="end">COP</InputAdornment> },
+                }}
+                helperText={edit.price ? formatCOP(Number(edit.price)) : " "}
               />
-
               <TextField
-                label="Precio (COP)"
-                value={editState.price}
-                inputProps={{ inputMode: "numeric" }}
-                onChange={(e) => handlePriceChange(e.target.value)}
+                label="Capacidad"
+                value={edit.cap}
+                onChange={(e) => setEdit({ ...edit, cap: e.target.value.replace(/\D/g, "") })}
+                slotProps={{ htmlInput: { inputMode: "numeric" }, input: { endAdornment: <InputAdornment position="end">boletos</InputAdornment> } }}
+                helperText={`Ya usados: ${(edit.day.sold + edit.day.checked_in).toLocaleString("es-CO")}`}
               />
-
-              <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-                <Switch
-                  checked={editState.isActive}
-                  onChange={(e) =>
-                    setEditState((prev) => ({
-                      ...prev,
-                      isActive: e.target.checked,
-                    }))
-                  }
-                />
-                <Typography variant="body2">
-                  {editState.isActive ? "Día activo" : "Día inactivo"}
-                </Typography>
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Switch checked={edit.isActive} onChange={(e) => setEdit({ ...edit, isActive: e.target.checked })} />
+                <Typography variant="body2">{edit.isActive ? "Día activo" : "Día inactivo"}</Typography>
               </Stack>
             </Stack>
           )}
         </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleCloseEdit}>Cancelar</Button>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setEdit(null)}>Cancelar</Button>
           <Button
-            onClick={handleSaveEdit}
             variant="contained"
-            disabled={updateMutation.isPending}
+            disabled={update.isPending || !edit}
+            startIcon={update.isPending ? <CircularProgress size={14} color="inherit" /> : undefined}
+            onClick={() =>
+              edit && update.mutate({ id: edit.day.id, cap: Number(edit.cap || 0), price: Number(edit.price || 0), isActive: edit.isActive })
+            }
           >
             Guardar cambios
           </Button>
