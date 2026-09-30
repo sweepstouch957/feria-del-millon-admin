@@ -688,9 +688,11 @@ function CreateUserDialog({ open, onClose, onCreated }: {
 export default function UsersPage() {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
-  // Filters
-  const [q,          setQ]          = React.useState("");
+  // Filters. El buscador de la cabecera del panel manda aquí con ?q=…; se lee
+  // del propio navegador para no sacar la página del prerenderizado.
+  const [q,          setQ]          = React.useState(() =>
+    typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("q") ?? "",
+  );
   const [city,       setCity]       = React.useState("");
   const [roles,      setRoles]      = React.useState<string[]>([]);
   const [active,     setActive]     = React.useState<string>("");
