@@ -25,11 +25,15 @@ import ArtworkDetailModal from "./ArtworkDetailModal";
 import CreateEditArtworkModal from "./CreateEditArtworkModal";
 import QRModal from "./QrModal";
 import { useAuth } from "@/provider/authProvider";
-import { DEFAULT_EVENT_ID, FIXED_PAVILION_ID } from "@/core/constants";
+import { FIXED_PAVILION_ID } from "@/core/constants";
+import { useActiveEvent } from "@hooks/events/useActiveEvent";
 
 export default function MiEstudioClient() {
   const { user, isAuthLoading, isAuthenticated } = useAuth();
   const artistId = user?.id || (user as any)?._id;
+  // La feria activa, no un ObjectId fijo: si no, las obras se piden para una
+  // feria que ya pasó y la lista sale vacía.
+  const { eventId } = useActiveEvent();
 
   const [q, setQ] = useState("");
   const [tech, setTech] = useState<string | "all">("all");
@@ -43,7 +47,7 @@ export default function MiEstudioClient() {
 
   const { data: techniques = [] } = useTechniques();
   const { data: pavsByUser } = usePavilionsByUser(
-    DEFAULT_EVENT_ID,
+    eventId,
     artistId as string,
     true
   );
@@ -51,13 +55,13 @@ export default function MiEstudioClient() {
   const filters = useMemo(
     () => ({
       q: q || undefined,
-      event: DEFAULT_EVENT_ID,
+      event: eventId,
       pavilion: pavilion === "all" ? undefined : pavilion,
       technique: tech === "all" ? undefined : tech,
       limit: 24,
       artist: artistId,
     }),
-    [q, pavilion, tech, artistId]
+    [q, pavilion, tech, artistId, eventId]
   );
 
   const artworksQuery = useArtworksCursor(filters as any);
@@ -297,7 +301,7 @@ export default function MiEstudioClient() {
       <CreateEditArtworkModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        eventId={DEFAULT_EVENT_ID}
+        eventId={eventId}
         editingId={editingId}
         currentRows={rows}
         techniqueOptions={techniqueOptions}

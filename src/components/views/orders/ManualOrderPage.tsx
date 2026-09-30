@@ -49,10 +49,13 @@
     } from "./ManualOrderForm";
 
     import { useAuth } from "@/provider/authProvider";
-    import { DEFAULT_EVENT_ID } from "@/core/constants";
+    import { useActiveEvent } from "@hooks/events/useActiveEvent";
 
     const ManualOrderPage = () => {
         const { user } = useAuth();
+        // La feria activa: antes era un ObjectId fijo de una feria vieja, así que
+        // el buscador de obras salía vacío y la orden se creaba en la feria mala.
+        const { eventId } = useActiveEvent();
 
         const [search, setSearch] = useState("");
         const [artistQ, setArtistQ] = useState("");
@@ -81,7 +84,7 @@
         } = useArtworksCursor({
             q: search || undefined,
             artist: artist?.id,
-            event: DEFAULT_EVENT_ID,
+            event: eventId || undefined,
             limit: 25,
         });
 
@@ -151,6 +154,11 @@
                     return;
                 }
 
+                if (!eventId) {
+                    toast.error("No hay ninguna feria activa: actívala en Eventos.");
+                    return;
+                }
+
                 const row = selectedArtwork as ArtworkRow & {
                     id?: string;
                     _id?: string;
@@ -216,7 +224,7 @@
 
                 // 1) Crear orden
                 const order: OrderDoc = await createOrder({
-                    event: DEFAULT_EVENT_ID,
+                    event: eventId,
                     items: [item],
                     buyer,
                     userId: user?.id,

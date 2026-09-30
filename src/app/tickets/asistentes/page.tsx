@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import { Users, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_EVENT_ID } from "@core/constants";
+import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getAttendanceReport, getTicketDays, type AttendanceBucket } from "@services/ticket.service";
 import { toCsv, downloadCsv } from "@/utils/csv";
 
@@ -41,7 +41,13 @@ function BucketTable({ title, rows }: { title: string; rows: AttendanceBucket[] 
 }
 
 export default function AttendancePage() {
-  const eventId = DEFAULT_EVENT_ID;
+  // La feria activa manda: sin ella no hay nada que pedir.
+  const { eventId, isLoading, isError, refetch } = useActiveEvent();
+  if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
+  return <Attendance eventId={eventId} />;
+}
+
+function Attendance({ eventId }: { eventId: string }) {
   const { data: daysRes } = useQuery({ queryKey: ["ticketDays", eventId], queryFn: () => getTicketDays(eventId) });
   const [date, setDate] = React.useState(todayCo());
 

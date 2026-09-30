@@ -8,7 +8,7 @@ import {
 import { Mail, Send, UserPlus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DEFAULT_EVENT_ID } from "@core/constants";
+import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { createInvitations, getTickets, getTicketDays, resendInvitation, type Ticket } from "@services/ticket.service";
 import { listUsers } from "@services/user.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
@@ -36,7 +36,12 @@ function parseInvitees(text: string) {
 }
 
 export default function InvitationsPage() {
-  const eventId = DEFAULT_EVENT_ID;
+  const { eventId, isLoading, isError, refetch } = useActiveEvent();
+  if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
+  return <Invitations eventId={eventId} />;
+}
+
+function Invitations({ eventId }: { eventId: string }) {
   const qc = useQueryClient();
   const { data: daysRes } = useQuery({ queryKey: ["ticketDays", eventId], queryFn: () => getTicketDays(eventId) });
   const days = daysRes?.days || [];

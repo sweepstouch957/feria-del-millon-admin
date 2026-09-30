@@ -7,7 +7,7 @@ import {
 import { Ticket as TicketIcon, Banknote, CreditCard } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DEFAULT_EVENT_ID } from "@core/constants";
+import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import {
   getTicketDays, sellAtBoxOffice, TICKET_TYPE_LABEL, type BoxOfficeSaleInput, type Ticket,
 } from "@services/ticket.service";
@@ -27,7 +27,12 @@ const TYPES: { key: SellType; price?: number; pickDay?: boolean; quantities?: nu
 const EMPTY = { name: "", email: "", phone: "", company: "", nit: "" };
 
 export default function BoxOfficePage() {
-  const eventId = DEFAULT_EVENT_ID;
+  const { eventId, isLoading, isError, refetch } = useActiveEvent();
+  if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
+  return <BoxOffice eventId={eventId} />;
+}
+
+function BoxOffice({ eventId }: { eventId: string }) {
   const qc = useQueryClient();
   const { data: daysRes } = useQuery({ queryKey: ["ticketDays", eventId], queryFn: () => getTicketDays(eventId) });
   const days = daysRes?.days || [];
