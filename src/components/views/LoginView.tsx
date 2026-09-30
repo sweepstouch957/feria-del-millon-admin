@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Stack, Typography, CircularProgress } from "@mui/material";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/provider/authProvider";
 import { FDM, eyebrow } from "@/app/theme";
@@ -152,16 +151,17 @@ const LoginClient: React.FC = () => {
         }}
       >
         {/* Marca: el escudo va invertido sobre la tinta, como en el sitio. */}
-        <Box sx={{ position: "relative", width: 64, height: 26 }}>
-          <Image
-            src="/fdm-logo.png"
-            alt="Feria del Millón"
-            fill
-            sizes="64px"
-            priority
-            style={{ objectFit: "contain", objectPosition: "left center", filter: "invert(1) contrast(1.3)" }}
-          />
-        </Box>
+        <Box
+          aria-label="Feria del Millón"
+          sx={{
+            width: 72,
+            aspectRatio: "2.46",
+            backgroundImage: "url(/fdm-logo.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "49% center",
+            filter: "invert(1) contrast(1.3)",
+          }}
+        />
 
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
           <Typography

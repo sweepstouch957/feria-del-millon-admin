@@ -42,9 +42,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
-        <link rel="shortcut icon" href="/sweeps.ico" />
-      </head>
+      {/* El icono de la pestaña sale de app/icon.svg (el escudo de la feria).
+          Antes había un <link> a sweeps.ico, de otro proyecto, que lo tapaba. */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${jost.variable} antialiased`}
       >

@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Box, Tooltip } from "@mui/material";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -157,16 +156,20 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             color: "inherit",
           }}
         >
-          <Box sx={{ position: "relative", width: rail ? 36 : 44, height: rail ? 15 : 18 }}>
-            <Image
-              src="/fdm-logo.png"
-              alt="Feria del Millón"
-              fill
-              sizes="44px"
-              priority
-              style={{ objectFit: "contain", filter: "invert(1) contrast(1.3)" }}
-            />
-          </Box>
+          {/* El escudo viene en un lienzo muy ancho y en negro sobre blanco: se
+              recorta al centro con `cover` y se invierte para la tinta. */}
+          <Box
+            aria-label="Feria del Millón"
+            sx={{
+              width: rail ? 38 : 52,
+              aspectRatio: "2.46",
+              flexShrink: 0,
+              backgroundImage: "url(/fdm-logo.jpg)",
+              backgroundSize: "cover",
+              backgroundPosition: "49% center",
+              filter: "invert(1) contrast(1.3)",
+            }}
+          />
           {!rail && (
             <Box
               component="span"
