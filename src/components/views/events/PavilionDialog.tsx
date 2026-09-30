@@ -21,7 +21,7 @@ import { X } from "lucide-react";
 
 import type { PavilionDoc } from "@services/pavilions.service";
 import type { PavilionFormState } from "@hooks/events/usePavilionsManager";
-import PavilionArtistsManager from "./PavilionArtistsManager";
+import PavilionPeopleManager from "./PavilionPeopleManager";
 import StatusPill from "@components/ui/StatusPill";
 import { eyebrow } from "@/app/theme";
 
@@ -62,6 +62,7 @@ export default function PavilionDialog({
   if (!pavilionForm) return null;
 
   const artistCount = pavilion?.artistInfo?.length ?? 0;
+  const cashierCount = pavilion?.cashierInfo?.length ?? 0;
 
   return (
     <Dialog
@@ -98,6 +99,7 @@ export default function PavilionDialog({
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mt: 1.5 }}>
           <Tab label="Datos" />
           <Tab label={`Artistas${artistCount ? ` · ${artistCount}` : ""}`} />
+          <Tab label={`Cajeros${cashierCount ? ` · ${cashierCount}` : ""}`} />
         </Tabs>
       </DialogTitle>
 
@@ -194,7 +196,11 @@ export default function PavilionDialog({
           </Stack>
         ) : (
           <Box sx={{ pt: 1 }}>
-            <PavilionArtistsManager eventId={eventId} pavilion={pavilion} />
+            <PavilionPeopleManager
+              eventId={eventId}
+              pavilion={pavilion}
+              kind={tab === 1 ? "artists" : "cashiers"}
+            />
           </Box>
         )}
       </DialogContent>

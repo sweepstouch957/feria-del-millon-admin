@@ -58,7 +58,9 @@ export function usePavilionsManager(selectedEventId: string | null) {
     isFetching: fetchingPavilions,
   } = useQuery({
     queryKey: ["pavilions", selectedEventId],
-    queryFn: () => listPavilions(selectedEventId as string),
+    // El panel también administra los apagados: si no, el switch de "activo"
+    // hacía desaparecer la fila y no había cómo volver a encenderla.
+    queryFn: () => listPavilions(selectedEventId as string, true),
     enabled: !!selectedEventId,
   });
 
@@ -192,12 +194,23 @@ export function usePavilionsManager(selectedEventId: string | null) {
     {
       field: "artists",
       headerName: "Artistas",
-      width: 110,
+      width: 100,
       align: "right",
       headerAlign: "right",
       valueGetter: (params) => {
         const row = (params as any)?.row as PavilionDoc | undefined;
         return row?.artistInfo?.length ?? 0;
+      },
+    },
+    {
+      field: "cashiers",
+      headerName: "Cajeros",
+      width: 100,
+      align: "right",
+      headerAlign: "right",
+      valueGetter: (params) => {
+        const row = (params as any)?.row as PavilionDoc | undefined;
+        return row?.cashierInfo?.length ?? 0;
       },
     },
     {

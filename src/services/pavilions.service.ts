@@ -26,7 +26,10 @@ export interface PavilionDoc {
   active?: boolean;
   meta?: Record<string, any>;
   artists?: string[];
-  artistInfo?: ArtistInfo[]; // NUEVO
+  artistInfo?: ArtistInfo[];
+  /** Cajeros de obra del pabellón (cobran en el stand). */
+  cashiers?: string[];
+  cashierInfo?: ArtistInfo[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -57,9 +60,12 @@ const normalizeId = <T extends { id?: string; _id?: string }>(obj: T) => ({
 /* ========= Endpoints ========= */
 
 // GET /events/:eventId/pavilions
-export const listPavilions = async (eventId: string) => {
+/** `includeInactive` es para el panel: sin eso, apagar un pabellón lo saca de su propia tabla. */
+export const listPavilions = async (eventId: string, includeInactive = false) => {
   const { data } = await apiClient.get<PavilionDoc[]>(
-    `/event/events/${encodeURIComponent(eventId)}/pavilions`,
+    `/event/events/${encodeURIComponent(eventId)}/pavilions${
+      includeInactive ? "?includeInactive=1" : ""
+    }`,
     { withCredentials: true }
   );
   return data.map(normalizeId);
