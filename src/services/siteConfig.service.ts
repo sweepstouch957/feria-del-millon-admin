@@ -130,11 +130,12 @@ export const LINKTREE_DEFAULTS: LinktreeConfig = {
     { label: "Ganador", value: "1 propuesta" },
     { label: "Premio", value: "$5.000.000 COP" },
   ],
+  // El segundo botón de la página: sale en cuanto se sube el PDF acá.
   doc: {
     url: "",
-    title: "Términos y condiciones",
-    subtitle: "Bases completas de la convocatoria",
-    buttonLabel: "Abrir el PDF",
+    title: "PDF de inscripción",
+    subtitle: "Términos, condiciones y cómo participar",
+    buttonLabel: "Ver el PDF de inscripción",
   },
   links: [
     {
@@ -142,18 +143,6 @@ export const LINKTREE_DEFAULTS: LinktreeConfig = {
       description: "Formulario oficial · se envía una sola vez",
       href: "https://forms.gle/43f6rhdrgEj45hFh9",
       highlight: true,
-      visible: true,
-    },
-    {
-      label: "Convocatoria Feria del Millón 2026",
-      description: "Bases, fechas y requisitos de la feria",
-      href: "/convocatoria",
-      visible: true,
-    },
-    {
-      label: "Ver el catálogo",
-      description: "Obras de artistas emergentes desde $1.000.000",
-      href: "/catalogo",
       visible: true,
     },
   ],

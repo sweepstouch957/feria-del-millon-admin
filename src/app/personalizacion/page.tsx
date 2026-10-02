@@ -1107,7 +1107,8 @@ export default function PersonalizacionPage() {
           {/* Documento (PDF) */}
           <Box sx={{ p: 1.5, border: "1px solid", borderColor: "divider" }}>
             <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-              Documento: se muestra su primera página como portada
+              PDF de inscripción — es el segundo botón de la página, y abajo se
+              muestra su primera página como portada
             </Typography>
             <Stack spacing={1.5}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -1135,11 +1136,17 @@ export default function PersonalizacionPage() {
                       setLT((x) => ({ ...x, doc: { ...x.doc, url } }));
                       setToast({ open: true, msg: "PDF subido — recuerda guardar la tarjeta", sev: "success" });
                     } catch (err: any) {
+                      const code = err?.response?.data?.error;
                       setToast({
                         open: true,
-                        msg: err?.response?.data?.error === "file_too_large"
-                          ? "El PDF pasa de 15 MB"
-                          : "No se pudo subir el PDF",
+                        msg:
+                          code === "file_too_large"
+                            ? "El PDF pasa de 15 MB"
+                            : // El servicio de subidas viejo sólo acepta imágenes:
+                              // hasta que se redespliegue, el PDF se rechaza.
+                              code === "only_images_allowed" || code === "file_type_not_allowed"
+                              ? "El servicio de subidas todavía no acepta PDF: falta redesplegarlo. Mientras tanto, pega el enlace del PDF a mano."
+                              : "No se pudo subir el PDF",
                         sev: "error",
                       });
                     } finally {
