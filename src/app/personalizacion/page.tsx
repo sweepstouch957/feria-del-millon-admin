@@ -1107,8 +1107,7 @@ export default function PersonalizacionPage() {
           {/* Documento (PDF) */}
           <Box sx={{ p: 1.5, border: "1px solid", borderColor: "divider" }}>
             <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-              PDF de inscripción — es el segundo botón de la página, y abajo se
-              muestra su primera página como portada
+              PDF de inscripción — es el segundo botón de la página
             </Typography>
             <Stack spacing={1.5}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
