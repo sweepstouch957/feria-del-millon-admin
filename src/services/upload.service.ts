@@ -21,3 +21,9 @@ export const uploadCampaignImage = async (
 
   return response.data; // { url, public_id }
 };
+
+/** Mismo endpoint para documentos (PDF de bases, términos). El campo se llama
+ *  `image` porque así lo espera el servicio; Cloudinary guarda el PDF como
+ *  imagen y de ahí sale su portada. */
+export const uploadDocument = (file: File, folder = 'documentos') =>
+  uploadCampaignImage(file, folder);

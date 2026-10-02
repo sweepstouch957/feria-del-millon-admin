@@ -249,6 +249,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             <SectionTitle label="Contenido" rail={rail} />
             {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
             {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
+            {item("/qr", "Códigos QR", <QrCode {...ICON} />)}
 
             <SectionTitle label="Operación" rail={rail} />
             {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
@@ -284,6 +285,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             <SectionTitle label="Contenido" rail={rail} />
             {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
             {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
+            {item("/qr", "Códigos QR", <QrCode {...ICON} />)}
           </>
         )}
 

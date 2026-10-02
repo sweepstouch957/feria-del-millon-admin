@@ -1,18 +1,21 @@
 "use client";
 import * as React from "react";
+import NextLink from "next/link";
 import {
   Box, Card, CardContent, Stack, TextField, Typography, Button, Divider,
-  Snackbar, Alert, CircularProgress, IconButton, Tooltip, Switch,
+  Snackbar, Alert, CircularProgress, IconButton, Tooltip, Switch, FormControlLabel,
 } from "@mui/material";
 import {
   Save as SaveIcon, RotateCcw as ResetIcon, Palette as PaletteIcon,
   ChevronUp, ChevronDown, Eye, EyeOff, Plus, Trash2, Menu as MenuIcon,
+  ExternalLink as ExternalLinkIcon, QrCode as QrIcon,
 } from "lucide-react";
 import {
   getSiteConfig, updateSiteConfig, SITE_DEFAULTS, SECTION_LABELS,
-  type SiteConfig, type SectionKey,
+  type SiteConfig, type SectionKey, type LinktreeConfig,
 } from "@services/siteConfig.service";
-import { uploadCampaignImage } from "@services/upload.service";
+import { uploadCampaignImage, uploadDocument } from "@services/upload.service";
+import { SHOP_URL } from "@core/constants";
 import PageHeader from "@/components/ui/PageHeader";
 import { Upload as UploadIcon, X as XIcon } from "lucide-react";
 
@@ -197,6 +200,8 @@ export default function PersonalizacionPage() {
   const [uploadingImg, setUploadingImg] = React.useState<"" | "hero" | "logo">("");
   const heroFileRef = React.useRef<HTMLInputElement>(null);
   const logoFileRef = React.useRef<HTMLInputElement>(null);
+  const docFileRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingDoc, setUploadingDoc] = React.useState(false);
   const [toast, setToast] = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
   // Línea base: lo último confirmado por el servidor. Comparar contra esto es
   // lo que permite saber qué tarjeta tiene cambios sin guardar.
@@ -279,6 +284,10 @@ export default function PersonalizacionPage() {
   const setCP = (updater: (cp: CP) => CP) =>
     setL((l) => ({ ...l, convocatoriaPage: updater(l.convocatoriaPage) }));
 
+  // Página de enlaces (/links), la del QR
+  const setLT = (updater: (lt: LinktreeConfig) => LinktreeConfig) =>
+    setL((l) => ({ ...l, linktree: updater(l.linktree) }));
+
   /** Guarda SOLO los trozos indicados, sobre la última versión confirmada.
    *  Así "guardar esta tarjeta" guarda esa tarjeta y nada más: los cambios
    *  a medio hacer en otras quedan intactos y siguen marcados. */
@@ -310,7 +319,7 @@ export default function PersonalizacionPage() {
       ["content.hero"], ["landing.heroMeta"], ["landing.ticker", "landing.showTicker"],
       ["landing.about"], ["landing.techniqueItems"], ["landing.sedes"],
       ["landing.programs"], ["landing.convocatoria"], ["landing.convocatoriaPage"],
-      ["landing.newsletter"],
+      ["landing.newsletter"], ["landing.linktree"],
       ["landing.footer", "landing.priceLabel", "landing.showPrices"],
       ["content.featured"], ["content.techniques"], ["content.contact"], ["content.social"],
     ];
@@ -362,6 +371,7 @@ export default function PersonalizacionPage() {
   const { theme, content, sections, nav, landing } = cfg;
 
   const cp = landing.convocatoriaPage;
+  const lt = landing.linktree;
 
   return (
     <Box sx={{ maxWidth: 940, mx: "auto" }}>
@@ -985,6 +995,183 @@ export default function PersonalizacionPage() {
             <TextField size="small" label="TikTok" value={content.social.tiktok} onChange={(e) => setSocial("tiktok", e.target.value)} fullWidth placeholder="https://tiktok.com/@…" />
             <Box sx={{ flex: 1 }} />
           </Stack>
+        </Section>
+
+        {/* Página de enlaces (/links): la del QR */}
+        <Section
+          title="Página de enlaces (QR)"
+          hint="La página corta que abre el QR: feria-millon.immsai.com/links. Enlaces, cifras y el PDF de las bases."
+          paths={["landing.linktree"]}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5} flexWrap="wrap">
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={lt.enabled}
+                  onChange={(e) => setLT((x) => ({ ...x, enabled: e.target.checked }))}
+                />
+              }
+              label={lt.enabled ? "Página publicada" : "Página apagada (responde 404)"}
+            />
+            <Stack direction="row" gap={1}>
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                href={`${SHOP_URL}/links`}
+                target="_blank"
+                rel="noopener"
+                startIcon={<ExternalLinkIcon size={14} />}
+              >
+                Ver la página
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                component={NextLink}
+                href={`/qr?url=${encodeURIComponent(`${SHOP_URL}/links`)}`}
+                startIcon={<QrIcon size={14} />}
+              >
+                Generar su QR
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" label="Versalita de arriba" value={lt.badge} onChange={(e) => setLT((x) => ({ ...x, badge: e.target.value }))} fullWidth />
+            <TextField size="small" label="Título" value={lt.title} onChange={(e) => setLT((x) => ({ ...x, title: e.target.value }))} fullWidth />
+            <TextField size="small" label="Título en verde" value={lt.titleStrong} onChange={(e) => setLT((x) => ({ ...x, titleStrong: e.target.value }))} fullWidth />
+          </Stack>
+          <TextField size="small" label="Párrafo" value={lt.paragraph} onChange={(e) => setLT((x) => ({ ...x, paragraph: e.target.value }))} fullWidth multiline rows={2} />
+
+          {/* Cifras del afiche */}
+          <Box>
+            <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
+              Cifras (convocatoria, edad, premio…)
+            </Typography>
+            <Stack spacing={1}>
+              {lt.stats.map((s, i) => (
+                <Row
+                  key={i}
+                  onRemove={() => setLT((x) => ({ ...x, stats: x.stats.filter((_, idx) => idx !== i) }))}
+                >
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                    <TextField size="small" label="Rótulo" value={s.label} fullWidth
+                      onChange={(e) => setLT((x) => ({ ...x, stats: x.stats.map((it, idx) => (idx === i ? { ...it, label: e.target.value } : it)) }))} />
+                    <TextField size="small" label="Valor" value={s.value} fullWidth
+                      onChange={(e) => setLT((x) => ({ ...x, stats: x.stats.map((it, idx) => (idx === i ? { ...it, value: e.target.value } : it)) }))} />
+                  </Stack>
+                </Row>
+              ))}
+              <AddBtn onClick={() => setLT((x) => ({ ...x, stats: [...x.stats, { label: "", value: "" }] }))} />
+            </Stack>
+          </Box>
+
+          {/* Enlaces */}
+          <Box>
+            <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
+              Enlaces (el destacado va en verde)
+            </Typography>
+            <Stack spacing={1}>
+              {lt.links.map((l, i) => (
+                <Row
+                  key={i}
+                  onRemove={() => setLT((x) => ({ ...x, links: x.links.filter((_, idx) => idx !== i) }))}
+                >
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                    <TextField size="small" label="Texto" value={l.label} fullWidth
+                      onChange={(e) => setLT((x) => ({ ...x, links: x.links.map((it, idx) => (idx === i ? { ...it, label: e.target.value } : it)) }))} />
+                    <TextField size="small" label="Enlace" value={l.href} fullWidth placeholder="https://… o /catalogo"
+                      onChange={(e) => setLT((x) => ({ ...x, links: x.links.map((it, idx) => (idx === i ? { ...it, href: e.target.value } : it)) }))} />
+                  </Stack>
+                  <TextField size="small" label="Descripción" value={l.description ?? ""} fullWidth
+                    onChange={(e) => setLT((x) => ({ ...x, links: x.links.map((it, idx) => (idx === i ? { ...it, description: e.target.value } : it)) }))} />
+                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                    <FormControlLabel
+                      control={<Switch size="small" checked={l.visible}
+                        onChange={() => setLT((x) => ({ ...x, links: x.links.map((it, idx) => (idx === i ? { ...it, visible: !it.visible } : it)) }))} />}
+                      label="Visible"
+                    />
+                    <FormControlLabel
+                      control={<Switch size="small" checked={!!l.highlight}
+                        onChange={() => setLT((x) => ({ ...x, links: x.links.map((it, idx) => (idx === i ? { ...it, highlight: !it.highlight } : it)) }))} />}
+                      label="Destacado"
+                    />
+                  </Stack>
+                </Row>
+              ))}
+              <AddBtn onClick={() => setLT((x) => ({ ...x, links: [...x.links, { label: "", href: "", description: "", visible: true }] }))} />
+            </Stack>
+          </Box>
+
+          {/* Documento (PDF) */}
+          <Box sx={{ p: 1.5, border: "1px solid", borderColor: "divider" }}>
+            <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              Documento: se muestra su primera página como portada
+            </Typography>
+            <Stack spacing={1.5}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                <TextField size="small" label="Título" value={lt.doc.title} fullWidth
+                  onChange={(e) => setLT((x) => ({ ...x, doc: { ...x.doc, title: e.target.value } }))} />
+                <TextField size="small" label="Bajada" value={lt.doc.subtitle} fullWidth
+                  onChange={(e) => setLT((x) => ({ ...x, doc: { ...x.doc, subtitle: e.target.value } }))} />
+                <TextField size="small" label="Texto del botón" value={lt.doc.buttonLabel} fullWidth
+                  onChange={(e) => setLT((x) => ({ ...x, doc: { ...x.doc, buttonLabel: e.target.value } }))} />
+              </Stack>
+              <TextField size="small" label="Enlace del PDF" value={lt.doc.url} fullWidth placeholder="Sube el archivo o pega su enlace"
+                onChange={(e) => setLT((x) => ({ ...x, doc: { ...x.doc, url: e.target.value } }))} />
+              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                <input
+                  ref={docFileRef}
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingDoc(true);
+                    try {
+                      const { url } = await uploadDocument(file, "convocatorias");
+                      setLT((x) => ({ ...x, doc: { ...x.doc, url } }));
+                      setToast({ open: true, msg: "PDF subido — recuerda guardar la tarjeta", sev: "success" });
+                    } catch (err: any) {
+                      setToast({
+                        open: true,
+                        msg: err?.response?.data?.error === "file_too_large"
+                          ? "El PDF pasa de 15 MB"
+                          : "No se pudo subir el PDF",
+                        sev: "error",
+                      });
+                    } finally {
+                      setUploadingDoc(false);
+                      if (docFileRef.current) docFileRef.current.value = "";
+                    }
+                  }}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={uploadingDoc ? <CircularProgress size={13} /> : <UploadIcon size={14} />}
+                  disabled={uploadingDoc}
+                  onClick={() => docFileRef.current?.click()}
+                >
+                  {uploadingDoc ? "Subiendo…" : "Subir PDF"}
+                </Button>
+                {lt.doc.url && (
+                  <>
+                    <Button size="small" component="a" href={lt.doc.url} target="_blank" rel="noopener">
+                      Ver el actual
+                    </Button>
+                    <Button size="small" color="error" onClick={() => setLT((x) => ({ ...x, doc: { ...x.doc, url: "" } }))}>
+                      Quitar
+                    </Button>
+                  </>
+                )}
+              </Stack>
+            </Stack>
+          </Box>
+
+          <TextField size="small" label="Nota del pie" value={lt.note} onChange={(e) => setLT((x) => ({ ...x, note: e.target.value }))} fullWidth multiline rows={2} />
         </Section>
       </Stack>
       </PersoCtx.Provider>

@@ -39,6 +39,7 @@ export const ROUTES: Record<string, { crumb: string; title: string }> = {
   "/solicitudes": { crumb: "Comunidad", title: "Solicitudes" },
   "/personalizacion": { crumb: "Contenido", title: "Personalización" },
   "/comunicaciones": { crumb: "Contenido", title: "Comunicaciones" },
+  "/qr": { crumb: "Contenido", title: "Códigos QR" },
   "/events": { crumb: "Operación", title: "Ferias" },
   "/tickets": { crumb: "Boletos", title: "Ver boletos" },
   "/tickets/validator": { crumb: "Boletos", title: "Validador QR" },
