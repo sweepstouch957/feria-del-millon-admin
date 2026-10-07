@@ -22,6 +22,7 @@ import {
   UserPlus, Copy, KeyRound, FileSpreadsheet,
 } from "lucide-react";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
+import { inviteArtist } from "@services/applications.service";
 
 import { useUsers, useDebouncedValue } from "@/hooks/useAuth";
 import { useCities } from "@/hooks/useCities";
@@ -555,17 +556,25 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
   );
 }
 
-// ── CreateUserDialog (crear cajera / usuario con contraseña temporal) ─────────
+/* ── CreateUserDialog ────────────────────────────────────────────────────────
+   Dos cosas distintas con el mismo formulario:
+   · Equipo: cuenta con los roles que se marquen (cajera, taquilla, editor…).
+   · Artista invitado: la feria lo invita sin convocatoria. Además de la cuenta
+     se le crea su postulación YA ACEPTADA, que es lo que le permite aparecer en
+     el selector de artistas de un pabellón y cargar su inventario. */
+type NewUserKind = "team" | "artist";
+
 const EMPTY_NEW_USER: CreateUserPayload = { email: "", password: "", firstName: "", lastName: "", roles: { cajero: true } };
 function CreateUserDialog({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: () => void;
 }) {
+  const [kind,    setKind]    = React.useState<NewUserKind>("team");
   const [form,    setForm]    = React.useState<CreateUserPayload>(EMPTY_NEW_USER);
   const [saving,  setSaving]  = React.useState(false);
   const [created, setCreated] = React.useState<{ email: string; password: string } | null>(null);
   const [toast,   setToast]   = React.useState({ open: false, msg: "", sev: "success" as "success"|"error" });
 
-  React.useEffect(() => { if (open) { setForm(EMPTY_NEW_USER); setCreated(null); } }, [open]);
+  React.useEffect(() => { if (open) { setForm(EMPTY_NEW_USER); setCreated(null); setKind("team"); } }, [open]);
 
   const genPassword = () => {
     const rnd = () => Math.random().toString(36).slice(-4);
@@ -580,9 +589,26 @@ function CreateUserDialog({ open, onClose, onCreated }: {
     if (!canSave) return;
     setSaving(true);
     try {
-      await createUser({ ...form, email: form.email.trim() });
-      setCreated({ email: form.email.trim(), password: form.password });
-      setToast({ open: true, msg: "Cuenta creada", sev: "success" });
+      const email = form.email.trim();
+      if (kind === "artist") {
+        // La cuenta y su postulación aceptada se crean de una: si sólo se
+        // creara el usuario, el artista no saldría para asignarle pabellón.
+        const r = await inviteArtist({
+          email,
+          password: form.password,
+          firstName: form.firstName,
+          lastName: form.lastName,
+        });
+        setToast({
+          open: true,
+          msg: r.createdUser ? "Artista invitado y aceptado" : "Ya existía: queda aceptado",
+          sev: "success",
+        });
+      } else {
+        await createUser({ ...form, email });
+        setToast({ open: true, msg: "Cuenta creada", sev: "success" });
+      }
+      setCreated({ email, password: form.password });
       onCreated();
     } catch (e: any) {
       setToast({ open: true, msg: e?.response?.data?.error || e?.message || "Error al crear la cuenta", sev: "error" });
@@ -602,10 +628,12 @@ function CreateUserDialog({ open, onClose, onCreated }: {
         <Box sx={{ p: 3, pb: 1.5, bgcolor: S1 }}>
           <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.25}>
             <UserPlus size={20} color={G} />
-            <Typography sx={{ fontWeight: 500, fontSize: 18, color: "#EDEBE4", letterSpacing: -0.4 }}>Nueva cajera</Typography>
+            <Typography sx={{ fontWeight: 500, fontSize: 18, color: "#EDEBE4", letterSpacing: -0.4 }}>Nueva cuenta</Typography>
           </Stack>
           <Typography sx={{ fontSize: 12, color: TM, mt: 0.5 }}>
-            Crea la cuenta con una contraseña temporal y pásasela a la cajera para que inicie sesión.
+            {kind === "artist"
+              ? "El artista invitado no pasa por convocatoria: queda aceptado y se le puede asignar pabellón enseguida."
+              : "Se crea con una contraseña temporal; pásasela a la persona para que entre."}
           </Typography>
         </Box>
 
@@ -624,6 +652,32 @@ function CreateUserDialog({ open, onClose, onCreated }: {
             </Stack>
           ) : (
             <Stack spacing={2} sx={{ pt: 1 }}>
+              {/* Qué cuenta es: cambia a quién se crea y qué pasa después */}
+              <Box>
+                <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>
+                  Tipo de cuenta
+                </Typography>
+                <Stack direction="row" gap={0.75} flexWrap="wrap">
+                  {([
+                    { k: "team" as const, label: "Equipo de la feria" },
+                    { k: "artist" as const, label: "Artista invitado" },
+                  ]).map((o) => (
+                    <Chip
+                      key={o.k}
+                      label={o.label}
+                      size="small"
+                      onClick={() => setKind(o.k)}
+                      sx={{
+                        cursor: "pointer", fontWeight: 500, fontSize: 11,
+                        bgcolor: kind === o.k ? alpha(G, 0.15) : alpha("#fff", 0.03),
+                        color: kind === o.k ? G : TM,
+                        border: `1px solid ${kind === o.k ? alpha(G, 0.4) : BR}`,
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                 <TextField label="Nombre" size="small" fullWidth value={form.firstName ?? ""} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
                 <TextField label="Apellido" size="small" fullWidth value={form.lastName ?? ""} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
@@ -642,20 +696,35 @@ function CreateUserDialog({ open, onClose, onCreated }: {
                   ),
                 }}
               />
-              <Box>
-                <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>Roles</Typography>
-                <Stack direction="row" gap={0.75} flexWrap="wrap">
-                  {ROLES.map(r => (
-                    <Chip key={r.key} label={r.label} size="small" onClick={() => toggleRole(r.key)}
-                      sx={{
-                        cursor: "pointer", fontWeight: 500, fontSize: 11,
-                        bgcolor: form.roles?.[r.key] ? alpha(r.color, 0.15) : alpha("#fff", 0.03),
-                        color:   form.roles?.[r.key] ? r.color : TM,
-                        border: `1px solid ${form.roles?.[r.key] ? alpha(r.color, 0.4) : BR}`,
-                      }} />
-                  ))}
-                </Stack>
-              </Box>
+              {kind === "team" ? (
+                <Box>
+                  <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>Roles</Typography>
+                  <Stack direction="row" gap={0.75} flexWrap="wrap">
+                    {ROLES.map(r => (
+                      <Chip key={r.key} label={r.label} size="small" onClick={() => toggleRole(r.key)}
+                        sx={{
+                          cursor: "pointer", fontWeight: 500, fontSize: 11,
+                          bgcolor: form.roles?.[r.key] ? alpha(r.color, 0.15) : alpha("#fff", 0.03),
+                          color:   form.roles?.[r.key] ? r.color : TM,
+                          border: `1px solid ${form.roles?.[r.key] ? alpha(r.color, 0.4) : BR}`,
+                        }} />
+                    ))}
+                  </Stack>
+                </Box>
+              ) : (
+                <Box sx={{ p: 1.5, border: `1px solid ${alpha(G, 0.25)}`, bgcolor: alpha(G, 0.06) }}>
+                  <Typography sx={{ fontSize: 12, color: G, fontWeight: 500, mb: 0.5 }}>
+                    Qué pasa al invitarlo
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, color: TM, lineHeight: 1.6 }}>
+                    Se crea su cuenta con rol de artista y su postulación queda
+                    <strong style={{ color: "#EDEBE4" }}> aceptada</strong> sin pasar por
+                    convocatoria ni pagar inscripción. Aparece en Solicitudes como invitado y ya
+                    se le puede asignar pabellón; al asignarlo recibe el correo con el enlace
+                    para cargar su inventario.
+                  </Typography>
+                </Box>
+              )}
             </Stack>
           )}
         </DialogContent>
@@ -670,7 +739,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
               <Button onClick={handleCreate} disabled={!canSave}
                 startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <UserPlus size={15} />}
                 sx={{ bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2.5, "&:hover": { bgcolor: GD }, "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) } }}>
-                {saving ? "Creando…" : "Crear cajera"}
+                {saving ? "Creando…" : kind === "artist" ? "Invitar artista" : "Crear cuenta"}
               </Button>
             </>
           )}
@@ -869,7 +938,7 @@ export default function UsersPage() {
         description="Cuentas registradas, roles y permisos del panel."
         actions={[
           {
-            label: "Nueva cajera",
+            label: "Nueva cuenta",
             kind: "pri",
             icon: <UserPlus size={14} />,
             onClick: () => setCreateOpen(true),

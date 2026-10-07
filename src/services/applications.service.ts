@@ -17,6 +17,8 @@ export interface ArtistApplication {
   convocatoria: { _id: string; name: string; slug: string; fee: number; currency: string } | string;
   artist: { _id: string; firstName: string; lastName: string; email: string; mobile?: string; city?: string } | string;
   status: "pending_payment" | "draft" | "submitted" | "under_review" | "stand_by" | "revision_requested" | "accepted" | "rejected";
+  /** Invitado por la feria: entró sin convocatoria ni pago. */
+  invited?: boolean;
   paymentStatus: "pending" | "approved" | "rejected" | "cancelled";
   isPaid: boolean;
   paidAt?: string;
@@ -88,6 +90,30 @@ export const getApplicationStats = async (
     headers: ADMIN_HEADERS,
   });
   return data;
+};
+
+/** Artista invitado por la feria: se le crea la cuenta y su postulación ya
+ *  aceptada, sin pasar por convocatoria ni pagar inscripción. */
+export interface InviteArtistPayload {
+  email: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  mobile?: string;
+  city?: string;
+  convocatoria?: string;
+}
+
+export const inviteArtist = async (payload: InviteArtistPayload) => {
+  const { data } = await apiClient.post("/applications/applications/invite-artist", payload, {
+    headers: ADMIN_HEADERS,
+  });
+  return data as {
+    ok: boolean;
+    createdUser: boolean;
+    user: { id: string; email: string; firstName?: string; lastName?: string };
+    applicationId: string;
+  };
 };
 
 export const listApplications = async (params: ApplicationListParams = {}): Promise<ApplicationListResponse> => {

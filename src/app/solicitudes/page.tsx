@@ -1118,12 +1118,18 @@ export default function SolicitudesPage() {
     {
       field: "status", headerName: "Estado", width: 145,
       renderCell: (p) => (
-        <Chip
-          size="small"
-          label={STATUS_CONFIG[p.row?.status]?.label || p.row?.status}
-          color={STATUS_CONFIG[p.row?.status]?.color || "default"}
-          sx={{ fontWeight: 500, fontSize: 11 }}
-        />
+        <Stack direction="row" gap={0.5} alignItems="center">
+          <Chip
+            size="small"
+            label={STATUS_CONFIG[p.row?.status]?.label || p.row?.status}
+            color={STATUS_CONFIG[p.row?.status]?.color || "default"}
+            sx={{ fontWeight: 500, fontSize: 11 }}
+          />
+          {/* Invitado por la feria: no pasó por convocatoria ni pagó. */}
+          {p.row?.invited && (
+            <Chip size="small" variant="outlined" label="Invitado" sx={{ fontSize: 10 }} />
+          )}
+        </Stack>
       ),
     },
     {
