@@ -40,6 +40,7 @@ import {
   CalendarDays as EventIcon,
   Users as ArtistsIcon,
   Brush as ArtworksIcon,
+  UploadCloud as UploadCloudIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -52,6 +53,7 @@ import { formatCOP } from "@/utils/money";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
+import PublishArtworksDialog from "@components/views/events/PublishArtworksDialog";
 
 const formatPrice = (price?: number, currency = "COP") =>
   price == null ? "—" : formatCOP(price, { code: true, currency });
@@ -61,6 +63,7 @@ export default function ArtworksCursorPage() {
   const [event, setEvent] = useState<string>("");
   const [pavilion, setPavilion] = useState<string>("");
   const [technique, setTechnique] = useState<string>("");
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const eventsQuery = useEvents();
   const pavilionsQuery = usePavilions(event);
@@ -182,6 +185,16 @@ export default function ArtworksCursorPage() {
                   />
                 </Tooltip>
               )}
+              {selectedEvent && (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<UploadCloudIcon size={16} />}
+                  onClick={() => setPublishOpen(true)}
+                >
+                  Publicar obras
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon size={16} />}
@@ -299,10 +312,12 @@ export default function ArtworksCursorPage() {
               [art.artistInfo?.firstName, art.artistInfo?.lastName]
                 .filter(Boolean)
                 .join(" ") || undefined,
-            badge: (
+            badge: art.hiddenUntilEvent ? (
+              <Chip size="small" variant="outlined" color="warning" label="Sin publicar" />
+            ) : (
               <Chip
                 size="small"
-                label={art.status ?? "—"}
+                label={art.status === "published" ? "En el catálogo" : art.status ?? "—"}
                 color={art.status === "published" ? "success" : "default"}
               />
             ),
@@ -389,13 +404,17 @@ export default function ArtworksCursorPage() {
                     </TableCell>
                     <TableCell align="center">{art.stock ?? 0}</TableCell>
                     <TableCell>
-                      <Chip
-                        size="small"
-                        label={art.status ?? "—"}
-                        color={
-                          art.status === "published" ? "success" : "default"
-                        }
-                      />
+                      {/* Cargada pero fuera del catálogo hasta que se publique:
+                          es el estado normal de lo que sube un artista. */}
+                      {art.hiddenUntilEvent ? (
+                        <Chip size="small" variant="outlined" color="warning" label="Sin publicar" />
+                      ) : (
+                        <Chip
+                          size="small"
+                          label={art.status === "published" ? "En el catálogo" : art.status ?? "—"}
+                          color={art.status === "published" ? "success" : "default"}
+                        />
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="Ver público">
@@ -436,6 +455,14 @@ export default function ArtworksCursorPage() {
         </TableContainer>
         </ResponsiveRows>
       </Card>
+
+      <PublishArtworksDialog
+        open={publishOpen}
+        onClose={() => setPublishOpen(false)}
+        eventId={event}
+        eventName={selectedEvent?.name}
+        onDone={() => refetch()}
+      />
     </Box>
   );
 }

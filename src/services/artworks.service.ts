@@ -275,3 +275,39 @@ export const patchArtwork = async (
   );
   return { ok: data.ok, doc: normalizeId(data.doc) as ArtworkDoc };
 };
+
+/* ── Publicar en el catálogo ────────────────────────────────────────────────
+   Lo que sube un artista existe pero no sale al público hasta que se publica,
+   y eso casi nunca es "todo o nada": se abre un pabellón, un artista o la
+   feria completa. `dryRun` sólo cuenta, para avisar antes de tocar nada. */
+
+export interface PublishArtworksInput {
+  event: string;
+  scope: "all" | "pavilion" | "artist" | "ids";
+  pavilion?: string;
+  artist?: string;
+  ids?: string[];
+  /** false = volver a esconderlas. */
+  publish?: boolean;
+  dryRun?: boolean;
+}
+
+export interface PublishArtworksResult {
+  ok: boolean;
+  dryRun?: boolean;
+  /** Cuántas obras hace falta cambiar con ese alcance. */
+  matched: number;
+  modified: number;
+  published?: boolean;
+}
+
+export const publishArtworks = async (
+  input: PublishArtworksInput
+): Promise<PublishArtworksResult> => {
+  const { data } = await apiClient.patch<PublishArtworksResult>(
+    "/catalogs/artworks/publish",
+    input,
+    { withCredentials: true }
+  );
+  return data;
+};
