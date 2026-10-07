@@ -84,6 +84,9 @@ function Invitations({ eventId }: { eventId: string }) {
       { header: "Nombre", value: (t) => t.buyer?.name },
       { header: "Email", value: (t) => t.buyer?.email },
       { header: "Teléfono", value: (t) => t.buyer?.phone, text: true },
+      // Datos de la inscripción: los llena el invitado al confirmar.
+      { header: "Identificación", value: (t) => t.buyer?.documentNumber, text: true },
+      { header: "Dirección", value: (t) => t.buyer?.address },
       { header: "Acompañante", value: (t) => t.companionName },
       { header: "Categoría", value: (t) => t.inviteCategory },
       { header: "Personas", value: (t) => t.admits ?? 1 },
@@ -158,12 +161,13 @@ function Invitations({ eventId }: { eventId: string }) {
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
               <TableHead><TableRow>
-                <TableCell>Invitado</TableCell><TableCell>Categoría</TableCell><TableCell>Acompañante</TableCell>
+                <TableCell>Invitado</TableCell><TableCell>Categoría</TableCell>
+                <TableCell>Inscripción</TableCell><TableCell>Acompañante</TableCell>
                 <TableCell align="right">Personas</TableCell><TableCell>Estado</TableCell><TableCell />
               </TableRow></TableHead>
               <TableBody>
                 {list.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} align="center" sx={{ color: "text.secondary", py: 3 }}>Aún no hay invitaciones.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>Aún no hay invitaciones.</TableCell></TableRow>
                 ) : list.map((t) => (
                   <TableRow key={t.id} hover>
                     <TableCell>
@@ -171,6 +175,19 @@ function Invitations({ eventId }: { eventId: string }) {
                       <Typography variant="caption" color="text.secondary">{t.buyer?.email}</Typography>
                     </TableCell>
                     <TableCell>{t.inviteCategory || "—"}</TableCell>
+                    {/* Lo que llenó al confirmar: sin eso, todavía no se inscribió. */}
+                    <TableCell>
+                      {t.buyer?.documentNumber || t.buyer?.address ? (
+                        <>
+                          <Typography fontSize={13}>{t.buyer?.documentNumber || "—"}</Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ maxWidth: 220 }}>
+                            {t.buyer?.phone ? `${t.buyer.phone} · ` : ""}{t.buyer?.address || ""}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">Sin inscribir</Typography>
+                      )}
+                    </TableCell>
                     <TableCell>{t.companionName || "—"}</TableCell>
                     <TableCell align="right">{t.admits ?? 1}</TableCell>
                     <TableCell><StatusPill label={STATUS[t.status]?.label || t.status} tone={STATUS[t.status]?.tone || "mid"} /></TableCell>

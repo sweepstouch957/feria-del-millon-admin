@@ -32,6 +32,8 @@ export interface TicketBuyer {
   company?: string;
   nit?: string;
   documentNumber?: string;
+  /** La llena el invitado al inscribirse desde el enlace del correo. */
+  address?: string;
 }
 
 export interface Ticket {
