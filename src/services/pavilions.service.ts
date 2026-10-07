@@ -143,13 +143,14 @@ export interface UpdatePavilionArtistsPayload {
   mode?: "replace" | "merge"; // replace (default) | merge
 }
 
-// POST /events/:eventId/pavilions/:pavilionId/artists
+/** PATCH /event/events/:eventId/pavilions/:pavilionId/artists — el gateway sólo
+ *  registra PATCH para esta ruta; con POST responde 404 y el panel no guardaba. */
 export const updatePavilionArtists = async (
   eventId: string,
   pavilionId: string,
   payload: UpdatePavilionArtistsPayload
 ) => {
-  const { data } = await apiClient.post(
+  const { data } = await apiClient.patch(
     `/event/events/${encodeURIComponent(
       eventId
     )}/pavilions/${encodeURIComponent(pavilionId)}/artists`,

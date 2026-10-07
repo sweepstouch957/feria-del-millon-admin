@@ -564,7 +564,8 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
      el selector de artistas de un pabellón y cargar su inventario. */
 type NewUserKind = "team" | "artist";
 
-const EMPTY_NEW_USER: CreateUserPayload = { email: "", password: "", firstName: "", lastName: "", roles: { cajero: true } };
+// Sin rol por defecto: quien crea la cuenta decide qué es, no el formulario.
+const EMPTY_NEW_USER: CreateUserPayload = { email: "", password: "", firstName: "", lastName: "", roles: {} };
 function CreateUserDialog({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: () => void;
 }) {

@@ -7,13 +7,14 @@ import {
   Button,
   Checkbox,
   Chip,
-  CircularProgress,
   InputAdornment,
+  LinearProgress,
+  Skeleton,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { Search } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { PavilionDoc } from "@services/pavilions.service";
@@ -62,6 +63,45 @@ function uniq(people: Person[]): Person[] {
   for (const p of people) if (p.email && !seen.has(key(p.email))) seen.set(key(p.email), p);
   return [...seen.values()];
 }
+
+/* "Revisa la conexión" cuando el servidor sí contestó no ayuda a nadie: con el
+   status y el mensaje del backend uno sabe si es permiso, datos o caída. */
+const errorText = (e: unknown) => {
+  const res = (e as any)?.response;
+  if (!res) return "No hay conexión con el servidor. Revisa tu red e intenta de nuevo.";
+  const msg = res.data?.error || res.data?.message;
+  if (res.status === 401) return "Tu sesión expiró. Vuelve a entrar y guarda otra vez.";
+  if (res.status === 403) return "Tu cuenta no tiene permiso para asignar gente a los pabellones.";
+  if (res.status === 404) return "Esa feria o ese pabellón ya no existe. Recarga la página.";
+  return msg ? String(msg) : `El servidor respondió ${res.status}. Intenta de nuevo.`;
+};
+
+/** Filas fantasma mientras carga la gente: la lista no salta al llegar. */
+const RowSkeletons = () => (
+  <>
+    {[0, 1, 2, 3, 4].map((i) => (
+      <Stack
+        key={i}
+        direction="row"
+        alignItems="center"
+        gap={1}
+        sx={{
+          px: 1.5,
+          py: 1,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          "&:last-of-type": { borderBottom: 0 },
+        }}
+      >
+        <Skeleton variant="rectangular" width={18} height={18} sx={{ ml: 0.5, flexShrink: 0 }} />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Skeleton variant="text" width={`${56 - i * 7}%`} sx={{ fontSize: 14 }} />
+          <Skeleton variant="text" width={`${42 - i * 5}%`} sx={{ fontSize: 11 }} />
+        </Box>
+      </Stack>
+    ))}
+  </>
+);
 
 export default function PavilionPeopleManager({
   eventId,
@@ -173,6 +213,7 @@ export default function PavilionPeopleManager({
       return next;
     });
     setDirty(true);
+    save.reset(); // al volver a tocar la lista, el aviso anterior ya no aplica
   };
 
   const save = useMutation({
@@ -231,11 +272,23 @@ export default function PavilionPeopleManager({
 
       {failed && <Alert severity="error">No se pudo cargar la lista. Recarga la página.</Alert>}
 
-      <Box sx={{ border: "1px solid", borderColor: "divider", maxHeight: 340, overflowY: "auto" }}>
+      <Box
+        sx={{
+          border: "1px solid",
+          borderColor: "divider",
+          maxHeight: 340,
+          overflowY: "auto",
+          position: "relative",
+        }}
+      >
+        {/* Buscar en todas las cuentas tarda: una barra fina arriba en lugar de
+            vaciar la lista que ya está en pantalla. */}
+        {openSearch.isFetching && (
+          <LinearProgress sx={{ position: "sticky", top: 0, height: 2, zIndex: 1 }} />
+        )}
+
         {loading ? (
-          <Box sx={{ display: "grid", placeItems: "center", py: 4 }}>
-            <CircularProgress size={22} />
-          </Box>
+          <RowSkeletons />
         ) : !shown.length ? (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2.5 }}>
             {needle ? "Nadie coincide con esa búsqueda." : copy.empty}
@@ -288,14 +341,24 @@ export default function PavilionPeopleManager({
       )}
 
       {save.isError && (
-        <Alert severity="error">No se pudo guardar. Revisa la conexión e intenta de nuevo.</Alert>
+        <Alert severity="error" onClose={() => save.reset()}>
+          {errorText(save.error)}
+        </Alert>
       )}
 
       <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5} flexWrap="wrap">
-        <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>
-          {selected.size} {selected.size === 1 ? "seleccionada" : "seleccionadas"}
-          {dirty ? " · sin guardar" : ""}
-        </Typography>
+        <Stack direction="row" alignItems="center" gap={0.75}>
+          <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>
+            {selected.size} {selected.size === 1 ? "seleccionada" : "seleccionadas"}
+            {dirty ? " · sin guardar" : ""}
+          </Typography>
+          {!dirty && save.isSuccess && (
+            <Stack direction="row" alignItems="center" gap={0.5} sx={{ color: "secondary.main" }}>
+              <Check size={13} strokeWidth={2.2} />
+              <Typography sx={{ ...eyebrow, fontSize: 9.5 }}>Guardado</Typography>
+            </Stack>
+          )}
+        </Stack>
         <Button
           variant="contained"
           color="secondary"
