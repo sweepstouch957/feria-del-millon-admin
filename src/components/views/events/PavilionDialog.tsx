@@ -34,6 +34,8 @@ type Props = {
   onClose: () => void;
   eventId: string;
   pavilion: PavilionDoc | null;
+  /** Los demás pabellones de la feria: avisan si alguien ya está en otro. */
+  pavilions?: PavilionDoc[];
   pavilionForm: PavilionFormState | null;
   onFieldChange: (field: keyof PavilionFormState, value: string | number | boolean) => void;
   onToggleActive: (active: boolean) => void;
@@ -46,6 +48,7 @@ export default function PavilionDialog({
   onClose,
   eventId,
   pavilion,
+  pavilions = [],
   pavilionForm,
   onFieldChange,
   onToggleActive,
@@ -199,6 +202,7 @@ export default function PavilionDialog({
             <PavilionPeopleManager
               eventId={eventId}
               pavilion={pavilion}
+              pavilions={pavilions}
               kind={tab === 1 ? "artists" : "cashiers"}
             />
           </Box>

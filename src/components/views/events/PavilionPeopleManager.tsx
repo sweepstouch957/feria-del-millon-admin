@@ -1,168 +1,199 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as React from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  CircularProgress,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { PavilionDoc } from "@services/pavilions.service";
 import { updatePavilionArtists, updatePavilionCashiers } from "@services/pavilions.service";
-import { searchUsersByRole } from "@services/users.service";
-import type { RoleKey, UserDTO } from "@services/user.service";
+import { listApplications } from "@services/applications.service";
+import { listUsers } from "@services/user.service";
+import { eyebrow } from "@/app/theme";
 
-/* La gente de un pabellón. Artistas y cajeros se gestionan igual —buscar por
-   nombre o correo, agregar, quitar, guardar— así que es un solo componente con
-   el rol como parámetro; lo único que cambia es a qué endpoint le pega y los
-   textos. Asignar a alguien le da el rol en su cuenta (lo hace el backend). */
+/* La gente de un pabellón: artistas y cajeros.
+
+   Es una LISTA con casillas, no un autocompletar: la pregunta no es "cómo se
+   llama", sino "a quién de estos le toca este pabellón". Los artistas salen de
+   las solicitudes ACEPTADAS —son los únicos que exponen— y los cajeros de las
+   cuentas con ese rol, con búsqueda abierta para nombrar a alguien que todavía
+   no lo es (el rol se lo pone el backend al guardar). */
 
 type Kind = "artists" | "cashiers";
 
-type Person = {
-  id: string;
-  label: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  disabled?: boolean;
-};
+type Person = { id: string; name: string; email: string };
 
-const COPY: Record<
-  Kind,
-  {
-    /** Rol que se le pone a la cuenta al asignarla (lo hace el backend). */
-    role: RoleKey;
-    /** Con qué rol se filtra la búsqueda; sin él busca en todas las cuentas. */
-    searchRole?: RoleKey;
-    title: string;
-    hint: string;
-    empty: string;
-    add: string;
-    save: string;
-  }
-> = {
+const COPY: Record<Kind, { title: string; hint: string; empty: string; save: string; search: string }> = {
   artists: {
-    role: "artista",
-    // Son cientos: sin filtrar por rol, la búsqueda devuelve cualquier cuenta.
-    searchRole: "artista",
     title: "Artistas del pabellón",
-    hint: "Quienes exponen en este pabellón. Al guardar, cada cuenta queda con el rol de artista.",
-    empty: "Este pabellón todavía no tiene artistas asignados.",
-    add: "Agregar artistas",
+    hint: "Salen de las solicitudes aceptadas de la convocatoria. Marca quiénes exponen en este pabellón.",
+    empty: "Todavía no hay solicitudes aceptadas. Acepta artistas en Solicitudes y aparecen acá.",
     save: "Guardar artistas",
+    search: "Buscar por nombre o correo",
   },
   cashiers: {
-    role: "cajero",
     title: "Cajeros del pabellón",
-    hint: "Quienes cobran las obras en este stand. Al guardar, cada cuenta queda con el rol de cajero. Para validar entradas en la puerta hace falta el rol de taquilla, que es aparte.",
-    empty: "Este pabellón todavía no tiene cajeros asignados.",
-    add: "Agregar cajeros",
+    hint: "Quienes cobran las obras en este stand. Al guardar, cada cuenta queda con el rol de cajero. Validar entradas en la puerta es el rol de taquilla, que es aparte.",
+    empty: "No hay cuentas con rol de cajero. Busca a la persona por su correo y márcala: al guardar queda como cajera.",
     save: "Guardar cajeros",
+    search: "Buscar cualquier cuenta por nombre o correo",
   },
 };
 
-const nameOf = (u: { firstName?: string; lastName?: string; email: string }) =>
-  `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email;
+const fullName = (u: { firstName?: string; lastName?: string; email?: string }) =>
+  `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email || "Sin nombre";
+
+const key = (email: string) => (email || "").trim().toLowerCase();
+
+/** Dedup por correo conservando el orden. */
+function uniq(people: Person[]): Person[] {
+  const seen = new Map<string, Person>();
+  for (const p of people) if (p.email && !seen.has(key(p.email))) seen.set(key(p.email), p);
+  return [...seen.values()];
+}
 
 export default function PavilionPeopleManager({
   eventId,
   pavilion,
   kind,
+  pavilions = [],
 }: {
   eventId: string;
   pavilion: PavilionDoc | null;
   kind: Kind;
+  /** Todos los pabellones de la feria: avisa si alguien ya está en otro. */
+  pavilions?: PavilionDoc[];
 }) {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const copy = COPY[kind];
 
-  const [search, setSearch] = useState("");
-  const [options, setOptions] = useState<Person[]>([]);
-  const [loadingOptions, setLoadingOptions] = useState(false);
-  const [assigned, setAssigned] = useState<Person[]>([]);
-  const [dirty, setDirty] = useState(false);
+  const [q, setQ] = React.useState("");
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [dirty, setDirty] = React.useState(false);
 
-  const current = kind === "artists" ? pavilion?.artistInfo : pavilion?.cashierInfo;
+  const assignedInfo = kind === "artists" ? pavilion?.artistInfo : pavilion?.cashierInfo;
 
-  // La lista del pabellón es la fuente: al cambiar de pabellón (o al refrescar
-  // tras guardar) se reescribe lo que se está editando.
-  useEffect(() => {
-    setAssigned(
-      (current ?? []).map((a) => ({
-        id: a.id,
-        email: a.email,
-        firstName: a.firstName,
-        lastName: a.lastName,
-        label: nameOf(a),
-      }))
-    );
+  // La lista guardada es la fuente: al cambiar de pabellón (o tras guardar) se
+  // reescribe la selección.
+  React.useEffect(() => {
+    setSelected(new Set((assignedInfo ?? []).map((a) => key(a.email))));
     setDirty(false);
-  }, [current, pavilion?.id]);
+    setQ("");
+  }, [assignedInfo, pavilion?.id, kind]);
 
-  const assignedEmails = useMemo(
-    () => new Set(assigned.map((a) => (a.email || "").toLowerCase()).filter(Boolean)),
-    [assigned]
-  );
+  // ── De dónde sale la gente ────────────────────────────────────────────────
+  const accepted = useQuery({
+    queryKey: ["accepted-artists"],
+    queryFn: () => listApplications({ status: "accepted", limit: 200 }),
+    enabled: kind === "artists",
+    staleTime: 60_000,
+  });
 
-  // Búsqueda en el backend por nombre o correo, con el rol que corresponda.
-  useEffect(() => {
-    if (!search.trim()) {
-      setOptions([]);
-      return;
+  const cashierAccounts = useQuery({
+    queryKey: ["users-by-role", "cajero"],
+    queryFn: () => listUsers({ roles: ["cajero"], limit: 200, sortBy: "firstName", sortDir: "asc" }),
+    enabled: kind === "cashiers",
+    staleTime: 60_000,
+  });
+
+  // Búsqueda abierta: para los cajeros hay que poder nombrar a quien todavía no
+  // tiene el rol, así que se busca en todas las cuentas.
+  const needle = q.trim();
+  const openSearch = useQuery({
+    queryKey: ["users-search", needle],
+    queryFn: () => listUsers({ q: needle, limit: 30, sortBy: "firstName", sortDir: "asc" }),
+    enabled: kind === "cashiers" && needle.length >= 2,
+    staleTime: 30_000,
+  });
+
+  const base: Person[] = React.useMemo(() => {
+    // Quien ya está asignado va siempre en la lista, aunque no esté en el origen
+    // (por ejemplo un artista que se aceptó en otra edición).
+    const current: Person[] = (assignedInfo ?? []).map((a) => ({
+      id: a.id,
+      name: fullName(a),
+      email: a.email,
+    }));
+
+    if (kind === "artists") {
+      const fromApps: Person[] = (accepted.data?.docs ?? [])
+        .map((d) => d.artist)
+        .filter((a): a is Exclude<typeof a, string> => !!a && typeof a === "object")
+        .map((a) => ({ id: a._id, name: fullName(a), email: a.email }));
+      return uniq([...current, ...fromApps]);
     }
-    let active = true;
-    const run = async () => {
-      try {
-        setLoadingOptions(true);
-        const users: UserDTO[] = await searchUsersByRole(copy.searchRole, search, 20);
-        if (!active) return;
-        setOptions(
-          users.map((u) => ({
-            id: u.id,
-            email: u.email,
-            firstName: u.firstName,
-            lastName: u.lastName,
-            label: nameOf(u),
-            disabled: assignedEmails.has((u.email || "").toLowerCase()),
-          }))
-        );
-      } catch (err) {
-        console.error("Error buscando cuentas", err);
-      } finally {
-        if (active) setLoadingOptions(false);
-      }
-    };
-    run();
-    return () => {
-      active = false;
-    };
-  }, [search, assignedEmails, copy.role]);
+
+    const fromRole: Person[] = (cashierAccounts.data?.users ?? []).map((u) => ({
+      id: u.id,
+      name: fullName(u),
+      email: u.email,
+    }));
+    const fromSearch: Person[] = (openSearch.data?.users ?? []).map((u) => ({
+      id: u.id,
+      name: fullName(u),
+      email: u.email,
+    }));
+    return uniq([...current, ...fromRole, ...fromSearch]);
+  }, [assignedInfo, kind, accepted.data, cashierAccounts.data, openSearch.data]);
+
+  const shown = React.useMemo(() => {
+    const n = needle.toLowerCase();
+    if (!n) return base;
+    return base.filter((p) => `${p.name} ${p.email}`.toLowerCase().includes(n));
+  }, [base, needle]);
+
+  /** En qué otro pabellón está esta persona (para no asignarla dos veces). */
+  const elsewhere = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of pavilions) {
+      if (p.id === pavilion?.id) continue;
+      const list = kind === "artists" ? p.artistInfo : p.cashierInfo;
+      for (const a of list ?? []) map[key(a.email)] = p.name;
+    }
+    return map;
+  }, [pavilions, pavilion?.id, kind]);
+
+  const toggle = (email: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const k = key(email);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+    setDirty(true);
+  };
 
   const save = useMutation({
     mutationKey: ["pavilion", kind, pavilion?.id],
     mutationFn: async () => {
       if (!pavilion) throw new Error("No hay pabellón seleccionado");
-      const emails = assigned.map((a) => a.email);
+      // Se mandan los correos tal como vinieron (el backend los normaliza).
+      const emails = base.filter((p) => selected.has(key(p.email))).map((p) => p.email);
       return kind === "artists"
         ? updatePavilionArtists(eventId, pavilion.id, { artistEmails: emails, mode: "replace" })
         : updatePavilionCashiers(eventId, pavilion.id, emails, "replace");
     },
     onSuccess: async () => {
       setDirty(false);
-      await queryClient.invalidateQueries({ queryKey: ["pavilions", eventId] });
+      await qc.invalidateQueries({ queryKey: ["pavilions", eventId] });
     },
   });
 
-  const add = (_: unknown, picked: Person[]) => {
-    const byEmail = new Map(assigned.map((a) => [a.email.toLowerCase(), a]));
-    for (const p of picked) byEmail.set(p.email.toLowerCase(), p);
-    setAssigned([...byEmail.values()]);
-    setDirty(true);
-  };
-
-  const remove = (email: string) => {
-    setAssigned((prev) => prev.filter((a) => a.email.toLowerCase() !== email.toLowerCase()));
-    setDirty(true);
-  };
+  const loading =
+    (kind === "artists" && accepted.isLoading) || (kind === "cashiers" && cashierAccounts.isLoading);
+  const failed = kind === "artists" ? accepted.isError : cashierAccounts.isError;
 
   if (!pavilion) {
     return (
@@ -181,58 +212,90 @@ export default function PavilionPeopleManager({
         </Typography>
       </Box>
 
-      {assigned.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {copy.empty}
-        </Typography>
-      ) : (
-        <Stack direction="row" gap={0.75} flexWrap="wrap">
-          {assigned.map((p) => (
-            <Chip
-              key={p.email}
-              label={p.label}
-              title={p.email}
-              size="small"
-              variant="outlined"
-              onDelete={() => remove(p.email)}
-            />
-          ))}
-        </Stack>
-      )}
-
-      <Autocomplete
-        multiple
-        value={[]}
-        options={options}
-        loading={loadingOptions}
-        onChange={add}
-        onInputChange={(_, value) => setSearch(value)}
-        getOptionLabel={(o) => `${o.label} (${o.email})`}
-        getOptionDisabled={(o) => !!o.disabled}
-        filterSelectedOptions
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label={copy.add}
-            size="small"
-            placeholder="Nombre o correo…"
-          />
-        )}
-        noOptionsText={
-          search.trim() ? "Nadie coincide con esa búsqueda" : "Escribe para buscar…"
-        }
+      <TextField
+        size="small"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={copy.search}
+        fullWidth
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={15} strokeWidth={1.4} />
+              </InputAdornment>
+            ),
+          },
+        }}
       />
+
+      {failed && <Alert severity="error">No se pudo cargar la lista. Recarga la página.</Alert>}
+
+      <Box sx={{ border: "1px solid", borderColor: "divider", maxHeight: 340, overflowY: "auto" }}>
+        {loading ? (
+          <Box sx={{ display: "grid", placeItems: "center", py: 4 }}>
+            <CircularProgress size={22} />
+          </Box>
+        ) : !shown.length ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2.5 }}>
+            {needle ? "Nadie coincide con esa búsqueda." : copy.empty}
+          </Typography>
+        ) : (
+          shown.map((p) => {
+            const k = key(p.email);
+            const on = selected.has(k);
+            const other = elsewhere[k];
+            return (
+              <Stack
+                key={k}
+                direction="row"
+                alignItems="center"
+                gap={1}
+                onClick={() => toggle(p.email)}
+                sx={{
+                  px: 1.5,
+                  py: 1,
+                  cursor: "pointer",
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                  "&:last-of-type": { borderBottom: 0 },
+                  backgroundColor: on ? "action.selected" : "transparent",
+                  "&:hover": { backgroundColor: "action.hover" },
+                }}
+              >
+                <Checkbox checked={on} size="small" sx={{ p: 0.5 }} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" noWrap>
+                    {p.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap display="block">
+                    {p.email}
+                  </Typography>
+                </Box>
+                {other && !on ? (
+                  <Chip size="small" variant="outlined" label={`Ya en ${other}`} />
+                ) : null}
+              </Stack>
+            );
+          })
+        )}
+      </Box>
+
+      {kind === "cashiers" && needle.length === 1 && (
+        <Typography variant="caption" color="text.secondary">
+          Escribe dos letras o más para buscar en todas las cuentas.
+        </Typography>
+      )}
 
       {save.isError && (
         <Alert severity="error">No se pudo guardar. Revisa la conexión e intenta de nuevo.</Alert>
       )}
 
-      <Stack direction="row" justifyContent="flex-end" alignItems="center" gap={1.5}>
-        {dirty && (
-          <Typography variant="caption" color="text.secondary">
-            Hay cambios sin guardar
-          </Typography>
-        )}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5} flexWrap="wrap">
+        <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>
+          {selected.size} {selected.size === 1 ? "seleccionada" : "seleccionadas"}
+          {dirty ? " · sin guardar" : ""}
+        </Typography>
         <Button
           variant="contained"
           color="secondary"

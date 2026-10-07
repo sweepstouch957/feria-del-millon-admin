@@ -222,6 +222,7 @@ export default function EventDetailPage() {
         onClose={() => setPavilionOpen(false)}
         eventId={eventId}
         pavilion={selectedPavilion ?? null}
+        pavilions={pavilions}
         pavilionForm={pavilionForm}
         onFieldChange={handlePavilionFieldChange}
         onToggleActive={handleTogglePavilionActive}
