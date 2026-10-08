@@ -23,6 +23,8 @@ export interface EventDoc {
   termsUrl?: string;
   websiteUrl?: string;
   currency?: string; // default "COP"
+  /** Ventana en la que los artistas cargan su inventario. */
+  inventoryOpenAt?: string; // ISO
   inventoryCloseAt?: string; // ISO
   minArtworkPrice?: number;
   maxArtworkPrice?: number;
@@ -44,7 +46,9 @@ export interface CreateEventDto {
   termsUrl?: string;
   websiteUrl?: string;
   currency?: string;
-  inventoryCloseAt?: string;
+  /** `null` borra la fecha: es "sin límite por ese lado". */
+  inventoryOpenAt?: string | null;
+  inventoryCloseAt?: string | null;
   minArtworkPrice?: number;
   maxArtworkPrice?: number;
   artistIds?: string[];

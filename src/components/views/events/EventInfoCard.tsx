@@ -15,13 +15,12 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
-import {
-  DatePicker,
-} from "@mui/x-date-pickers";
-import type { Dayjs } from "dayjs";
+import { DatePicker } from "@mui/x-date-pickers";
+import dayjs, { type Dayjs } from "dayjs";
 
 import type { EventDoc } from "@services/events.service";
 import type { EventFormState } from "@hooks/events/useEventsManager";
+import DateRangeField from "@components/common/DateRangeField";
 
 type Props = {
   events: EventDoc[];
@@ -170,6 +169,37 @@ export default function EventInfoCard({
                 }}
               />
             </Stack>
+
+            {/* Entre estas dos fechas los artistas pueden cargar y editar sus
+                obras. Fuera de la ventana, el servidor les contesta con la
+                fecha, no con un "no se puede". */}
+            <DateRangeField
+              label="Carga de inventario"
+              hint="Cuándo pueden los artistas cargar y editar sus obras. Si lo dejas vacío, pueden hacerlo en cualquier momento."
+              emptyText="Sin fechas: la carga está abierta siempre."
+              value={{ from: eventForm.inventoryOpenAt, to: eventForm.inventoryCloseAt }}
+              onChange={(next) => {
+                onFieldChange("inventoryOpenAt", next.from);
+                onFieldChange("inventoryCloseAt", next.to);
+              }}
+              shortcuts={[
+                {
+                  label: "Hasta que empiece la feria",
+                  value: () => ({
+                    from: eventForm.inventoryOpenAt,
+                    to: eventForm.validFrom ? eventForm.validFrom.subtract(1, "day") : null,
+                  }),
+                },
+                {
+                  label: "Próximos 30 días",
+                  value: () => ({ from: dayjs(), to: dayjs().add(30, "day") }),
+                },
+                {
+                  label: "Abrir ahora",
+                  value: () => ({ from: dayjs(), to: eventForm.inventoryCloseAt }),
+                },
+              ]}
+            />
 
             <Stack direction="row" flexWrap="wrap" spacing={2}>
               <TextField

@@ -23,6 +23,9 @@ export type EventFormState = {
   status: EventStatus;
   validFrom: Dayjs | null;
   validTo: Dayjs | null;
+  /** Ventana de carga de inventario; cada punta puede quedar vacía. */
+  inventoryOpenAt: Dayjs | null;
+  inventoryCloseAt: Dayjs | null;
   minArtworkPrice?: number;
   maxArtworkPrice?: number;
   currency?: string;
@@ -35,6 +38,8 @@ const toEventFormState = (event: EventDoc): EventFormState => ({
   status: event.status,
   validFrom: event.validFrom ? dayjs(event.validFrom) : null,
   validTo: event.validTo ? dayjs(event.validTo) : null,
+  inventoryOpenAt: event.inventoryOpenAt ? dayjs(event.inventoryOpenAt) : null,
+  inventoryCloseAt: event.inventoryCloseAt ? dayjs(event.inventoryCloseAt) : null,
   minArtworkPrice: event.minArtworkPrice,
   maxArtworkPrice: event.maxArtworkPrice,
   currency: event.currency ?? "COP",
@@ -124,6 +129,15 @@ export function useEventsManager(initialEventId?: string | null) {
       status: eventForm.status,
       validFrom: eventForm.validFrom?.toISOString(),
       validTo: eventForm.validTo?.toISOString(),
+      // La carga abre a primera hora del día elegido y cierra al final del
+      // último: nadie piensa "hasta las 00:00 del 20", piensa "hasta el 20".
+      // `null` borra la fecha, que para el backend es "sin límite por ese lado".
+      inventoryOpenAt: eventForm.inventoryOpenAt
+        ? eventForm.inventoryOpenAt.startOf("day").toISOString()
+        : null,
+      inventoryCloseAt: eventForm.inventoryCloseAt
+        ? eventForm.inventoryCloseAt.endOf("day").toISOString()
+        : null,
       minArtworkPrice: eventForm.minArtworkPrice,
       maxArtworkPrice: eventForm.maxArtworkPrice,
       currency: eventForm.currency,
