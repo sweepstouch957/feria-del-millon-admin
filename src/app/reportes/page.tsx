@@ -59,7 +59,7 @@ export default function ReportesPage() {
 
   const convQ = useQuery({
     queryKey: ["convocatorias"],
-    queryFn: getConvocatorias,
+    queryFn: () => getConvocatorias(),
     staleTime: 5 * 60_000,
   });
 

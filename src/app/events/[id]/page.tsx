@@ -16,6 +16,7 @@ import {
   CreatePavilionDialog,
 } from "@components/views/events/CreateDialogs";
 import CreateConvocatoriaDialog from "@components/views/events/CreateConvocatoriaDialog";
+import ConvocatoriasCard from "@components/views/events/ConvocatoriasCard";
 import PavilionSalesCard from "@components/views/events/PavilionSalesCard";
 import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
 import PavilionDialog from "@components/views/events/PavilionDialog";
@@ -208,6 +209,11 @@ export default function EventDetailPage() {
               handleSelectPavilion(id);
               setPavilionOpen(true);
             }}
+          />
+
+          <ConvocatoriasCard
+            eventId={eventId}
+            onCreate={() => setNewConvocatoriaOpen(true)}
           />
 
           <PavilionSalesCard

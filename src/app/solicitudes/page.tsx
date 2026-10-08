@@ -904,7 +904,7 @@ export default function SolicitudesPage() {
   // el filtro las necesita desde el arranque.
   const { data: convOptions = [] } = useQuery({
     queryKey: ["convocatorias"],
-    queryFn: getConvocatorias,
+    queryFn: () => getConvocatorias(),
     staleTime: 5 * 60_000,
   });
   const [filterPaid, setFilterPaid] = React.useState("");

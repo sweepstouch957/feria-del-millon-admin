@@ -166,8 +166,10 @@ export interface ConvocatoriaRequirements {
 }
 
 // GET /event/convocatorias
-export const getConvocatorias = async (): Promise<Convocatoria[]> => {
-  const { data } = await apiClient.get<Convocatoria[]>("/event/convocatorias", {
+/** `eventId` acota a las de una feria; sin él vienen todas las ediciones. */
+export const getConvocatorias = async (eventId?: string): Promise<Convocatoria[]> => {
+  const qs = eventId ? `?event=${encodeURIComponent(eventId)}` : "";
+  const { data } = await apiClient.get<Convocatoria[]>(`/event/convocatorias${qs}`, {
     withCredentials: true,
   });
   return (data || []).map(normalizeId);
