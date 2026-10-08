@@ -103,10 +103,15 @@ export default function ConvocatoriaDialog({
   open,
   onClose,
   convocatoria,
+  siblings,
+  onPick,
 }: {
   open: boolean;
   onClose: () => void;
   convocatoria: Convocatoria | null;
+  /** Si se abre sin una feria de contexto (Solicitudes), se puede elegir cuál. */
+  siblings?: Convocatoria[];
+  onPick?: (c: Convocatoria) => void;
 }) {
   const qc = useQueryClient();
   const [form, setForm] = React.useState<Form | null>(null);
@@ -181,6 +186,27 @@ export default function ConvocatoriaDialog({
             <Alert severity="error">
               {(save.error as any)?.response?.data?.error || "No se pudo guardar."}
             </Alert>
+          )}
+
+          {siblings && siblings.length > 1 && onPick && (
+            <TextField
+              select
+              size="small"
+              label="Convocatoria"
+              value={convocatoria._id}
+              onChange={(e) => {
+                const next = siblings.find((c) => c._id === e.target.value);
+                if (next) onPick(next);
+              }}
+              fullWidth
+              helperText="Hay varias ediciones: elige cuál estás configurando."
+            >
+              {siblings.map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
           )}
 
           {/* ── Estado ─────────────────────────────────────────────────── */}

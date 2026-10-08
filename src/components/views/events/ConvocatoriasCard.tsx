@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { getConvocatorias, type Convocatoria } from "@services/events.service";
+import { getApplicationStats } from "@services/applications.service";
 import StatusPill from "@components/ui/StatusPill";
 import { eyebrow } from "@/app/theme";
 import ConvocatoriaDialog from "./ConvocatoriaDialog";
@@ -55,6 +56,34 @@ const money = (n?: number, currency = "COP") =>
   typeof n === "number"
     ? new Intl.NumberFormat("es-CO", { style: "currency", currency, maximumFractionDigits: 0 }).format(n)
     : "—";
+
+/** Cuántas postulaciones recibió esta convocatoria, y cuántas se aceptaron.
+ *  Es el número por el que se entra a mirar una convocatoria pasada. */
+function Solicitudes({ convocatoriaId }: { convocatoriaId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["application-stats", convocatoriaId],
+    queryFn: () => getApplicationStats(convocatoriaId),
+    staleTime: 60_000,
+  });
+
+  return (
+    <Box sx={{ flex: "0 1 130px" }}>
+      <Typography sx={{ ...eyebrow, fontSize: 9, color: "text.secondary" }}>Solicitudes</Typography>
+      {isLoading ? (
+        <Skeleton variant="text" width={54} sx={{ fontSize: 14 }} />
+      ) : (
+        <Typography variant="body2" sx={{ fontVariantNumeric: "tabular-nums" }}>
+          {data?.total ?? 0}
+          {data?.byStatus?.accepted ? (
+            <Typography component="span" variant="caption" color="text.secondary">
+              {" "}· {data.byStatus.accepted} aceptadas
+            </Typography>
+          ) : null}
+        </Typography>
+      )}
+    </Box>
+  );
+}
 
 export default function ConvocatoriasCard({
   eventId,
@@ -140,11 +169,17 @@ export default function ConvocatoriasCard({
                   </Typography>
                 </Box>
 
-                <Box sx={{ flex: "0 1 110px" }}>
+                <Solicitudes convocatoriaId={c._id} />
+
+                {/* "Obras" solo decía 3 y se leía como el total de solicitudes:
+                    es el tope por artista, no un conteo. */}
+                <Box sx={{ flex: "0 1 130px" }}>
                   <Typography sx={{ ...eyebrow, fontSize: 9, color: "text.secondary" }}>
-                    Obras
+                    Tope por artista
                   </Typography>
-                  <Typography variant="body2">{c.maxArtworksPerArtist ?? "—"}</Typography>
+                  <Typography variant="body2">
+                    {c.maxArtworksPerArtist ? `${c.maxArtworksPerArtist} obras` : "—"}
+                  </Typography>
                 </Box>
 
                 <StatusPill label={LABEL[c.status] ?? c.status} tone={TONE[c.status] ?? "mid"} />
