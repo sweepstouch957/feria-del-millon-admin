@@ -38,10 +38,10 @@ type Person = { id: string; name: string; email: string };
 const COPY: Record<Kind, { title: string; hint: string; empty: string; save: string; search: string }> = {
   artists: {
     title: "Artistas del pabellón",
-    hint: "Salen de las solicitudes aceptadas de la convocatoria. Marca quiénes exponen en este pabellón.",
-    empty: "Todavía no hay solicitudes aceptadas. Acepta artistas en Solicitudes y aparecen acá.",
+    hint: "Arriba salen las solicitudes aceptadas; para sumar a cualquier otra cuenta (aunque su solicitud se haya rechazado), búscala por nombre o correo.",
+    empty: "Todavía no hay solicitudes aceptadas. Busca a la persona por su correo y márcala.",
     save: "Guardar artistas",
-    search: "Buscar por nombre o correo",
+    search: "Buscar cualquier cuenta por nombre o correo",
   },
   cashiers: {
     title: "Cajeros del pabellón",
@@ -147,15 +147,21 @@ export default function PavilionPeopleManager({
     staleTime: 60_000,
   });
 
-  // Búsqueda abierta: para los cajeros hay que poder nombrar a quien todavía no
-  // tiene el rol, así que se busca en todas las cuentas.
+  // Búsqueda abierta en todas las cuentas: el cajero que todavía no tiene el
+  // rol, o el artista que no pasó por convocatoria (o quedó rechazado) y igual
+  // expone. El backend acepta cualquier cuenta.
   const needle = q.trim();
   const openSearch = useQuery({
     queryKey: ["users-search", needle],
     queryFn: () => listUsers({ q: needle, limit: 30, sortBy: "firstName", sortDir: "asc" }),
-    enabled: kind === "cashiers" && needle.length >= 2,
+    enabled: needle.length >= 2,
     staleTime: 30_000,
   });
+
+  // Quien se marca desde la búsqueda se recuerda aunque se borre el texto: si
+  // no, al limpiar el buscador desaparecía de `base` y no se guardaba.
+  const [picked, setPicked] = React.useState<Person[]>([]);
+  React.useEffect(() => setPicked([]), [pavilion?.id, kind]);
 
   const base: Person[] = React.useMemo(() => {
     // Quien ya está asignado va siempre en la lista, aunque no esté en el origen
@@ -166,12 +172,18 @@ export default function PavilionPeopleManager({
       email: a.email,
     }));
 
+    const fromSearch: Person[] = (openSearch.data?.users ?? []).map((u) => ({
+      id: u.id,
+      name: fullName(u),
+      email: u.email,
+    }));
+
     if (kind === "artists") {
       const fromApps: Person[] = (accepted.data?.docs ?? [])
         .map((d) => d.artist)
         .filter((a): a is Exclude<typeof a, string> => !!a && typeof a === "object")
         .map((a) => ({ id: a._id, name: fullName(a), email: a.email }));
-      return uniq([...current, ...fromApps]);
+      return uniq([...current, ...picked, ...fromApps, ...fromSearch]);
     }
 
     const fromRole: Person[] = (cashierAccounts.data?.users ?? []).map((u) => ({
@@ -179,13 +191,8 @@ export default function PavilionPeopleManager({
       name: fullName(u),
       email: u.email,
     }));
-    const fromSearch: Person[] = (openSearch.data?.users ?? []).map((u) => ({
-      id: u.id,
-      name: fullName(u),
-      email: u.email,
-    }));
-    return uniq([...current, ...fromRole, ...fromSearch]);
-  }, [assignedInfo, kind, accepted.data, cashierAccounts.data, openSearch.data]);
+    return uniq([...current, ...picked, ...fromRole, ...fromSearch]);
+  }, [assignedInfo, kind, picked, accepted.data, cashierAccounts.data, openSearch.data]);
 
   const shown = React.useMemo(() => {
     const n = needle.toLowerCase();
@@ -204,7 +211,9 @@ export default function PavilionPeopleManager({
     return map;
   }, [pavilions, pavilion?.id, kind]);
 
-  const toggle = (email: string) => {
+  const toggle = (person: Person) => {
+    const { email } = person;
+    setPicked((prev) => uniq([...prev, person]));
     setSelected((prev) => {
       const next = new Set(prev);
       const k = key(email);
@@ -304,7 +313,7 @@ export default function PavilionPeopleManager({
                 direction="row"
                 alignItems="center"
                 gap={1}
-                onClick={() => toggle(p.email)}
+                onClick={() => toggle(p)}
                 sx={{
                   px: 1.5,
                   py: 1,
@@ -334,7 +343,7 @@ export default function PavilionPeopleManager({
         )}
       </Box>
 
-      {kind === "cashiers" && needle.length === 1 && (
+      {needle.length === 1 && (
         <Typography variant="caption" color="text.secondary">
           Escribe dos letras o más para buscar en todas las cuentas.
         </Typography>

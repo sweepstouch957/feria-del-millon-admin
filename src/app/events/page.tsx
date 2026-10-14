@@ -205,7 +205,9 @@ export default function EventsListPage() {
 
               {rows.map(({ event, pavilions, loadingPavilions }) => {
                 const artistCount =
-                  pavilions?.reduce((acc, p) => acc + (p.artistInfo?.length ?? 0), 0) ?? null;
+                  pavilions
+                    ? new Set(pavilions.flatMap((p) => (p.artistInfo ?? []).map((a) => String(a.id)))).size
+                    : null;
 
                 return (
                   <TableRow

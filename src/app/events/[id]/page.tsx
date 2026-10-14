@@ -97,7 +97,11 @@ export default function EventDetailPage() {
   const [pavilionOpen, setPavilionOpen] = React.useState(false);
 
   const notFound = !loadingEvents && events.length > 0 && !selectedEvent;
-  const artistCount = pavilions.reduce((acc, p) => acc + (p.artistInfo?.length ?? 0), 0);
+  // Personas distintas: sumar por pabellón contaba dos veces a quien expone en dos.
+  const countPeople = (pick: (p: (typeof pavilions)[number]) => { id: string }[] | undefined) =>
+    new Set(pavilions.flatMap((p) => (pick(p) ?? []).map((a) => String(a.id)))).size;
+  const artistCount = countPeople((p) => p.artistInfo);
+  const cashierCount = countPeople((p) => p.cashierInfo);
 
   if (notFound) {
     return (
@@ -165,6 +169,7 @@ export default function EventDetailPage() {
           { label: "Fin", value: fmtDate(selectedEvent?.validTo) },
           { label: "Pabellones", value: loadingPavilions ? "…" : pavilions.length },
           { label: "Artistas asignados", value: loadingPavilions ? "…" : artistCount },
+          { label: "Cajeros asignados", value: loadingPavilions ? "…" : cashierCount },
           {
             label: "Precio de obra",
             value: priceRange(
