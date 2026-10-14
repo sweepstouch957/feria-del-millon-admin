@@ -57,10 +57,13 @@ const FormSchema = z.object({
     .transform((v) =>
       typeof v === "number" && !Number.isNaN(v) ? v : undefined
     ),
-  stock: z
-    .union([z.coerce.number().int().min(0), z.nan()])
-    .optional()
-    .transform((v) => (Number.isNaN(v) ? undefined : v)),
+  // Obligatorio: vacío se iba como 1 y las obras con edición quedaban con una
+  // sola unidad a la venta. El vacío llega como "" → 0 → falla el min.
+  stock: z.coerce
+    .number({ error: "Indica cuántas reproducciones hay" })
+    .int("Debe ser un número entero")
+    .min(1, "Indica cuántas reproducciones hay (1 si es pieza única)")
+    .max(15, "Máximo 15 por obra"), // mismo tope que MAX_COPIES del ecommerce
   dimensions: z.string().optional(),
   technique: z.string().min(1, "Selecciona una técnica"),
   pavilion: z.string().optional(),
@@ -360,10 +363,14 @@ export default function CreateEditArtworkModal({
               {...register("year")}
             />
             <TextField
-              label="Stock"
+              label="Reproducciones (stock)"
               size="small"
               type="number"
+              required
               fullWidth
+              inputProps={{ min: 1, max: 15, step: 1 }}
+              error={!!errors.stock}
+              helperText={errors.stock?.message ?? "Cuántas copias hay a la venta. 1 si es pieza única."}
               {...register("stock")}
             />
 

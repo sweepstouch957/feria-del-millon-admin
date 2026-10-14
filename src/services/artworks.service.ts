@@ -161,6 +161,9 @@ export type PatchArtworkDto = Partial<{
   contactPhone: string;
   meta: any;
   tagId: string;
+  /** Devuelta al artista para una edición aunque la carga haya cerrado. */
+  editUnlocked: boolean;
+  editNote: string;
 }>;
 
 /* ───────────────────────── Helpers ───────────────────────── */

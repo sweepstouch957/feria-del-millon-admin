@@ -41,7 +41,9 @@ import {
   Users as ArtistsIcon,
   Brush as ArtworksIcon,
   UploadCloud as UploadCloudIcon,
+  PencilLine as ReturnIcon,
 } from "lucide-react";
+import { patchArtwork } from "@services/artworks.service";
 import Link from "next/link";
 import { useState } from "react";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
@@ -112,6 +114,32 @@ export default function ArtworksCursorPage() {
       await eventsQuery.refetch?.();
     } finally {
       setRevealBusy(false);
+    }
+  };
+
+  // Devolver una obra al artista: puede editarla UNA vez aunque la carga haya
+  // cerrado (p. ej. subió una serie con stock 1). Al guardar él, se vuelve a cerrar.
+  // ponytail: window.prompt para la nota; diálogo propio si hace falta más que un texto.
+  const [returningId, setReturningId] = useState<string | null>(null);
+  const toggleReturn = async (art: any) => {
+    const unlock = !art.editUnlocked;
+    let editNote = "";
+    if (unlock) {
+      const note = window.prompt(
+        `Devolver “${art.title}” al artista para que la corrija.\n¿Qué tiene que revisar? (opcional)`,
+        "Revisa el número de reproducciones (stock)."
+      );
+      if (note === null) return; // canceló
+      editNote = note.trim();
+    }
+    setReturningId(String(art.id));
+    try {
+      await patchArtwork(String(art.id), { editUnlocked: unlock, editNote });
+      await refetch();
+    } catch (e: any) {
+      window.alert(e?.response?.data?.error || "No se pudo cambiar. Intenta de nuevo.");
+    } finally {
+      setReturningId(null);
     }
   };
 
@@ -415,8 +443,29 @@ export default function ArtworksCursorPage() {
                           color={art.status === "published" ? "success" : "default"}
                         />
                       )}
+                      {art.editUnlocked && (
+                        <Chip size="small" color="warning" label="En edición" sx={{ ml: 0.5 }} />
+                      )}
                     </TableCell>
                     <TableCell align="right">
+                      <Tooltip
+                        title={
+                          art.editUnlocked
+                            ? `Devuelta al artista${art.editNote ? `: ${art.editNote}` : ""}. Clic para cancelar.`
+                            : "Devolver al artista para que la edite (aunque la carga esté cerrada)"
+                        }
+                      >
+                        <span>
+                          <IconButton
+                            size="small"
+                            color={art.editUnlocked ? "warning" : "default"}
+                            disabled={returningId === String(art.id)}
+                            onClick={() => toggleReturn(art)}
+                          >
+                            <ReturnIcon size={18} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                       <Tooltip title="Ver público">
                         <IconButton
                           size="small"
