@@ -34,6 +34,14 @@ export interface TicketBuyer {
   documentNumber?: string;
   /** La llena el invitado al inscribirse desde el enlace del correo. */
   address?: string;
+  firstName?: string;
+  lastName?: string;
+  documentType?: string;
+  country?: string;
+  city?: string;
+  position?: string;
+  corporateEmail?: string;
+  dataConsentAt?: string;
 }
 
 export interface Ticket {
@@ -51,6 +59,8 @@ export interface Ticket {
   admits?: number;
   inviteCategory?: string;
   companionName?: string;
+  inviteImage?: string;
+  whatsappSentAt?: string;
   paymentMethod?: string;
   qrToken?: string; // presente al comprar
   shortCode?: string; // humano-legible
@@ -343,6 +353,10 @@ export interface CreateInvitationsInput {
   admits?: number;
   category?: string;
   invitees: { name: string; email: string }[];
+  /** Imagen de cabecera del correo (URL https ya subida). */
+  image?: string;
+  /** Cuerpo del correo; párrafos separados por línea en blanco. Vacío = el de siempre. */
+  message?: string;
 }
 
 /** POST /ticket/tickets/invitations — crea y envía el correo con botón de confirmación. */

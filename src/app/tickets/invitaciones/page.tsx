@@ -5,7 +5,8 @@ import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, FormControlLabel, Checkbox, Chip,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, IconButton, Tooltip,
 } from "@mui/material";
-import { Send, UserPlus } from "lucide-react";
+import { ImagePlus, Send, UserPlus, X } from "lucide-react";
+import { uploadCampaignImage } from "@services/upload.service";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
@@ -15,6 +16,14 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { createInvitations, getTickets, getTicketDays, resendInvitation, type Ticket } from "@services/ticket.service";
 import { listUsers } from "@services/user.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
+
+/* El texto del correo (mismo que DEFAULT_INVITE_MESSAGE de tickets-svc). Va a
+   la vista para poder ajustarlo por envío; el saludo con el nombre lo pone el
+   correo solo. Párrafos separados por una línea en blanco. */
+const DEFAULT_MESSAGE = [
+  "La Feria del Millón tiene el gusto de invitarle a su 14.ª edición, que se realizará del 5 al 8 de noviembre de 2026 en el Antiguo Carulla Calle 100 Bogotá – Cl. 98 #17-60, con inauguración el 5 de noviembre.",
+  "Confirme su asistencia y reciba su pase de acceso digital con código QR válido para el acceso a la Feria del Millón, a través de la línea oficial de WhatsApp: +57 3007485406",
+].join("\n\n");
 
 const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Aliado", "Artista", "Mentor", "Curador"];
 
@@ -54,7 +63,23 @@ function Invitations({ eventId }: { eventId: string }) {
   const [date, setDate] = React.useState("");
   const [allDays, setAllDays] = React.useState(false);
   const [admits, setAdmits] = React.useState(2);
+  const [message, setMessage] = React.useState(DEFAULT_MESSAGE);
+  const [image, setImage] = React.useState("");
+  const [uploading, setUploading] = React.useState(false);
   const invitees = parseInvitees(text);
+
+  const onPickImage = async (file?: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const r = await uploadCampaignImage(file, "invitaciones");
+      setImage(r.url);
+    } catch {
+      toast.error("No se pudo subir la imagen.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // ponytail: primeras 200 invitaciones (tope del backend); paginar con nextCursor si pasan de eso.
   const { data: list = [], isFetching } = useQuery({
@@ -63,7 +88,12 @@ function Invitations({ eventId }: { eventId: string }) {
   });
 
   const send = useMutation({
-    mutationFn: () => createInvitations({ eventId, invitees, category, admits, allDays, date: allDays ? undefined : date || undefined }),
+    mutationFn: () =>
+      createInvitations({
+        eventId, invitees, category, admits, allDays, date: allDays ? undefined : date || undefined,
+        image: image || undefined,
+        message: message.trim() && message.trim() !== DEFAULT_MESSAGE ? message.trim() : undefined,
+      }),
     onSuccess: (r) => {
       toast.success(`${r.created} invitaciones enviadas${r.skipped.length ? ` · ${r.skipped.length} omitidas (ya invitadas o inválidas)` : ""}`);
       setText("");
@@ -85,8 +115,16 @@ function Invitations({ eventId }: { eventId: string }) {
       { header: "Email", value: (t) => t.buyer?.email },
       { header: "Teléfono", value: (t) => t.buyer?.phone, text: true },
       // Datos de la inscripción: los llena el invitado al confirmar.
+      { header: "Tipo doc.", value: (t) => t.buyer?.documentType },
       { header: "Identificación", value: (t) => t.buyer?.documentNumber, text: true },
+      { header: "País", value: (t) => t.buyer?.country },
+      { header: "Ciudad", value: (t) => t.buyer?.city },
       { header: "Dirección", value: (t) => t.buyer?.address },
+      { header: "Compañía", value: (t) => t.buyer?.company },
+      { header: "Cargo", value: (t) => t.buyer?.position },
+      { header: "Correo institucional", value: (t) => t.buyer?.corporateEmail },
+      { header: "Aceptó datos", value: (t) => (t.buyer?.dataConsentAt ? "Sí" : "") },
+      { header: "WhatsApp enviado", value: (t) => (t.whatsappSentAt ? "Sí" : "") },
       { header: "Acompañante", value: (t) => t.companionName },
       { header: "Categoría", value: (t) => t.inviteCategory },
       { header: "Personas", value: (t) => t.admits ?? 1 },
@@ -125,6 +163,33 @@ function Invitations({ eventId }: { eventId: string }) {
             value={text} onChange={(e) => setText(e.target.value)}
             helperText={`${invitees.length} invitado(s) · ${invitees.filter((i) => !i.email).length} sin correo válido`}
           />
+          {/* El correo: imagen de cabecera (como el de ARTBO) y el texto. */}
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="flex-start">
+            <Box sx={{ width: { xs: "100%", md: 220 }, flexShrink: 0 }}>
+              {image ? (
+                <Box sx={{ position: "relative" }}>
+                  <Box component="img" src={image} alt="Imagen del correo" sx={{ width: "100%", display: "block", border: "1px solid", borderColor: "divider" }} />
+                  <IconButton size="small" onClick={() => setImage("")} sx={{ position: "absolute", top: 4, right: 4, bgcolor: "background.paper" }}>
+                    <X size={14} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Button component="label" variant="outlined" fullWidth startIcon={<ImagePlus size={16} />} disabled={uploading}
+                  sx={{ textTransform: "none", height: 120, borderStyle: "dashed" }}>
+                  {uploading ? "Subiendo…" : "Imagen del correo"}
+                  <input hidden type="file" accept="image/*" onChange={(e) => onPickImage(e.target.files?.[0])} />
+                </Button>
+              )}
+              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                Va arriba, como la de ARTBO. Horizontal o cuadrada.
+              </Typography>
+            </Box>
+            <TextField
+              multiline minRows={5} size="small" fullWidth label="Texto del correo"
+              value={message} onChange={(e) => setMessage(e.target.value)}
+              helperText="El saludo “Apreciado(a) Nombre:” y el botón Confirmar asistencia los pone el correo. Separe párrafos con una línea en blanco."
+            />
+          </Stack>
           <Stack direction="row" flexWrap="wrap" gap={1}>
             {(["vip", "mentor", "curador", "asistente"] as const).map((r) => (
               <Button key={r} size="small" variant="text" startIcon={<UserPlus size={14} />} onClick={() => importRole(r)} sx={{ textTransform: "none" }}>
@@ -181,7 +246,8 @@ function Invitations({ eventId }: { eventId: string }) {
                         <>
                           <Typography fontSize={13}>{t.buyer?.documentNumber || "—"}</Typography>
                           <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ maxWidth: 220 }}>
-                            {t.buyer?.phone ? `${t.buyer.phone} · ` : ""}{t.buyer?.address || ""}
+                            {t.buyer?.phone ? `${t.buyer.phone}${t.whatsappSentAt ? " (WhatsApp ✓)" : ""} · ` : ""}
+                            {[t.buyer?.city, t.buyer?.company].filter(Boolean).join(" · ") || t.buyer?.address || ""}
                           </Typography>
                         </>
                       ) : (
