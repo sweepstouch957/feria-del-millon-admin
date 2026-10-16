@@ -23,6 +23,7 @@ const AUDIENCES: { key: string; label: string }[] = [
   { key: "vip", label: "VIP" },
   { key: "mentor", label: "Mentores" },
   { key: "asistente", label: "Asistentes" },
+  { key: "comprador", label: "Compradores" },
   { key: "curador", label: "Curadores" },
   { key: "artista", label: "Artistas" },
   { key: "staff", label: "Staff" },

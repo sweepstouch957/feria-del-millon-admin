@@ -17,6 +17,7 @@ export interface Roles {
   asistente?: boolean;
   vip?: boolean;
   mentor?: boolean;
+  comprador?: boolean;
 }
 
 export interface AuthUser {

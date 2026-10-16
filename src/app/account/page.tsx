@@ -39,6 +39,7 @@ const ROLES: { key: keyof RolesMap; label: string; color: string }[] = [
   { key: "asistente", label: "Asistente", color: "#7A8A99" },
   { key: "vip",       label: "VIP",       color: "#B8963E" },
   { key: "mentor",    label: "Mentor",    color: "#5E8C8C" },
+  { key: "comprador", label: "Comprador", color: "#7A6A55" },
 ];
 
 const DOC_TYPES = ["CC", "NIT", "CE", "PP", "OTRO", "INE"];

@@ -53,6 +53,7 @@ const ROLES: { key: keyof RolesMap; label: string; desc: string; color: string }
   { key: "asistente", label: "Asistente", desc: "Categoría de contacto",        color: "#7A8A99" },
   { key: "vip",       label: "VIP",       desc: "Invitado VIP (contacto)",      color: "#B8963E" },
   { key: "mentor",    label: "Mentor",    desc: "Mentor (contacto)",            color: "#5E8C8C" },
+  { key: "comprador", label: "Comprador", desc: "Compró obra (2025 en adelante)", color: "#7A6A55" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

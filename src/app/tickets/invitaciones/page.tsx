@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { createInvitations, getTickets, getTicketDays, resendInvitation, type Ticket } from "@services/ticket.service";
 import { listUsers } from "@services/user.service";
+import { listCustomers } from "@services/orders.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
 
 /* El texto del correo (mismo que DEFAULT_INVITE_MESSAGE de tickets-svc). Va a
@@ -25,10 +26,20 @@ const DEFAULT_MESSAGE = [
   "Confirme su asistencia y reciba su pase de acceso digital con código QR válido para el acceso a la Feria del Millón, a través de la línea oficial de WhatsApp: +57 3007485406",
 ].join("\n\n");
 
-const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Aliado", "Artista", "Mentor", "Curador"];
+const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Comprador", "Aliado", "Artista", "Mentor", "Curador", "Asistente"];
+
+type Base = "vip" | "mentor" | "curador" | "asistente" | "comprador";
+const BASES: { key: Base; label: string }[] = [
+  { key: "vip", label: "VIP" },
+  { key: "mentor", label: "Mentores" },
+  { key: "curador", label: "Curadores" },
+  { key: "asistente", label: "Asistentes" },
+  { key: "comprador", label: "Compradores" },
+];
 
 const STATUS: Record<string, { label: string; tone: PillTone }> = {
   invited: { label: "Pendiente", tone: "warn" },
+  declined: { label: "Declinó", tone: "mid" },
   sold: { label: "Confirmada", tone: "mid" },
   checked_in: { label: "Asistió", tone: "ok" },
   canceled: { label: "Anulada", tone: "mid" },
@@ -66,6 +77,7 @@ function Invitations({ eventId }: { eventId: string }) {
   const [message, setMessage] = React.useState(DEFAULT_MESSAGE);
   const [image, setImage] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
+  const [deadline, setDeadline] = React.useState("");
   const invitees = parseInvitees(text);
 
   const onPickImage = async (file?: File) => {
@@ -93,6 +105,7 @@ function Invitations({ eventId }: { eventId: string }) {
         eventId, invitees, category, admits, allDays, date: allDays ? undefined : date || undefined,
         image: image || undefined,
         message: message.trim() && message.trim() !== DEFAULT_MESSAGE ? message.trim() : undefined,
+        deadline: deadline || undefined,
       }),
     onSuccess: (r) => {
       toast.success(`${r.created} invitaciones enviadas${r.skipped.length ? ` · ${r.skipped.length} omitidas (ya invitadas o inválidas)` : ""}`);
@@ -102,17 +115,32 @@ function Invitations({ eventId }: { eventId: string }) {
     onError: () => toast.error("No se pudieron crear las invitaciones."),
   });
 
-  const importRole = async (role: "vip" | "mentor" | "curador" | "asistente") => {
+  const importRole = async (role: Base) => {
     const { users } = await listUsers({ roles: [role], limit: 200 });
     const lines = users.map((u: any) => `${[u.firstName, u.lastName].filter(Boolean).join(" ")}, ${u.email}`);
-    setText((t) => [t.trim(), ...lines].filter(Boolean).join("\n"));
-    toast.message(`${lines.length} contactos con rol ${role} agregados`);
+    // Compradores: también la base de quienes pagaron obra (compran sin cuenta).
+    // El histórico 2025 no está en el sistema: se pega del Excel en la caja.
+    if (role === "comprador") {
+      const customers = await listCustomers().catch(() => []);
+      lines.push(...customers.map((c) => `${c.name || c.email.split("@")[0]}, ${c.email}`));
+    }
+    const seen = new Set(parseInvitees(text).map((i) => i.email.toLowerCase()));
+    const fresh = lines.filter((l) => {
+      const e = parseInvitees(l)[0]?.email.toLowerCase();
+      return e && !seen.has(e) && (seen.add(e), true);
+    });
+    setText((t) => [t.trim(), ...fresh].filter(Boolean).join("\n"));
+    toast.message(`${fresh.length} contactos de ${BASES.find((b) => b.key === role)?.label} agregados`);
   };
+
+  const hosts = list.filter((t) => !t.inviteParent);
 
   const exportCsv = () =>
     downloadCsv(`invitaciones_${stamp()}.csv`, toCsv(list, [
       { header: "Nombre", value: (t) => t.buyer?.name },
       { header: "Email", value: (t) => t.buyer?.email },
+      // Acompañante: tiene su propio QR; aquí se ve de parte de quién va.
+      { header: "Invitado por", value: (t) => t.inviteHostName },
       { header: "Teléfono", value: (t) => t.buyer?.phone, text: true },
       // Datos de la inscripción: los llena el invitado al confirmar.
       { header: "Tipo doc.", value: (t) => t.buyer?.documentType },
@@ -149,8 +177,10 @@ function Invitations({ eventId }: { eventId: string }) {
 
       <KpiStrip
         items={[
-          { label: "Enviadas", value: list.length },
-          { label: "Confirmadas", value: list.filter((t) => t.status !== "invited").length },
+          { label: "Enviadas", value: hosts.length },
+          { label: "Confirmadas", value: hosts.filter((t) => ["sold", "checked_in"].includes(t.status)).length },
+          { label: "Declinaron", value: hosts.filter((t) => t.status === "declined").length },
+          { label: "Acompañantes", value: list.length - hosts.length },
           { label: "Asistieron", value: list.filter((t) => t.status === "checked_in").length, accent: true },
           { label: "En este envío", value: invitees.length },
         ]}
@@ -187,13 +217,13 @@ function Invitations({ eventId }: { eventId: string }) {
             <TextField
               multiline minRows={5} size="small" fullWidth label="Texto del correo"
               value={message} onChange={(e) => setMessage(e.target.value)}
-              helperText="El saludo “Apreciado(a) Nombre:” y el botón Confirmar asistencia los pone el correo. Separe párrafos con una línea en blanco."
+              helperText="El saludo “Apreciado(a) Nombre:” y los botones Confirmar / Declinar los pone el correo. Separe párrafos con una línea en blanco."
             />
           </Stack>
           <Stack direction="row" flexWrap="wrap" gap={1}>
-            {(["vip", "mentor", "curador", "asistente"] as const).map((r) => (
-              <Button key={r} size="small" variant="text" startIcon={<UserPlus size={14} />} onClick={() => importRole(r)} sx={{ textTransform: "none" }}>
-                Agregar usuarios {r}
+            {BASES.map((b) => (
+              <Button key={b.key} size="small" variant="text" startIcon={<UserPlus size={14} />} onClick={() => importRole(b.key)} sx={{ textTransform: "none" }}>
+                Agregar {b.label}
               </Button>
             ))}
           </Stack>
@@ -206,8 +236,13 @@ function Invitations({ eventId }: { eventId: string }) {
               {days.map((d) => <MenuItem key={d.date} value={d.date}>{d.display || d.date}</MenuItem>)}
             </TextField>
             <FormControlLabel control={<Checkbox checked={allDays} onChange={(e) => setAllDays(e.target.checked)} />} label="Todos los días" />
-            <TextField size="small" type="number" label="Personas por QR" value={admits}
-              onChange={(e) => setAdmits(Math.max(1, Math.min(10, Number(e.target.value) || 1)))} sx={{ width: 150 }} />
+            <Tooltip title="Pases por invitación. Doble = 2 QR: el del invitado y el de su acompañante, que deja sus datos al confirmar.">
+              <TextField size="small" type="number" label="Pases (personas)" value={admits}
+                onChange={(e) => setAdmits(Math.max(1, Math.min(10, Number(e.target.value) || 1)))} sx={{ width: 140 }} />
+            </Tooltip>
+            <TextField size="small" type="date" label="Confirmar antes de" value={deadline}
+              onChange={(e) => setDeadline(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ width: 170 }}
+              helperText="Opcional; sale en el correo" />
             <Box flex={1} />
             <Button variant="contained" startIcon={<Send size={16} />} disabled={!invitees.some((i) => i.email) || send.isPending}
               onClick={() => send.mutate()} sx={{ textTransform: "none" }}>
@@ -237,12 +272,15 @@ function Invitations({ eventId }: { eventId: string }) {
                   <TableRow key={t.id} hover>
                     <TableCell>
                       <Typography fontSize={13} fontWeight={500}>{t.buyer?.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">{t.buyer?.email}</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block">{t.buyer?.email}</Typography>
+                      {t.inviteHostName && (
+                        <Chip size="small" variant="outlined" label={`Acompañante de ${t.inviteHostName}`} sx={{ mt: 0.5 }} />
+                      )}
                     </TableCell>
                     <TableCell>{t.inviteCategory || "—"}</TableCell>
                     {/* Lo que llenó al confirmar: sin eso, todavía no se inscribió. */}
                     <TableCell>
-                      {t.buyer?.documentNumber || t.buyer?.address ? (
+                      {t.buyer?.documentNumber || t.buyer?.address || t.inviteParent ? (
                         <>
                           <Typography fontSize={13}>{t.buyer?.documentNumber || "—"}</Typography>
                           <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ maxWidth: 220 }}>

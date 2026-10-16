@@ -11,7 +11,7 @@ export interface PaginatedCursorResponse<T> {
   nextCursor: string | null;
 }
 
-export type TicketStatus = "invited" | "sold" | "refunded" | "canceled" | "checked_in";
+export type TicketStatus = "invited" | "declined" | "sold" | "refunded" | "canceled" | "checked_in";
 export type TicketType = "general" | "allpass" | "preview" | "empresa" | "2x1" | "estudiante" | "invitacion";
 
 export const TICKET_TYPE_LABEL: Record<TicketType, string> = {
@@ -60,6 +60,11 @@ export interface Ticket {
   inviteCategory?: string;
   companionName?: string;
   inviteImage?: string;
+  inviteDeadline?: string;
+  /** Pase de acompañante: id del pase del anfitrión y su nombre. */
+  inviteParent?: string;
+  inviteHostName?: string;
+  declinedAt?: string;
   whatsappSentAt?: string;
   paymentMethod?: string;
   qrToken?: string; // presente al comprar
@@ -357,6 +362,8 @@ export interface CreateInvitationsInput {
   image?: string;
   /** Cuerpo del correo; párrafos separados por línea en blanco. Vacío = el de siempre. */
   message?: string;
+  /** "Confirme antes del…" (YYYY-MM-DD). Solo se muestra; no bloquea. */
+  deadline?: string;
 }
 
 /** POST /ticket/tickets/invitations — crea y envía el correo con botón de confirmación. */
