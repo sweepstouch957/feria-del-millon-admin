@@ -121,6 +121,36 @@ export const listApplications = async (params: ApplicationListParams = {}): Prom
   return data;
 };
 
+/** Estado de la carga de inventario por artista (staff). */
+export type InventoryState = "draft" | "ready" | "empty" | "sent";
+export interface InventoryStatusRow {
+  artistId: string;
+  name: string;
+  email: string;
+  phone: string;
+  pavilions: string[];
+  artworks: number;
+  copies: number;
+  /** Obras devueltas a edición, aún sin corregir. */
+  returned: number;
+  lastArtworkAt: string | null;
+  applicationStatus: string | null;
+  invited: boolean;
+  projectTitle: string;
+  hasReview: boolean;
+  sentAt: string | null;
+  state: InventoryState;
+  issues: string[];
+}
+
+export const getInventoryStatus = async (eventId: string): Promise<InventoryStatusRow[]> => {
+  const { data } = await apiClient.get("/applications/applications/inventory-status", {
+    params: { eventId },
+    headers: ADMIN_HEADERS,
+  });
+  return data.rows;
+};
+
 export const reviewApplication = async (
   id: string,
   decision: "accepted" | "rejected",

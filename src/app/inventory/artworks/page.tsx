@@ -223,6 +223,10 @@ export default function ArtworksCursorPage() {
                   Publicar obras
                 </Button>
               )}
+              {/* Quién está en borrador (no le ha dado Enviar) y por qué. */}
+              <Button component={Link} href="/inventory/carga" variant="outlined">
+                Estado de carga
+              </Button>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon size={16} />}

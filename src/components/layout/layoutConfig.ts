@@ -33,6 +33,7 @@ export const ROUTES: Record<string, { crumb: string; title: string }> = {
   "/": { crumb: "General", title: "Tablero" },
   "/inventory/artworks": { crumb: "Inventario", title: "Artes" },
   "/inventory/artworks/qr": { crumb: "Inventario", title: "QR de obras" },
+  "/inventory/carga": { crumb: "Inventario", title: "Estado de carga" },
   "/inventory/cities": { crumb: "Inventario", title: "Ciudades" },
   "/inventory/techniques": { crumb: "Inventario", title: "Técnicas" },
   "/users": { crumb: "Comunidad", title: "Usuarios" },
