@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import {
-  Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, FormControlLabel, Checkbox, Chip,
+  Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, Chip, ToggleButton, ToggleButtonGroup,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, IconButton, Tooltip,
 } from "@mui/material";
+import { useDebouncedValue } from "@/hooks/useAuth";
 import { ImagePlus, Send, UserPlus, X } from "lucide-react";
 import { uploadCampaignImage } from "@services/upload.service";
 import PageHeader from "@/components/ui/PageHeader";
@@ -13,7 +14,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTickets, getTicketDays, resendInvitation, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTickets, getTicketDays, previewInvitation, resendInvitation, type Ticket } from "@services/ticket.service";
 import { listUsers } from "@services/user.service";
 import { listCustomers } from "@services/orders.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
@@ -58,6 +59,27 @@ function parseInvitees(text: string) {
     });
 }
 
+/** Un paso del formulario: número, título, pista y su contenido. */
+function Step({ n, title, hint, last, children }: { n: number; title: string; hint?: string; last?: boolean; children: React.ReactNode }) {
+  return (
+    <Box sx={{ display: "flex", gap: 2, pb: last ? 0 : 3, mb: last ? 0 : 3, borderBottom: last ? 0 : "1px solid", borderColor: "divider" }}>
+      <Box
+        sx={{
+          width: 28, height: 28, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center",
+          bgcolor: "secondary.main", color: "secondary.contrastText", fontSize: 13, fontWeight: 700,
+        }}
+      >
+        {n}
+      </Box>
+      <Box flex={1} minWidth={0}>
+        <Typography fontSize={15.5} fontWeight={600}>{title}</Typography>
+        {hint && <Typography variant="body2" color="text.secondary" mb={1.25}>{hint}</Typography>}
+        <Box mt={hint ? 0 : 1.25}>{children}</Box>
+      </Box>
+    </Box>
+  );
+}
+
 export default function InvitationsPage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
@@ -79,6 +101,24 @@ function Invitations({ eventId }: { eventId: string }) {
   const [uploading, setUploading] = React.useState(false);
   const [deadline, setDeadline] = React.useState("");
   const invitees = parseInvitees(text);
+  const validInvitees = invitees.filter((i) => i.email);
+  const invalidLines = invitees.length - validInvitees.length;
+  const dayLabel = allDays
+    ? "todos los días"
+    : days.find((d) => d.date === date)?.display || (date ? date : "día de inauguración");
+
+  // "Así le llega": el HTML real del correo, pedido al servidor cuando el texto se asienta.
+  // Como texto: un objeto nuevo en cada render no dejaría asentarse al debounce.
+  const previewKey = useDebouncedValue(
+    JSON.stringify({ eventId, image: image || undefined, message: message.trim() || undefined, admits, deadline: deadline || undefined, name: validInvitees[0]?.name }),
+    500,
+  );
+  const preview = useQuery({
+    queryKey: ["invitation-preview", previewKey],
+    queryFn: () => previewInvitation(JSON.parse(previewKey)),
+    placeholderData: (prev) => prev,
+    staleTime: 60_000,
+  });
 
   const onPickImage = async (file?: File) => {
     if (!file) return;
@@ -186,71 +226,164 @@ function Invitations({ eventId }: { eventId: string }) {
         ]}
       />
 
-      <Card sx={{ mb: 3 }}><CardContent>
-        <Stack spacing={2}>
-          <TextField
-            multiline minRows={4} size="small" label="Invitados (uno por línea: Nombre, correo)"
-            value={text} onChange={(e) => setText(e.target.value)}
-            helperText={`${invitees.length} invitado(s) · ${invitees.filter((i) => !i.email).length} sin correo válido`}
-          />
-          {/* El correo: imagen de cabecera (como el de ARTBO) y el texto. */}
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="flex-start">
-            <Box sx={{ width: { xs: "100%", md: 220 }, flexShrink: 0 }}>
-              {image ? (
-                <Box sx={{ position: "relative" }}>
-                  <Box component="img" src={image} alt="Imagen del correo" sx={{ width: "100%", display: "block", border: "1px solid", borderColor: "divider" }} />
-                  <IconButton size="small" onClick={() => setImage("")} sx={{ position: "absolute", top: 4, right: 4, bgcolor: "background.paper" }}>
-                    <X size={14} />
-                  </IconButton>
-                </Box>
-              ) : (
-                <Button component="label" variant="outlined" fullWidth startIcon={<ImagePlus size={16} />} disabled={uploading}
-                  sx={{ textTransform: "none", height: 120, borderStyle: "dashed" }}>
-                  {uploading ? "Subiendo…" : "Imagen del correo"}
-                  <input hidden type="file" accept="image/*" onChange={(e) => onPickImage(e.target.files?.[0])} />
-                </Button>
+      {/* Nueva invitación: tres pasos a la izquierda, "así le llega" a la derecha. */}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 3,
+          mb: 3,
+          alignItems: "start",
+          gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1.15fr) minmax(0,1fr)" },
+        }}
+      >
+        <Card><CardContent>
+          <Typography sx={{ fontSize: 19, mb: 0.5 }}>Nueva invitación</Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Cada invitado recibe un correo con <b>Confirmar</b> o <b>Declinar</b>. Al confirmar llena sus datos y le llega su
+            pase con QR por correo y WhatsApp.
+          </Typography>
+
+          {/* 1 · A quién */}
+          <Step n={1} title="¿A quién invitas?" hint="Uno por línea: Nombre, correo. Puedes pegar dos columnas de un Excel.">
+            <TextField
+              multiline minRows={5} maxRows={12} fullWidth size="small"
+              placeholder={"Diego Garzón, diego@correo.com\nJuan Ricardo Rincón, juan@correo.com"}
+              value={text} onChange={(e) => setText(e.target.value)}
+            />
+            <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} mt={1}>
+              <Chip size="small" color={validInvitees.length ? "secondary" : "default"} label={`${validInvitees.length} con correo válido`} />
+              {invalidLines > 0 && <Chip size="small" color="warning" variant="outlined" label={`${invalidLines} sin correo (se omiten)`} />}
+              {!!text.trim() && <Button size="small" onClick={() => setText("")} sx={{ textTransform: "none", ml: "auto" }}>Vaciar lista</Button>}
+            </Stack>
+            <Typography variant="caption" color="text.secondary" display="block" mt={1.5} mb={0.5}>
+              O trae contactos de las bases:
+            </Typography>
+            <Stack direction="row" flexWrap="wrap" gap={1}>
+              {BASES.map((b) => (
+                <Chip key={b.key} icon={<UserPlus size={13} />} label={b.label} variant="outlined" onClick={() => importRole(b.key)} />
+              ))}
+            </Stack>
+          </Step>
+
+          {/* 2 · El pase */}
+          <Step n={2} title="¿Qué pase reciben?">
+            <Typography variant="caption" color="text.secondary" display="block" mb={0.75}>Personas por invitación</Typography>
+            <ToggleButtonGroup exclusive size="small" value={admits} onChange={(_, v) => v && setAdmits(v)}>
+              <ToggleButton value={1} sx={{ textTransform: "none", px: 2 }}>Personal · 1 QR</ToggleButton>
+              <ToggleButton value={2} sx={{ textTransform: "none", px: 2 }}>Doble · 2 QR</ToggleButton>
+              <ToggleButton value={3} sx={{ textTransform: "none", px: 2 }}>3</ToggleButton>
+              <ToggleButton value={4} sx={{ textTransform: "none", px: 2 }}>4</ToggleButton>
+            </ToggleButtonGroup>
+            <Typography variant="caption" color="text.secondary" display="block" mt={0.75}>
+              {admits === 1
+                ? "Solo el invitado."
+                : `El invitado y ${admits === 2 ? "su acompañante" : `${admits - 1} acompañantes`}: cada uno recibe su propio QR. Los datos del acompañante los llena el invitado al confirmar.`}
+            </Typography>
+
+            <Typography variant="caption" color="text.secondary" display="block" mt={2.5} mb={0.75}>¿Qué días puede entrar?</Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} alignItems={{ sm: "center" }}>
+              <ToggleButtonGroup exclusive size="small" value={allDays ? "all" : "one"} onChange={(_, v) => v && setAllDays(v === "all")}>
+                <ToggleButton value="one" sx={{ textTransform: "none", px: 2 }}>Un día</ToggleButton>
+                <ToggleButton value="all" sx={{ textTransform: "none", px: 2 }}>Todos los días</ToggleButton>
+              </ToggleButtonGroup>
+              {!allDays && (
+                <TextField select size="small" value={date} onChange={(e) => setDate(e.target.value)} sx={{ minWidth: 220 }}
+                  SelectProps={{ displayEmpty: true }}>
+                  <MenuItem value="">Inauguración (primer día)</MenuItem>
+                  {days.map((d) => <MenuItem key={d.date} value={d.date}>{d.display || d.date}</MenuItem>)}
+                </TextField>
               )}
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                Va arriba, como la de ARTBO. Horizontal o cuadrada.
+            </Stack>
+
+            <Stack direction={{ xs: "column", sm: "row" }} gap={2} mt={2.5}>
+              <TextField select size="small" label="Categoría" value={category} onChange={(e) => setCategory(e.target.value)}
+                sx={{ minWidth: 200 }} helperText="Para ordenar y filtrar; el invitado no la ve">
+                {CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+              </TextField>
+              <TextField size="small" type="date" label="Confirmar antes de (opcional)" value={deadline}
+                onChange={(e) => setDeadline(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 220 }}
+                helperText="Sale en el correo; no bloquea a quien confirme tarde" />
+            </Stack>
+          </Step>
+
+          {/* 3 · El correo */}
+          <Step n={3} title="El correo" hint="El saludo con el nombre y los botones Confirmar / Declinar los pone el correo solo." last>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
+              <Box sx={{ width: { xs: "100%", sm: 180 }, flexShrink: 0 }}>
+                {image ? (
+                  <Box sx={{ position: "relative" }}>
+                    <Box component="img" src={image} alt="Imagen del correo" sx={{ width: "100%", display: "block", border: "1px solid", borderColor: "divider" }} />
+                    <IconButton size="small" onClick={() => setImage("")} sx={{ position: "absolute", top: 4, right: 4, bgcolor: "background.paper" }}>
+                      <X size={14} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <Button component="label" variant="outlined" fullWidth startIcon={<ImagePlus size={16} />} disabled={uploading}
+                    sx={{ textTransform: "none", height: 120, borderStyle: "dashed" }}>
+                    {uploading ? "Subiendo…" : "Subir imagen"}
+                    <input hidden type="file" accept="image/*" onChange={(e) => onPickImage(e.target.files?.[0])} />
+                  </Button>
+                )}
+                <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                  Opcional. Va arriba del texto (la pieza de la feria).
+                </Typography>
+              </Box>
+              <Box flex={1} width="100%">
+                <TextField
+                  multiline minRows={6} fullWidth size="small" label="Texto"
+                  value={message} onChange={(e) => setMessage(e.target.value)}
+                  helperText="Separe los párrafos con una línea en blanco."
+                />
+                {message.trim() !== DEFAULT_MESSAGE && (
+                  <Button size="small" onClick={() => setMessage(DEFAULT_MESSAGE)} sx={{ textTransform: "none", mt: 0.5 }}>
+                    Volver al texto original
+                  </Button>
+                )}
+              </Box>
+            </Stack>
+          </Step>
+        </CardContent></Card>
+
+        {/* Así le llega + resumen y envío */}
+        <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+          <Card><CardContent>
+            <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: "0.14em", textTransform: "uppercase" }}>
+              Así le llega el correo
+            </Typography>
+            <Box sx={{ mt: 1, border: "1px solid", borderColor: "divider", bgcolor: "#ECECEC", position: "relative" }}>
+              {preview.isFetching && <LinearProgress sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 2 }} />}
+              {preview.data ? (
+                <iframe title="Vista previa del correo" srcDoc={preview.data} style={{ width: "100%", height: 520, border: 0, display: "block" }} />
+              ) : (
+                <Box sx={{ height: 520, display: "grid", placeItems: "center", color: "text.secondary", fontSize: 13 }}>
+                  {preview.isError ? "No se pudo cargar la vista previa." : "Cargando vista previa…"}
+                </Box>
+              )}
+            </Box>
+
+            <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider" }}>
+              <Typography fontSize={14} fontWeight={600} mb={0.5}>Resumen</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {validInvitees.length
+                  ? `${validInvitees.length} invitación${validInvitees.length === 1 ? "" : "es"} · ${category} · ${admits === 1 ? "personal (1 QR)" : `${admits} QR por invitación`} · ${dayLabel}${deadline ? ` · confirmar antes del ${new Date(`${deadline}T12:00:00`).toLocaleDateString("es-CO", { day: "numeric", month: "long" })}` : ""}`
+                  : "Agrega al menos un invitado con correo en el paso 1."}
+              </Typography>
+              <Button
+                fullWidth variant="contained" size="large" startIcon={<Send size={16} />} sx={{ textTransform: "none", mt: 2 }}
+                disabled={!validInvitees.length || send.isPending || uploading}
+                onClick={() => {
+                  if (window.confirm(`¿Enviar ${validInvitees.length} invitación(es) ahora? Los correos salen de inmediato.`)) send.mutate();
+                }}
+              >
+                {send.isPending ? "Enviando…" : validInvitees.length ? `Enviar ${validInvitees.length} invitación${validInvitees.length === 1 ? "" : "es"}` : "Enviar invitaciones"}
+              </Button>
+              <Typography variant="caption" color="text.secondary" display="block" mt={1}>
+                A quien ya tiene invitación para esta feria no se le vuelve a enviar.
               </Typography>
             </Box>
-            <TextField
-              multiline minRows={5} size="small" fullWidth label="Texto del correo"
-              value={message} onChange={(e) => setMessage(e.target.value)}
-              helperText="El saludo “Apreciado(a) Nombre:” y los botones Confirmar / Declinar los pone el correo. Separe párrafos con una línea en blanco."
-            />
-          </Stack>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {BASES.map((b) => (
-              <Button key={b.key} size="small" variant="text" startIcon={<UserPlus size={14} />} onClick={() => importRole(b.key)} sx={{ textTransform: "none" }}>
-                Agregar {b.label}
-              </Button>
-            ))}
-          </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
-            <TextField select size="small" label="Categoría" value={category} onChange={(e) => setCategory(e.target.value)} sx={{ minWidth: 160 }}>
-              {CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-            </TextField>
-            <TextField select size="small" label="Día" value={date} onChange={(e) => setDate(e.target.value)} disabled={allDays} sx={{ minWidth: 180 }}>
-              <MenuItem value="">Inauguración (primer día)</MenuItem>
-              {days.map((d) => <MenuItem key={d.date} value={d.date}>{d.display || d.date}</MenuItem>)}
-            </TextField>
-            <FormControlLabel control={<Checkbox checked={allDays} onChange={(e) => setAllDays(e.target.checked)} />} label="Todos los días" />
-            <Tooltip title="Pases por invitación. Doble = 2 QR: el del invitado y el de su acompañante, que deja sus datos al confirmar.">
-              <TextField size="small" type="number" label="Pases (personas)" value={admits}
-                onChange={(e) => setAdmits(Math.max(1, Math.min(10, Number(e.target.value) || 1)))} sx={{ width: 140 }} />
-            </Tooltip>
-            <TextField size="small" type="date" label="Confirmar antes de" value={deadline}
-              onChange={(e) => setDeadline(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ width: 170 }}
-              helperText="Opcional; sale en el correo" />
-            <Box flex={1} />
-            <Button variant="contained" startIcon={<Send size={16} />} disabled={!invitees.some((i) => i.email) || send.isPending}
-              onClick={() => send.mutate()} sx={{ textTransform: "none" }}>
-              {send.isPending ? "Enviando…" : "Enviar invitaciones"}
-            </Button>
-          </Stack>
-        </Stack>
-      </CardContent></Card>
+          </CardContent></Card>
+        </Box>
+      </Box>
 
       <Card>
         {isFetching && <LinearProgress />}

@@ -376,6 +376,14 @@ export const createInvitations = async (input: CreateInvitationsInput) => {
   return data;
 };
 
+/** HTML exacto del correo de invitación, para la vista previa del panel. */
+export const previewInvitation = async (
+  input: Pick<CreateInvitationsInput, "eventId" | "image" | "message" | "admits" | "deadline"> & { name?: string },
+) => {
+  const { data } = await apiClient.post<{ html: string }>("/ticket/tickets/invitations/preview", input, { withCredentials: true });
+  return data.html;
+};
+
 export const resendInvitation = async (ticketId: string) => {
   await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
 };
