@@ -151,6 +151,48 @@ export const getInventoryStatus = async (eventId: string): Promise<InventoryStat
   return data.rows;
 };
 
+export interface InventoryArtworkDetail {
+  id: string;
+  title: string;
+  image: string;
+  technique: string;
+  pavilion: string;
+  price: number;
+  currency: string;
+  stock: number;
+  reproducible: boolean;
+  dimensions: string;
+  year: number | null;
+  published: boolean;
+  editUnlocked: boolean;
+  editNote: string;
+  tagId: string;
+  createdAt: string;
+  updatedAt: string;
+  issues: string[];
+}
+
+export interface InventoryStatusDetail {
+  artist: { id: string; name: string; email: string; phone: string; city: string; accountSince: string | null; lastLoginAt: string | null };
+  pavilions: { name: string; minArtworkPrice: number | null; maxArtworkPrice: number | null }[];
+  application: {
+    id: string; status: string; invited: boolean; isPaid: boolean; createdAt: string;
+    projectTitle: string; projectReview: string; inventorySentAt: string | null;
+  } | null;
+  otherApplications: { status: string; createdAt: string }[];
+  artworks: InventoryArtworkDetail[];
+  totals: { artworks: number; copies: number; value: number; withIssues: number };
+}
+
+/** Ficha de un artista en "Estado de carga": proyecto completo y sus obras una por una. */
+export const getInventoryStatusDetail = async (eventId: string, artistId: string): Promise<InventoryStatusDetail> => {
+  const { data } = await apiClient.get(`/applications/applications/inventory-status/${encodeURIComponent(artistId)}`, {
+    params: { eventId },
+    headers: ADMIN_HEADERS,
+  });
+  return data;
+};
+
 export const reviewApplication = async (
   id: string,
   decision: "accepted" | "rejected",

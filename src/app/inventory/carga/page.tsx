@@ -13,6 +13,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getInventoryStatus, type InventoryState, type InventoryStatusRow } from "@services/applications.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
+import ArtistLoadDrawer from "@components/views/inventory/ArtistLoadDrawer";
 
 /* Estado de la carga por artista. "Enviado" no es de la obra: es el botón
    "Enviar" del estudio, que queda en la postulación. Acá se cruza todo para
@@ -39,6 +40,7 @@ export default function InventoryStatusPage() {
 function InventoryStatus({ eventId }: { eventId: string }) {
   const [filter, setFilter] = React.useState<(typeof FILTERS)[number]>("all");
   const [q, setQ] = React.useState("");
+  const [open, setOpen] = React.useState<InventoryStatusRow | null>(null);
 
   const { data: rows = [], isFetching, isError } = useQuery({
     queryKey: ["inventory-status", eventId],
@@ -143,11 +145,11 @@ function InventoryStatus({ eventId }: { eventId: string }) {
                     </TableCell>
                   </TableRow>
                 ) : shown.map((r) => (
-                  <TableRow key={r.artistId} hover>
+                  <TableRow key={r.artistId} hover onClick={() => setOpen(r)} sx={{ cursor: "pointer" }}>
                     <TableCell>
                       <Typography fontSize={13} fontWeight={500}>{r.name}</Typography>
                       <Typography variant="caption" color="text.secondary" display="block">
-                        {r.email ? <a href={`mailto:${r.email}`} style={{ color: "inherit" }}>{r.email}</a> : "—"}
+                        {r.email || "—"}
                         {r.phone ? ` · ${r.phone}` : ""}
                       </Typography>
                     </TableCell>
@@ -182,10 +184,13 @@ function InventoryStatus({ eventId }: { eventId: string }) {
           </TableContainer>
 
           <Typography variant="caption" color="text.secondary" display="block" mt={2}>
+            Haz clic en un artista para ver su ficha: proyecto, obras una por una y un mensaje listo para escribirle.{" "}
             {Object.values(STATE).map((s) => `${s.label}: ${s.hint}.`).join(" ")}
           </Typography>
         </CardContent>
       </Card>
+
+      <ArtistLoadDrawer eventId={eventId} row={open} onClose={() => setOpen(null)} />
     </Box>
   );
 }
