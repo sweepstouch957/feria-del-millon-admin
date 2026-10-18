@@ -155,6 +155,10 @@ export interface InventoryArtworkDetail {
   id: string;
   title: string;
   image: string;
+  /** Principal + secundarias, sin repetir. */
+  gallery: string[];
+  description: string;
+  qrImage: string;
   technique: string;
   pavilion: string;
   price: number;
