@@ -939,6 +939,19 @@ export default function PersonalizacionPage() {
           </Stack>
         </Section>
 
+        {/* Venta en línea congelada durante la feria */}
+        <Section
+          title="Venta en línea del catálogo"
+          hint="Entre estas fechas (inclusive) el catálogo se ve pero no se compra en línea: prioridad a quien está en la feria. La caja sigue vendiendo. Vacío = nunca se pausa."
+          paths={["landing.catalogSales"]}
+        >
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField size="small" type="date" label="Pausar desde" InputLabelProps={{ shrink: true }} value={landing.catalogSales.pausedFrom} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, pausedFrom: e.target.value } }))} />
+            <TextField size="small" type="date" label="Hasta" InputLabelProps={{ shrink: true }} value={landing.catalogSales.pausedTo} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, pausedTo: e.target.value } }))} />
+          </Stack>
+          <TextField size="small" label="Mensaje que ve el comprador" value={landing.catalogSales.message} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, message: e.target.value } }))} fullWidth multiline rows={2} />
+        </Section>
+
         {/* Obras destacadas (título de sección; las obras salen del catálogo) */}
         <Section
           title="Obras destacadas"

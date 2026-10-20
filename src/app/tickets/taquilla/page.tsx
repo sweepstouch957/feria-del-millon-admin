@@ -19,7 +19,6 @@ type SellType = BoxOfficeSaleInput["type"];
 const TYPES: { key: SellType; price?: number; pickDay?: boolean; quantities?: number[]; maxQty?: number }[] = [
   { key: "general", pickDay: true },
   { key: "allpass", price: 80000 },
-  { key: "preview", price: 100000 },
   { key: "2x1", pickDay: true },
   { key: "estudiante", price: 0, pickDay: true, maxQty: 1 },
   { key: "empresa", price: 64000, quantities: [50, 100] },

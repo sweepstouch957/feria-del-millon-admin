@@ -24,7 +24,9 @@ export interface BuyerInput {
     name: string;
     email: string;
     phone?: string;
-    address: AddressInput;
+    /** Cédula / NIT. */
+    document?: string;
+    address?: AddressInput;
 }
 
 export interface OrderItemInput {
@@ -74,6 +76,8 @@ export interface InvoiceSnapshot {
 }
 
 export interface OrderDoc {
+    /** Pago capturado pero el stock no se pudo descontar (reconciliar a mano). */
+    fulfillmentError?: string;
     id: string;
     _id?: string;
     status:

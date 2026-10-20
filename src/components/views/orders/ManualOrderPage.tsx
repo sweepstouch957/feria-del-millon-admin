@@ -9,6 +9,7 @@
         CardContent,
         CardHeader,
         Grid,
+        MenuItem,
         Paper,
         Stack,
         Table,
@@ -41,6 +42,7 @@
     } from "@hooks/useArtworksCursor";
     import { useArtworkDetail } from "@hooks/useArtworkDetail";
     import { useCities } from "@hooks/useCities";
+    import { usePavilions } from "@hooks/usePavilions";
 
     import { ManualOrderDetail } from "./ManualOrderDetail";
     import {
@@ -59,6 +61,8 @@
         const { eventId } = useActiveEvent();
 
         const [search, setSearch] = useState("");
+        const [pavilion, setPavilion] = useState("");
+        const { data: pavilions = [] } = usePavilions(eventId || undefined);
         const [artistQ, setArtistQ] = useState("");
         const [artist, setArtist] = useState<{ id: string; label: string } | null>(null);
         const { data: artistOpts = [] } = useQuery({
@@ -85,6 +89,7 @@
         } = useArtworksCursor({
             q: search || undefined,
             artist: artist?.id,
+            pavilion: pavilion || undefined,
             event: eventId || undefined,
             limit: 25,
         });
@@ -115,6 +120,7 @@
                 buyerName: "",
                 buyerEmail: "",
                 buyerPhone: "",
+                buyerDocument: "",
                 notes: "",
                 addressLine1: "",
                 cityId: "",
@@ -210,17 +216,23 @@
                 );
 
                 
+                // Sin ciudad no hay dirección: el comprador se lleva la obra.
+                const cityId = (selectedCity as any)?._id ?? (selectedCity as any)?.id;
                 const buyer: BuyerInput = {
                     name: buyerName,
                     email: buyerEmail,
                     phone: values.buyerPhone?.trim() || undefined,
-                    address: {
-                        line1: values.addressLine1,
-                        city: selectedCity?._id ?? "0",
-                        state: values.state || (selectedCity as any)?.state,
-                        zip: values.zipCode || (selectedCity as any)?.zipCode,
-                        country: "CO",
-                    },
+                    document: values.buyerDocument?.trim() || undefined,
+                    address: cityId
+                        ? {
+                            line1: values.addressLine1,
+                            line2: values.notes || undefined,
+                            city: cityId,
+                            state: values.state || (selectedCity as any)?.state,
+                            zip: values.zipCode || (selectedCity as any)?.zipCode,
+                            country: "CO",
+                        }
+                        : undefined,
                 };
 
                 // 1) Crear orden
@@ -305,13 +317,25 @@
                                 }}
                             >
                                 <TextField
-                                    label="Buscar por slug o SKU"
+                                    label="Buscar por título, slug o código"
                                     size="small"
                                     fullWidth
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Ej: obra-azul-01 o SKU123"
+                                    placeholder="Ej: obra-azul-01 o el código de la etiqueta"
                                 />
+                                <TextField
+                                    select
+                                    size="small"
+                                    label="Pabellón / salón"
+                                    value={pavilion}
+                                    onChange={(e) => setPavilion(e.target.value)}
+                                >
+                                    <MenuItem value="">Todos</MenuItem>
+                                    {pavilions.map((p: any) => (
+                                        <MenuItem key={p._id ?? p.id} value={String(p._id ?? p.id)}>{p.name}</MenuItem>
+                                    ))}
+                                </TextField>
                                 <Autocomplete
                                     size="small"
                                     options={artistOpts}
@@ -332,13 +356,14 @@
                                                 <TableCell>SKU</TableCell>
                                                 <TableCell>Título</TableCell>
                                                 <TableCell>Artista</TableCell>
+                                                <TableCell align="right">Disp.</TableCell>
                                                 <TableCell align="right">Precio</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {isLoading && rows.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={5} align="center">
+                                                    <TableCell colSpan={6} align="center">
                                                         Cargando obras...
                                                     </TableCell>
                                                 </TableRow>
@@ -372,6 +397,9 @@
                                                             <TableCell>{(row as any).sku}</TableCell>
                                                             <TableCell>{row.title}</TableCell>
                                                             <TableCell>{rowArtistName}</TableCell>
+                                                            <TableCell align="right" sx={{ color: Number(row.stock ?? 0) > 0 ? "inherit" : "error.main", fontWeight: Number(row.stock ?? 0) > 0 ? 400 : 600 }}>
+                                                                {Number(row.stock ?? 0) > 0 ? row.stock : "Vendida"}
+                                                            </TableCell>
                                                             <TableCell align="right">
                                                                 {formatMoney(row.price, row.currency)}
                                                             </TableCell>
@@ -381,7 +409,7 @@
 
                                             {!isLoading && rows.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={5} align="center">
+                                                    <TableCell colSpan={6} align="center">
                                                         No se encontraron obras.
                                                     </TableCell>
                                                 </TableRow>

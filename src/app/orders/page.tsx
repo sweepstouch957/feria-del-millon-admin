@@ -37,6 +37,9 @@ export default function OrdersPage() {
     queryKey: ["orders", "list", status],
     queryFn: () => listOrders(status ? { status } : undefined),
     staleTime: 30_000,
+    // Durante la feria el panel queda abierto: un pago rechazado o un error de
+    // stock tiene que verse sin recargar.
+    refetchInterval: 60_000,
   });
 
   // ponytail: filtro de texto en cliente; mover al backend si las órdenes pasan de unos miles.
@@ -107,6 +110,7 @@ export default function OrdersPage() {
         items={[
           { label: "Pedidos", value: rows.length },
           { label: "Pagados", value: paidRows.length },
+          { label: "Rechazados", value: rows.filter((o) => o.status === "failed").length },
           { label: "En cartera", value: money(pendingTotal) },
           { label: "Total pagado", value: money(paidTotal), accent: true },
         ]}
@@ -138,6 +142,7 @@ export default function OrdersPage() {
                   { label: "Total", value: money(o.total) },
                   { label: "Método", value: o.payment?.method || "—" },
                   { label: "Fecha", value: formatDate(o.createdAt) },
+                  ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
                 ],
               }))}
             >
@@ -166,7 +171,12 @@ export default function OrdersPage() {
                         <TableCell><Typography variant="caption">{items(o)}</Typography></TableCell>
                         <TableCell>{o.payment?.method || "—"}</TableCell>
                         <TableCell align="right">{money(o.total)}</TableCell>
-                        <TableCell>{chip(o.status)}</TableCell>
+                        <TableCell>
+                          {chip(o.status)}
+                          {o.fulfillmentError && (
+                            <Typography variant="caption" color="error" display="block">Pagada sin descontar stock: {o.fulfillmentError}</Typography>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

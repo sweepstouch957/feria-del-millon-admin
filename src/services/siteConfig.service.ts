@@ -89,6 +89,8 @@ export interface LandingConfig {
   showTicker: boolean;
   showPrices: boolean;
   priceLabel: string;
+  /** Congelamiento de la venta en línea (días de feria). Fechas YYYY-MM-DD inclusive, hora Bogotá. */
+  catalogSales: { pausedFrom: string; pausedTo: string; message: string };
   convocatoriaPage: ConvocatoriaPage;
   linktree: LinktreeConfig;
 }
@@ -285,6 +287,7 @@ export const LANDING_DEFAULTS: LandingConfig = {
   showTicker: true,
   showPrices: true,
   priceLabel: "$1.000.000",
+  catalogSales: { pausedFrom: "", pausedTo: "", message: "Durante los días de feria las obras se compran en el recinto. La venta en línea se reabre al terminar." },
   convocatoriaPage: CONVOCATORIA_PAGE_DEFAULTS,
   linktree: LINKTREE_DEFAULTS,
 };
@@ -427,6 +430,7 @@ function mergeLanding(l: any): LandingConfig {
     showTicker: l.showTicker ?? D.showTicker,
     showPrices: l.showPrices ?? D.showPrices,
     priceLabel: l.priceLabel || D.priceLabel,
+    catalogSales: { ...D.catalogSales, ...(l.catalogSales || {}) },
     convocatoriaPage: mergeConvPage(l.convocatoriaPage),
     linktree: {
       ...D.linktree,

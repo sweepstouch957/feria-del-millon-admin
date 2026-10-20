@@ -29,6 +29,7 @@ export type ManualOrderFormValues = {
   buyerName: string;
   buyerEmail: string;
   buyerPhone: string;
+  buyerDocument: string;
   notes: string;
 
   // NUEVOS CAMPOS DE DIRECCIÓN
@@ -145,18 +146,17 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
 
           <Divider />
 
-          {/* Dirección de entrega */}
-          <Typography variant="subtitle2">Dirección de entrega</Typography>
+          {/* Dirección de entrega: opcional. En mostrador el comprador suele
+              llevarse la obra; solo se pide si hay que enviarla. */}
+          <Typography variant="subtitle2">Dirección de entrega (solo si se envía)</Typography>
 
           <TextField
-            label="Dirección *"
+            label="Dirección"
             placeholder="Calle, carrera, número"
             size="small"
             fullWidth
-            {...register("addressLine1", { required: "La dirección es obligatoria" })}
+            {...register("addressLine1")}
             disabled={isSubmitting}
-            error={Boolean(errors.addressLine1)}
-            helperText={errors.addressLine1?.message as string | undefined}
           />
 
           <Box
@@ -168,10 +168,10 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
           >
             <TextField
               select
-              label="Ciudad de entrega *"
+              label="Ciudad de entrega"
               size="small"
               fullWidth
-              {...register("cityId", { required: "Selecciona una ciudad" })}
+              {...register("cityId")}
               disabled={isSubmitting || citiesLoading}
               error={Boolean(errors.cityId)}
               helperText={
@@ -190,9 +190,9 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
             </TextField>
 
             <TextField
-              label="Departamento *"
+              label="Departamento"
               size="small"
-              {...register("state", { required: "Departamento requerido" })}
+              {...register("state")}
               disabled={isSubmitting}
               error={Boolean(errors.state)}
               helperText={errors.state?.message as string | undefined}
@@ -241,6 +241,14 @@ export const ManualOrderForm: React.FC<ManualOrderFormProps> = ({
             size="small"
             type="tel"
             {...register("buyerPhone")}
+            disabled={isSubmitting}
+          />
+
+          <TextField
+            label="Documento (cédula / NIT)"
+            size="small"
+            fullWidth
+            {...register("buyerDocument")}
             disabled={isSubmitting}
           />
 

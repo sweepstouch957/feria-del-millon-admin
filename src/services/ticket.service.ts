@@ -12,12 +12,11 @@ export interface PaginatedCursorResponse<T> {
 }
 
 export type TicketStatus = "invited" | "declined" | "sold" | "refunded" | "canceled" | "checked_in";
-export type TicketType = "general" | "allpass" | "preview" | "empresa" | "2x1" | "estudiante" | "invitacion";
+export type TicketType = "general" | "allpass" | "empresa" | "2x1" | "estudiante" | "invitacion";
 
 export const TICKET_TYPE_LABEL: Record<TicketType, string> = {
   general: "General",
   allpass: "All pass 4 días",
-  preview: "Preview",
   empresa: "Empresa",
   "2x1": "Promoción 2x1",
   estudiante: "Estudiante",
@@ -237,7 +236,7 @@ export const updateTicketDay = async (
 
 /** ────────── Preventa: tipos de entrada por evento ────────── */
 
-export type TicketTypeKey = "general" | "allpass" | "preview" | "empresa" | "2x1" | "estudiante";
+export type TicketTypeKey = "general" | "allpass" | "empresa" | "2x1" | "estudiante";
 export type TicketSaleClosedReason = "disabled" | "not_started" | "ended" | "sold_out" | null;
 
 export interface TicketTypeConfig {
