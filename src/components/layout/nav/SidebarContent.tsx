@@ -239,7 +239,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
             <SectionTitle label="Inventario" rail={rail} />
             {item("/inventory/artworks", "Obras", <Paintbrush2 {...ICON} />)}
-            {item("/inventory/artworks/qr", "QR de obras", <QrCode {...ICON} />)}
+            {item("/inventory/artworks/qr", "QR de artistas y obras", <QrCode {...ICON} />)}
             {item("/inventory/carga", "Estado de carga", <ClipboardCheck {...ICON} />)}
             {item("/inventory/cities", "Ciudades", <MapPin {...ICON} />)}
             {item("/inventory/techniques", "Técnicas", <Layers {...ICON} />)}

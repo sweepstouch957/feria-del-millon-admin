@@ -32,7 +32,7 @@ export const LAYOUT_COLORS = {
 export const ROUTES: Record<string, { crumb: string; title: string }> = {
   "/": { crumb: "General", title: "Tablero" },
   "/inventory/artworks": { crumb: "Inventario", title: "Obras" },
-  "/inventory/artworks/qr": { crumb: "Inventario", title: "QR de obras" },
+  "/inventory/artworks/qr": { crumb: "Inventario", title: "QR de artistas y obras" },
   "/inventory/carga": { crumb: "Inventario", title: "Estado de carga" },
   "/inventory/cities": { crumb: "Inventario", title: "Ciudades" },
   "/inventory/techniques": { crumb: "Inventario", title: "Técnicas" },
