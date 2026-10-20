@@ -243,6 +243,8 @@ export interface TicketTypeConfig {
   key: TicketTypeKey;
   label: string;
   desc?: string;
+  /** Banner de la tarjeta en la tienda (URL de Cloudinary). */
+  image?: string | null;
   /** null = lo pone el día elegido (general, 2x1, estudiante). */
   price: number | null;
   pickDay: boolean;
@@ -275,6 +277,8 @@ export interface TicketTypesResponse {
 export interface SaveTicketTypeInput {
   key: TicketTypeKey;
   enabled?: boolean;
+  /** "" quita el banner; ausente no lo toca. */
+  image?: string;
   label?: string | null;
   description?: string | null;
   price?: number | null;

@@ -6,7 +6,8 @@ import {
   Skeleton, Stack, Switch, TextField, Tooltip, Typography, alpha, useTheme,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, CalendarOff, CalendarPlus, Infinity as InfinityIcon, PlayCircle, RefreshCw, Save } from "lucide-react";
+import { CalendarClock, CalendarOff, CalendarPlus, ImagePlus, Infinity as InfinityIcon, PlayCircle, RefreshCw, Save, Trash2 } from "lucide-react";
+import { uploadCampaignImage } from "@services/upload.service";
 import { formatCOP } from "@/utils/money";
 import { eyebrow } from "@/app/theme";
 import { updateEvent } from "@services/events.service";
@@ -25,6 +26,7 @@ import {
 
 type Row = {
   enabled: boolean;
+  image: string;
   price: string;
   cap: string;
   maxQty: string;
@@ -52,6 +54,7 @@ const shiftDays = (days: number, hours = 0) => {
 
 const rowFromConfig = (t: TicketTypeConfig): Row => ({
   enabled: t.enabled,
+  image: t.image || "",
   price: t.price === null || t.price === undefined ? "" : String(t.price),
   cap: t.cap == null ? "" : String(t.cap),
   maxQty: t.maxQty == null ? "" : String(t.maxQty),
@@ -116,6 +119,21 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
   const patch = (key: string, p: Partial<Row>) =>
     setRows((prev) => ({ ...prev, [key]: { ...prev[key], ...p } }));
 
+  // Banner por tipo: se sube a Cloudinary y queda en el campo hasta "Guardar cambios".
+  const [uploading, setUploading] = React.useState<string | null>(null);
+  const uploadBanner = async (key: string, file?: File) => {
+    if (!file) return;
+    setUploading(key);
+    try {
+      const { url } = await uploadCampaignImage(file, "entradas");
+      patch(key, { image: url });
+    } catch {
+      setMsg({ kind: "error", text: "No se pudo subir el banner." });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const changed = Object.keys(rows).filter((k) => !sameRow(rows[k], initial[k]));
 
   const payloadFrom = (state: Record<string, Row>): SaveTicketTypeInput[] =>
@@ -128,6 +146,7 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
       return {
         key: t.key as TicketTypeKey,
         enabled: r.enabled,
+        image: r.image,
         price: num(r.price),
         cap: num(r.cap),
         maxQty: num(r.maxQty),
@@ -308,6 +327,41 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
                     <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums", textAlign: "right" }}>
                       {t.sold} vendidas{t.price !== null ? ` · ${formatCOP(t.price)}` : ""}
                     </Typography>
+                  </Stack>
+                </Stack>
+
+                {/* Banner de la tarjeta en la tienda */}
+                <Stack direction="row" alignItems="center" gap={2} sx={{ px: 2, pt: 2, flexWrap: "wrap" }}>
+                  <Box
+                    sx={{
+                      width: 120, height: 80, flexShrink: 0, border: 1, borderColor: "divider",
+                      bgcolor: alpha(theme.palette.text.primary, 0.03), overflow: "hidden",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    {r.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    ) : (
+                      <ImagePlus size={18} style={{ opacity: 0.4 }} />
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Typography sx={{ ...eyebrow, fontSize: 9.5, color: "text.secondary" }}>Banner de la tarjeta</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Imagen horizontal (3:2). Sin banner, la tarjeta es solo texto.
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" gap={1}>
+                    <Button component="label" size="small" variant="outlined" startIcon={uploading === t.key ? <CircularProgress size={14} /> : <ImagePlus size={15} />} disabled={uploading === t.key}>
+                      {r.image ? "Cambiar" : "Subir banner"}
+                      <input hidden type="file" accept="image/*" onChange={(e) => { uploadBanner(t.key, e.target.files?.[0]); e.target.value = ""; }} />
+                    </Button>
+                    {r.image && (
+                      <Button size="small" color="inherit" startIcon={<Trash2 size={15} />} onClick={() => patch(t.key, { image: "" })}>
+                        Quitar
+                      </Button>
+                    )}
                   </Stack>
                 </Stack>
 
