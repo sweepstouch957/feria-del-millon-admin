@@ -314,3 +314,26 @@ export const publishArtworks = async (
   );
   return data;
 };
+
+/** POST /inventory/artworks/regenerate-qrs — vuelve a generar el QR guardado
+ *  de cada obra apuntando a la tienda actual. `mismatchOnly` = solo las que
+ *  quedaron con un dominio viejo. */
+export const regenerateArtworkQrs = async (body: {
+  event?: string;
+  status?: string;
+  mismatchOnly?: boolean;
+  onlyMissing?: boolean;
+  dryRun?: boolean;
+}) => {
+  const { data } = await apiClient.post<{
+    ok: boolean; totalMatched: number; updated: number; failed: number; dryRun: boolean; target?: string;
+    sampleErrors?: { id: string; error: string }[];
+  }>("/inventory/artworks/regenerate-qrs", {
+    ...body,
+    status: body.status ?? "",
+    mismatchOnly: body.mismatchOnly ? "true" : "false",
+    onlyMissing: body.onlyMissing ? "true" : "false",
+    dryRun: body.dryRun ? "true" : "false",
+  }, { withCredentials: true });
+  return data;
+};
