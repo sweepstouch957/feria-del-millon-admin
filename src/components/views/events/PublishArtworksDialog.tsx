@@ -33,12 +33,15 @@ export default function PublishArtworksDialog({
   eventId,
   eventName,
   onDone,
+  initial,
 }: {
   open: boolean;
   onClose: () => void;
   eventId: string;
   eventName?: string;
   onDone?: () => void;
+  /** Alcance con el que abre: el mismo filtro que tiene la página de obras. */
+  initial?: { scope: Scope; pavilion?: string; artist?: string };
 }) {
   const qc = useQueryClient();
   const [scope, setScope] = React.useState<Scope>("all");
@@ -49,13 +52,13 @@ export default function PublishArtworksDialog({
 
   React.useEffect(() => {
     if (open) {
-      setScope("all");
-      setPavilion("");
-      setArtist("");
+      setScope(initial?.scope ?? "all");
+      setPavilion(initial?.pavilion ?? "");
+      setArtist(initial?.artist ?? "");
       setPublish(true);
       setDone(null);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pabellones de la feria (con sus artistas): de aquí salen los dos selectores.
   const { data: pavilions = [] } = useQuery({

@@ -4,18 +4,13 @@ import {
   Box,
   Card,
   CardContent,
-  CardHeader,
   Typography,
   Stack,
   Chip,
   Button,
-  Divider,
   LinearProgress,
   TextField,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
   TableContainer,
   Table,
@@ -35,41 +30,69 @@ import {
   RefreshCw as RefreshIcon,
   Eye as EyeIcon,
   GalleryHorizontal as GalleryIcon,
-  ChevronDown as ChevronDownIcon,
-  Building2 as PavilionIcon,
-  CalendarDays as EventIcon,
-  Users as ArtistsIcon,
-  Brush as ArtworksIcon,
   UploadCloud as UploadCloudIcon,
   PencilLine as ReturnIcon,
+  X as ClearIcon,
 } from "lucide-react";
 import { patchArtwork } from "@services/artworks.service";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useTechniques } from "@/hooks/useTechniques";
-import { useEvents } from "@/hooks/useEvents";
-import { usePavilions } from "@/hooks/usePavilions";
+import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { setCatalogReveal, setInventoryClose } from "@services/events.service";
+import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { formatCOP } from "@/utils/money";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import PublishArtworksDialog from "@components/views/events/PublishArtworksDialog";
 
+/* Obras de la feria activa. Una sola fila de filtros (buscar, pabellón,
+   artista, técnica, estado) y "Publicar" publica LO QUE ESTÁ FILTRADO: antes
+   había que elegir el pabellón en el filtro y otra vez dentro del diálogo. */
+
 const formatPrice = (price?: number, currency = "COP") =>
   price == null ? "—" : formatCOP(price, { code: true, currency });
 
-export default function ArtworksCursorPage() {
+type StatusFilter = "" | "hidden" | "published";
+
+export default function ArtworksPage() {
+  const { event: activeEvent, eventId, isLoading, isError, refetch } = useActiveEvent();
+  if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
+  return <ArtworksCursorPage eventId={eventId} activeEvent={activeEvent} refetchEvent={refetch} />;
+}
+
+function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: string; activeEvent: any; refetchEvent: () => unknown }) {
+  const event = eventId;
   const [q, setQ] = useState("");
-  const [event, setEvent] = useState<string>("");
   const [pavilion, setPavilion] = useState<string>("");
+  const [artist, setArtist] = useState<string>("");
   const [technique, setTechnique] = useState<string>("");
+  const [status, setStatus] = useState<StatusFilter>("");
   const [publishOpen, setPublishOpen] = useState(false);
 
-  const eventsQuery = useEvents();
-  const pavilionsQuery = usePavilions(event);
+  // Pabellones con sus artistas: de aquí salen los dos selectores (y el
+  // artista queda acotado al pabellón elegido).
+  const pavilionsQuery = useQuery({
+    queryKey: ["pavilions", eventId, "with-artists"],
+    queryFn: () => listPavilions(eventId, true),
+    staleTime: 60_000,
+  });
+  const pavilions = (pavilionsQuery.data ?? []) as PavilionDoc[];
   const techniquesQuery = useTechniques();
+
+  const artistOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of pavilions) {
+      if (pavilion && String(p.id) !== pavilion) continue;
+      for (const a of (p as any).artistInfo ?? []) {
+        map.set(String(a.id), `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || a.email);
+      }
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [pavilions, pavilion]);
 
   const {
     rows,
@@ -82,19 +105,24 @@ export default function ArtworksCursorPage() {
     loadMore,
     isFetchingNextPage,
     refetch,
-  } = useArtworksCursor({ q, event, pavilion, technique, limit: 24, includeHidden: 1 });
+  } = useArtworksCursor({ q, event, pavilion, artist, technique, limit: 24, includeHidden: 1 });
 
-  // Interruptor global: revelar el catálogo (muestra las obras "ocultas hasta el evento").
-  const selectedEvent: any = (eventsQuery.data ?? []).find(
-    (ev: any) => (ev.id || ev._id) === event
+  // ponytail: el estado se filtra en cliente sobre lo cargado; al backend si hay miles de obras.
+  const shown = useMemo(
+    () =>
+      status === ""
+        ? rows
+        : rows.filter((a: any) => (status === "hidden" ? !!a.hiddenUntilEvent : !a.hiddenUntilEvent && a.status === "published")),
+    [rows, status]
   );
+
+  const selectedEvent: any = activeEvent;
   const [revealBusy, setRevealBusy] = useState(false);
   const toggleReveal = async (checked: boolean) => {
-    if (!event) return;
     setRevealBusy(true);
     try {
       await setCatalogReveal(event, checked);
-      await eventsQuery.refetch?.();
+      await refetchEvent();
     } finally {
       setRevealBusy(false);
     }
@@ -107,11 +135,10 @@ export default function ArtworksCursorPage() {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   };
   const saveInventoryClose = async (value: string) => {
-    if (!event) return;
     setRevealBusy(true);
     try {
       await setInventoryClose(event, value ? new Date(value).toISOString() : null);
-      await eventsQuery.refetch?.();
+      await refetchEvent();
     } finally {
       setRevealBusy(false);
     }
@@ -143,121 +170,94 @@ export default function ArtworksCursorPage() {
     }
   };
 
-  const totalArtworks = totalLabel;
-  const totalArtists = new Set(
-    rows.map((r:any) => r.artistInfo?._id).filter(Boolean)
-  ).size;
-  const totalEvents = eventsQuery.data?.length ?? 0;
-  const totalPavilions = pavilionsQuery.data?.length ?? 0;
+  const hiddenCount = rows.filter((r: any) => r.hiddenUntilEvent).length;
+  const totalArtists = new Set(rows.map((r: any) => r.artistInfo?._id).filter(Boolean)).size;
+  const hasFilter = !!(q || pavilion || artist || technique || status);
+  const clearFilters = () => { setQ(""); setPavilion(""); setArtist(""); setTechnique(""); setStatus(""); };
+
+  // Lo que se va a publicar es lo mismo que se está viendo.
+  const publishScope = artist
+    ? { scope: "artist" as const, artist }
+    : pavilion
+      ? { scope: "pavilion" as const, pavilion }
+      : { scope: "all" as const };
+  const scopeLabel = artist
+    ? `las de ${artistOptions.find(([id]) => id === artist)?.[1] ?? "este artista"}`
+    : pavilion
+      ? `las de ${pavilions.find((p) => String(p.id) === pavilion)?.name ?? "este pabellón"}`
+      : "todas las de la feria";
 
   return (
     <Box>
       <PageHeader
         crumb="Inventario"
-        title="Artes"
-        description="Obras cargadas por los artistas y publicadas en el catálogo público."
-      />
-
-      <KpiStrip
-        items={[
-          { label: "Obras publicadas", value: totalArtworks },
-          { label: "Artistas en catálogo", value: totalArtists },
-          { label: "Ferias", value: totalEvents },
-          { label: "Pabellones", value: totalPavilions },
+        title="Obras"
+        description={`${selectedEvent?.name ?? "Feria"} · lo que suben los artistas queda cargado pero oculto; publicar es decidir qué sale al catálogo.`}
+        actions={[
+          { label: `Publicar ${scopeLabel}`, kind: "pri", icon: <UploadCloudIcon size={14} />, onClick: () => setPublishOpen(true) },
+          { label: "Estado de carga", kind: "sec", href: "/inventory/carga" },
+          { label: "Actualizar", kind: "sec", icon: <RefreshIcon size={14} />, disabled: isFetching, onClick: () => refetch() },
         ]}
       />
 
-      {/* Tabla de obras */}
-      <Card sx={{ overflow: "hidden" }}>
-        <CardHeader
-          title={
-            <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1}>
-              <Typography variant="h5" fontWeight={500}>
-                Obras
-              </Typography>
-              <Chip label={`${totalLabel} cargadas`} size="small" />
-            </Stack>
-          }
-          action={
-            <Stack direction="row" flexWrap="wrap" spacing={1.5} alignItems="center">
-              {selectedEvent && (
-                <Tooltip title="Al activarlo, las obras marcadas “ocultas hasta el evento” se muestran en el catálogo público ya mismo.">
-                  <FormControlLabel
-                    sx={{ mr: 0 }}
-                    control={
-                      <Switch
-                        color="success"
-                        checked={!!selectedEvent.catalogRevealed}
-                        disabled={revealBusy}
-                        onChange={(e) => toggleReveal(e.target.checked)}
-                      />
-                    }
-                    label={<Typography variant="caption" fontWeight={500}>Catálogo revelado</Typography>}
-                  />
-                </Tooltip>
-              )}
-              {selectedEvent && (
-                <Tooltip title="Después de esta fecha los artistas ya no pueden crear ni editar obras. Vacío = sin cierre.">
-                  <TextField
-                    key={selectedEvent.inventoryCloseAt || "none"}
-                    size="small"
-                    type="datetime-local"
-                    label="Cierre de inventario"
-                    InputLabelProps={{ shrink: true }}
-                    defaultValue={toLocalInput(selectedEvent.inventoryCloseAt)}
+      <KpiStrip
+        loading={isLoading}
+        items={[
+          { label: "Obras cargadas", value: totalLabel },
+          { label: "Sin publicar (de las cargadas aquí)", value: hiddenCount },
+          { label: "Artistas", value: totalArtists },
+          { label: "Pabellones", value: pavilions.length },
+        ]}
+      />
+
+      {/* Ajustes de la feria que afectan a todas las obras */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ py: 1.5 }}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} justifyContent="space-between">
+            <Tooltip title="Al activarlo, las obras marcadas “ocultas hasta el evento” se muestran en el catálogo público ya mismo.">
+              <FormControlLabel
+                sx={{ mr: 0 }}
+                control={
+                  <Switch
+                    color="success"
+                    checked={!!selectedEvent?.catalogRevealed}
                     disabled={revealBusy}
-                    onBlur={(e) => {
-                      if (e.target.value !== toLocalInput(selectedEvent.inventoryCloseAt))
-                        saveInventoryClose(e.target.value);
-                    }}
+                    onChange={(e) => toggleReveal(e.target.checked)}
                   />
-                </Tooltip>
-              )}
-              {selectedEvent && (
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<UploadCloudIcon size={16} />}
-                  onClick={() => setPublishOpen(true)}
-                >
-                  Publicar obras
-                </Button>
-              )}
-              {/* Quién está en borrador (no le ha dado Enviar) y por qué. */}
-              <Button component={Link} href="/inventory/carga" variant="outlined">
-                Estado de carga
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon size={16} />}
-                onClick={() => refetch()}
-                disabled={isFetching}
-              >
-                Actualizar
-              </Button>
-            </Stack>
-          }
-          sx={{
-            background:
-              "linear-gradient(90deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.0) 100%)",
-          }}
-        />
+                }
+                label={<Typography variant="body2" fontWeight={500}>Catálogo revelado al público</Typography>}
+              />
+            </Tooltip>
+            <Tooltip title="Después de esta fecha los artistas ya no pueden crear ni editar obras. Vacío = sin cierre.">
+              <TextField
+                key={selectedEvent?.inventoryCloseAt || "none"}
+                size="small"
+                type="datetime-local"
+                label="Cierre de carga para artistas"
+                InputLabelProps={{ shrink: true }}
+                defaultValue={toLocalInput(selectedEvent?.inventoryCloseAt)}
+                disabled={revealBusy}
+                onBlur={(e) => {
+                  if (e.target.value !== toLocalInput(selectedEvent?.inventoryCloseAt))
+                    saveInventoryClose(e.target.value);
+                }}
+                sx={{ minWidth: 260 }}
+              />
+            </Tooltip>
+          </Stack>
+        </CardContent>
+      </Card>
 
-        <Divider />
-
-        {/* Filtros */}
+      {/* Obras: una sola fila de filtros */}
+      <Card sx={{ overflow: "hidden" }}>
         <CardContent sx={{ pb: 1 }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            alignItems={{ xs: "stretch", md: "center" }}
-          >
+          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ xs: "stretch", md: "center" }} flexWrap="wrap" useFlexGap>
             <TextField
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por título o texto"
+              placeholder="Buscar por título"
               size="small"
-              fullWidth
+              sx={{ flex: 1, minWidth: 200 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -266,64 +266,38 @@ export default function ArtworksCursorPage() {
                 ),
               }}
             />
-
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel>Evento</InputLabel>
-              <Select
-                value={event}
-                onChange={(e) => {
-                  setEvent(e.target.value);
-                  setPavilion("");
-                }}
-                IconComponent={ChevronDownIcon as any}
-              >
-                <MenuItem value="">
-                  <em>Todos</em>
-                </MenuItem>
-                {(eventsQuery.data ?? []).map((ev) => (
-                  <MenuItem key={ev.id} value={ev.id}>
-                    {ev.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel>Pabellón</InputLabel>
-              <Select
-                value={pavilion}
-                onChange={(e) => setPavilion(e.target.value)}
-                IconComponent={ChevronDownIcon as any}
-                disabled={!event}
-              >
-                <MenuItem value="">
-                  <em>Todos</em>
-                </MenuItem>
-                {(pavilionsQuery.data ?? []).map((pav) => (
-                  <MenuItem key={pav.id} value={pav.id}>
-                    {pav.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel>Técnica</InputLabel>
-              <Select
-                value={technique}
-                onChange={(e) => setTechnique(e.target.value)}
-                IconComponent={ChevronDownIcon as any}
-              >
-                <MenuItem value="">
-                  <em>Todas</em>
-                </MenuItem>
-                {(techniquesQuery.data ?? []).map((t) => (
-                  <MenuItem key={t.id} value={t.id}>
-                    {t.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField select size="small" label="Pabellón" value={pavilion} onChange={(e) => { setPavilion(e.target.value); setArtist(""); }} sx={{ minWidth: 180 }}>
+              <MenuItem value=""><em>Todos</em></MenuItem>
+              {pavilions.map((pav) => (
+                <MenuItem key={pav.id} value={pav.id}>{pav.name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField select size="small" label="Artista" value={artist} onChange={(e) => setArtist(e.target.value)} sx={{ minWidth: 200 }}>
+              <MenuItem value=""><em>Todos</em></MenuItem>
+              {artistOptions.map(([id, name]) => (
+                <MenuItem key={id} value={id}>{name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField select size="small" label="Técnica" value={technique} onChange={(e) => setTechnique(e.target.value)} sx={{ minWidth: 160 }}>
+              <MenuItem value=""><em>Todas</em></MenuItem>
+              {(techniquesQuery.data ?? []).map((t) => (
+                <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField select size="small" label="Estado" value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} sx={{ minWidth: 150 }}>
+              <MenuItem value=""><em>Todas</em></MenuItem>
+              <MenuItem value="hidden">Sin publicar</MenuItem>
+              <MenuItem value="published">En el catálogo</MenuItem>
+            </TextField>
+            {hasFilter && (
+              <Button size="small" color="inherit" startIcon={<ClearIcon size={14} />} onClick={clearFilters} sx={{ textTransform: "none", whiteSpace: "nowrap" }}>
+                Limpiar
+              </Button>
+            )}
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+            <Chip size="small" label={`${shown.length} de ${totalLabel} cargadas`} />
+            {hasFilter && <Typography variant="caption" color="text.secondary">“Publicar” aplica a {scopeLabel}.</Typography>}
           </Stack>
         </CardContent>
 
@@ -333,7 +307,7 @@ export default function ArtworksCursorPage() {
         <ResponsiveRows
           loading={isLoading}
           emptyText="No hay obras que coincidan con los filtros."
-          cards={rows.map((art: any) => ({
+          cards={shown.map((art: any) => ({
             id: String(art.id),
             title: (
               <Link href={`/inventory/artworks/${art.id}`} style={{ color: "inherit" }}>
@@ -389,7 +363,7 @@ export default function ArtworksCursorPage() {
               )}
 
               {!isLoading &&
-                rows.map((art:any) => (
+                shown.map((art:any) => (
                   <TableRow key={art.id} hover>
                     <TableCell>
                       <Avatar
@@ -484,7 +458,7 @@ export default function ArtworksCursorPage() {
                   </TableRow>
                 ))}
 
-              {rows.length > 0 && (
+              {shown.length > 0 && (
                 <TableRow>
                   <TableCell colSpan={9} align="center">
                     {hasNextPage ? (
@@ -514,6 +488,7 @@ export default function ArtworksCursorPage() {
         onClose={() => setPublishOpen(false)}
         eventId={event}
         eventName={selectedEvent?.name}
+        initial={publishScope}
         onDone={() => refetch()}
       />
     </Box>

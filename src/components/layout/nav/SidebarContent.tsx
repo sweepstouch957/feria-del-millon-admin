@@ -238,7 +238,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
 
             <SectionTitle label="Inventario" rail={rail} />
-            {item("/inventory/artworks", "Artes", <Paintbrush2 {...ICON} />)}
+            {item("/inventory/artworks", "Obras", <Paintbrush2 {...ICON} />)}
             {item("/inventory/artworks/qr", "QR de obras", <QrCode {...ICON} />)}
             {item("/inventory/carga", "Estado de carga", <ClipboardCheck {...ICON} />)}
             {item("/inventory/cities", "Ciudades", <MapPin {...ICON} />)}
