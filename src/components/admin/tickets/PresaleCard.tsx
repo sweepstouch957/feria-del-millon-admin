@@ -136,8 +136,10 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
 
   const changed = Object.keys(rows).filter((k) => !sameRow(rows[k], initial[k]));
 
+  // Solo los tipos que cambiaron: mandar todos congelaba los valores del código
+  // como override (p. ej. precio de empresas) y un cambio en el código no llegaba.
   const payloadFrom = (state: Record<string, Row>): SaveTicketTypeInput[] =>
-    (data?.types || []).map((t) => {
+    (data?.types || []).filter((t) => !sameRow(state[t.key], initial[t.key])).map((t) => {
       const r = state[t.key];
       const qs = r.quantities
         .split(",")
