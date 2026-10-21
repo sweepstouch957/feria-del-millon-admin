@@ -16,12 +16,13 @@ import { formatCOP } from "@/utils/money";
 
 type SellType = BoxOfficeSaleInput["type"];
 // Espejo de TICKET_TYPES (tickets-svc/utils/pricing.js). El backend es quien cobra.
-const TYPES: { key: SellType; price?: number; pickDay?: boolean; quantities?: number[]; maxQty?: number }[] = [
+const TYPES: { key: SellType; price?: number; pickDay?: boolean; quantities?: number[]; packPrices?: Record<number, number>; maxQty?: number }[] = [
   { key: "general", pickDay: true },
   { key: "allpass", price: 80000 },
   { key: "2x1", pickDay: true },
   { key: "estudiante", price: 0, pickDay: true, maxQty: 1 },
-  { key: "empresa", price: 64000, quantities: [50, 100] },
+  // Empresas: un día, paquetes; 20% de descuento desde 50.
+  { key: "empresa", price: 55000, pickDay: true, quantities: [20, 50, 100], packPrices: { 20: 55000, 50: 44000, 100: 44000 } },
 ];
 
 const EMPTY = { name: "", email: "", phone: "", company: "", nit: "" };
@@ -53,7 +54,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
     setQuantity(spec.quantities ? spec.quantities[0] : 1);
   }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const unit = spec.price ?? days.find((d) => d.date === date)?.price ?? 0;
+  const unit = spec.packPrices?.[quantity] ?? spec.price ?? days.find((d) => d.date === date)?.price ?? 0;
   const total = unit * quantity;
   const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) => setBuyer((b) => ({ ...b, [k]: e.target.value }));
 
@@ -139,7 +140,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
               )}
               {spec.quantities ? (
                 <TextField select size="small" label="Cantidad" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} sx={{ width: 140 }}>
-                  {spec.quantities.map((q) => <MenuItem key={q} value={q}>{q}</MenuItem>)}
+                  {spec.quantities.map((q) => <MenuItem key={q} value={q}>{q} · {formatCOP((spec.packPrices?.[q] ?? spec.price ?? 0) * q)}</MenuItem>)}
                 </TextField>
               ) : (
                 <TextField size="small" type="number" label="Cantidad" value={quantity} disabled={spec.maxQty === 1}

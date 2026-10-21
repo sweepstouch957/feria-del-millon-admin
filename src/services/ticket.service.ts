@@ -250,6 +250,8 @@ export interface TicketTypeConfig {
   pickDay: boolean;
   allDays: boolean;
   quantities: number[] | null;
+  /** Precio por persona según el paquete (empresas: 20 → 55.000, 50/100 → 44.000). */
+  packPrices?: Record<string, number> | null;
   maxQty: number | null;
   cap: number | null;
   sold: number;
