@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   listArtworks,
@@ -31,6 +31,8 @@ export type ArtworksCursorFilters = {
   limit?: number;
   artist?: string;
   includeHidden?: boolean | number | string;
+  /** false = no consulta (p. ej. pestaña que no muestra obras). */
+  enabled?: boolean;
 };
 
 export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
@@ -67,6 +69,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     initialPageParam: undefined,
     staleTime: 10_000,
+    enabled: filters.enabled ?? true,
   });
 
   const pages = useMemo(
@@ -92,5 +95,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       ? "—"
       : `${rows.length}`;
 
-  return { ...query, rows, totalLabel, loadMore: () => query.fetchNextPage() };
+  const { fetchNextPage } = query;
+  const loadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
+  return { ...query, rows, totalLabel, loadMore };
 }
