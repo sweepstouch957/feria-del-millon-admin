@@ -324,9 +324,11 @@ export const regenerateArtworkQrs = async (body: {
   mismatchOnly?: boolean;
   onlyMissing?: boolean;
   dryRun?: boolean;
+  /** Máximo de obras por llamada; el panel regenera por lotes para no pasar el timeout del proxy. */
+  limit?: number;
 }) => {
   const { data } = await apiClient.post<{
-    ok: boolean; totalMatched: number; updated: number; failed: number; dryRun: boolean; target?: string;
+    ok: boolean; totalMatched: number; updated: number; failed: number; remaining?: number; dryRun: boolean; target?: string;
     sampleErrors?: { id: string; error: string }[];
   }>("/inventory/artworks/regenerate-qrs", {
     ...body,

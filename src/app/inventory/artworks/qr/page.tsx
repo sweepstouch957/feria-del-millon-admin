@@ -96,7 +96,26 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
   }, [pavilions, pavilion]);
 
-  const regen = useMutation({ mutationFn: () => regenerateArtworkQrs({ mismatchOnly: true }) });
+  // Regenera por lotes de 10: una sola llamada con cientos de obras pasa el
+  // timeout del proxy (60 s) y el panel veía un error aunque el servidor siguiera.
+  const [regenProgress, setRegenProgress] = React.useState("");
+  const regen = useMutation({
+    mutationFn: async () => {
+      const first = await regenerateArtworkQrs({ mismatchOnly: true, dryRun: true });
+      const total = first.remaining ?? first.totalMatched;
+      let updated = 0, failed = 0, remaining = total;
+      // ponytail: tope de vueltas por si el servidor viejo no filtra por dominio
+      for (let i = 0; i < 60 && remaining > 0; i++) {
+        setRegenProgress(`${updated + failed} de ${total}…`);
+        const r = await regenerateArtworkQrs({ mismatchOnly: true, limit: 10 });
+        updated += r.updated; failed += r.failed;
+        if (r.updated === 0) break; // nada avanzó: no insistir con las mismas
+        remaining = r.remaining ?? remaining - r.updated;
+      }
+      setRegenProgress("");
+      return { totalMatched: total, updated, failed };
+    },
+  });
 
   // Obras: solo en la pestaña "Obras", por páginas al hacer scroll.
   const { rows, isLoading, hasNextPage, loadMore, isFetchingNextPage } = useArtworksCursor({
@@ -173,7 +192,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                 helperText={`Artista: ${base}/artista/… · Obra: ${base}/obra/…`} />
               <Box>
                 <Button variant="outlined" startIcon={regen.isPending ? <CircularProgress size={14} /> : <Wand2 size={16} />} disabled={regen.isPending} onClick={() => regen.mutate()} sx={{ textTransform: "none" }}>
-                  Corregir QR guardados con dominio viejo
+                  {regen.isPending ? `Corrigiendo ${regenProgress || "…"}` : "Corregir QR guardados con dominio viejo"}
                 </Button>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, maxWidth: 420 }}>
                   Los QR que se imprimen aquí se generan al momento con este dominio. Este botón arregla los que quedaron guardados en cada obra (los que ve el artista en su estudio).
