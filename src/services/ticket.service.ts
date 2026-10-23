@@ -391,6 +391,22 @@ export const previewInvitation = async (
   return data.html;
 };
 
+/** Manda el correo de invitación y/o el del pase, de muestra, a estos correos. */
+export const sendInvitationTest = async (
+  input: Pick<CreateInvitationsInput, "eventId" | "image" | "message" | "admits" | "deadline" | "allDays" | "anyDay"> & {
+    emails: string[];
+    kinds: ("invitation" | "pass")[];
+    name?: string;
+  },
+) => {
+  const { data } = await apiClient.post<{ ok: boolean; sent: string[]; failed: { email: string; error: string }[] }>(
+    "/ticket/tickets/invitations/test",
+    input,
+    { withCredentials: true },
+  );
+  return data;
+};
+
 export const resendInvitation = async (ticketId: string) => {
   await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
 };

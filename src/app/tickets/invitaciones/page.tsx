@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, Chip, ToggleButton, ToggleButtonGroup,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, IconButton, Tooltip,
+  Checkbox, FormControlLabel,
 } from "@mui/material";
 import { useDebouncedValue } from "@/hooks/useAuth";
 import { ImagePlus, Send, UserPlus, X } from "lucide-react";
@@ -14,7 +15,8 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTickets, getTicketDays, previewInvitation, resendInvitation, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTickets, getTicketDays, previewInvitation, resendInvitation, sendInvitationTest, type Ticket } from "@services/ticket.service";
+import { useAuth } from "@/provider/authProvider";
 import { listUsers } from "@services/user.service";
 import { listCustomers } from "@services/orders.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
@@ -121,6 +123,35 @@ function Invitations({ eventId }: { eventId: string }) {
     JSON.stringify({ eventId, image: image || undefined, message: message.trim() || undefined, admits, deadline: deadline || undefined, name: validInvitees[0]?.name }),
     500,
   );
+  // Prueba: los mismos correos, con este borrador, a quien los quiera revisar.
+  const { user } = useAuth() as any;
+  const [testEmails, setTestEmails] = React.useState<string>("");
+  React.useEffect(() => {
+    if (!testEmails && user?.email) setTestEmails(user.email);
+  }, [user?.email]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [testKinds, setTestKinds] = React.useState({ invitation: true, pass: true });
+  const testList = testEmails.split(/[\s,;]+/).map((e) => e.trim()).filter((e) => /\S+@\S+\.\S+/.test(e));
+  const sendTest = useMutation({
+    mutationFn: () =>
+      sendInvitationTest({
+        eventId,
+        emails: testList,
+        kinds: (Object.keys(testKinds) as ("invitation" | "pass")[]).filter((k) => testKinds[k]),
+        image: image || undefined,
+        message: message.trim() || undefined,
+        admits,
+        deadline: deadline || undefined,
+        allDays,
+        anyDay: dayMode === "any",
+        name: validInvitees[0]?.name,
+      }),
+    onSuccess: (r) =>
+      r.failed.length
+        ? toast.error(`No se pudo enviar a ${r.failed.map((f) => f.email).join(", ")}`)
+        : toast.success(`Prueba enviada a ${r.sent.join(", ")}`),
+    onError: (e: any) => toast.error(e?.response?.data?.error || "No se pudo enviar la prueba"),
+  });
+
   const preview = useQuery({
     queryKey: ["invitation-preview", previewKey],
     queryFn: () => previewInvitation(JSON.parse(previewKey)),
@@ -368,6 +399,31 @@ function Invitations({ eventId }: { eventId: string }) {
                   {preview.isError ? "No se pudo cargar la vista previa." : "Cargando vista previa…"}
                 </Box>
               )}
+            </Box>
+
+            <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider" }}>
+              <Typography fontSize={14} fontWeight={600} mb={0.5}>Enviar prueba</Typography>
+              <Typography variant="body2" color="text.secondary" mb={1.5}>
+                Llega con el asunto “[PRUEBA]”, este texto e imagen, y un QR de muestra. No crea invitaciones; los botones del correo no confirman nada.
+              </Typography>
+              <TextField
+                size="small" fullWidth label="Correos (separados por coma)" value={testEmails}
+                onChange={(e) => setTestEmails(e.target.value)}
+                placeholder="disenadora@correo.com, admin@correo.com"
+                helperText={testList.length > 10 ? "Máximo 10 correos" : `${testList.length} correo${testList.length === 1 ? "" : "s"}`}
+                error={testList.length > 10}
+              />
+              <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} mt={1}>
+                <FormControlLabel control={<Checkbox size="small" checked={testKinds.invitation} onChange={(e) => setTestKinds((k) => ({ ...k, invitation: e.target.checked }))} />} label="Invitación" />
+                <FormControlLabel control={<Checkbox size="small" checked={testKinds.pass} onChange={(e) => setTestKinds((k) => ({ ...k, pass: e.target.checked }))} />} label="Pase con QR" />
+                <Button
+                  variant="outlined" size="small" startIcon={<Send size={14} />} sx={{ ml: "auto" }}
+                  disabled={!testList.length || testList.length > 10 || (!testKinds.invitation && !testKinds.pass) || sendTest.isPending}
+                  onClick={() => sendTest.mutate()}
+                >
+                  {sendTest.isPending ? "Enviando…" : "Enviar prueba"}
+                </Button>
+              </Stack>
             </Box>
 
             <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider" }}>
