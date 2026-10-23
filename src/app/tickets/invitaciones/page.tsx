@@ -187,7 +187,11 @@ function Invitations({ eventId }: { eventId: string }) {
         deadline: deadline || undefined,
       }),
     onSuccess: (r) => {
-      toast.success(`${r.created} invitaciones enviadas${r.skipped.length ? ` · ${r.skipped.length} omitidas (ya invitadas o inválidas)` : ""}`);
+      toast.success(
+        `${r.created} invitaciones enviadas` +
+          (r.reset?.length ? ` · ${r.reset.length} reiniciadas desde cero` : "") +
+          (r.skipped.length ? ` · ${r.skipped.length} omitidas (inválidas o ya entraron a la feria)` : ""),
+      );
       setText("");
       qc.invalidateQueries({ queryKey: ["invitations", eventId] });
     },

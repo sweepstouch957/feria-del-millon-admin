@@ -375,7 +375,7 @@ export interface CreateInvitationsInput {
 
 /** POST /ticket/tickets/invitations — crea y envía el correo con botón de confirmación. */
 export const createInvitations = async (input: CreateInvitationsInput) => {
-  const { data } = await apiClient.post<{ created: number; skipped: { email: string; reason: string }[] }>(
+  const { data } = await apiClient.post<{ created: number; skipped: { email: string; reason: string }[]; reset?: string[] }>(
     "/ticket/tickets/invitations",
     input,
     { withCredentials: true },
