@@ -23,8 +23,10 @@ import { toCsv, downloadCsv, stamp } from "@/utils/csv";
    la vista para poder ajustarlo por envío; el saludo con el nombre lo pone el
    correo solo. Párrafos separados por una línea en blanco. */
 const DEFAULT_MESSAGE = [
-  "La Feria del Millón tiene el gusto de invitarle a su 14.ª edición, que se realizará del 5 al 8 de noviembre de 2026 en el Antiguo Carulla Calle 100 Bogotá – Cl. 98 #17-60, con inauguración el 5 de noviembre.",
-  "Confirme su asistencia y reciba su pase de acceso digital con código QR válido para el acceso a la Feria del Millón, a través de la línea oficial de WhatsApp: +57 3007485406",
+  "Nos complace darle la bienvenida como invitado especial a la 14.ª Feria del Millón, la feria que visibiliza el trabajo de artistas emergentes. Queremos ofrecerle un acceso preferencial para que disfrute de este espacio en una nueva locación.",
+  "Lugar: Cl. 97 #17-31 (Antiguo Carulla Calle 100), Bogotá\n(A 100 metros del round point de la carrera 15)",
+  "Horarios de la feria:\n* Jueves 5 de noviembre: 5:00 p. m. a 10:00 p. m. (Entrada solo para mayores de edad)\n* Viernes 6 de noviembre: 12:00 p. m. a 10:00 p. m.\n* Sábado 7 de noviembre: 12:00 p. m. a 10:00 p. m.\n* Domingo 8 de noviembre: 12:00 p. m. a 10:00 p. m.",
+  "Lo esperamos en la feria.",
 ].join("\n\n");
 
 const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Comprador", "Aliado", "Artista", "Mentor", "Curador", "Asistente"];
@@ -99,7 +101,7 @@ function Invitations({ eventId }: { eventId: string }) {
   const [message, setMessage] = React.useState(DEFAULT_MESSAGE);
   const [image, setImage] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
-  const [deadline, setDeadline] = React.useState("");
+  const [deadline, setDeadline] = React.useState("2026-11-01");
   const invitees = parseInvitees(text);
   const validInvitees = invitees.filter((i) => i.email);
   const invalidLines = invitees.length - validInvitees.length;
