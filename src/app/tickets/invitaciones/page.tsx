@@ -32,7 +32,7 @@ const DEFAULT_MESSAGE = [
 ].join("\n\n");
 
 /** Pieza gráfica de la invitación (misma que DEFAULT_INVITE_IMAGE en tickets-svc). */
-const DEFAULT_IMAGE = "https://res.cloudinary.com/dg9gzic4s/image/upload/v1792766636/feria-del-millon/invitaciones/iylfoxvij7y7b3jnhino.jpg";
+const DEFAULT_IMAGE = "https://res.cloudinary.com/dg9gzic4s/image/upload/w_1120,q_auto,f_auto/v1792793743/feria-del-millon/invitaciones/jgym7rbvclzhxfj5xwvc.jpg";
 
 const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Comprador", "Aliado", "Artista", "Mentor", "Curador", "Asistente"];
 
