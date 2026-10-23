@@ -360,6 +360,8 @@ export interface CreateInvitationsInput {
   eventId: string;
   date?: string;
   allDays?: boolean;
+  /** Un día a elección entre los de la feria (una sola entrada). */
+  anyDay?: boolean;
   admits?: number;
   category?: string;
   invitees: { name: string; email: string }[];

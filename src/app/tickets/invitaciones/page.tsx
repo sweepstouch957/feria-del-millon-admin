@@ -99,7 +99,8 @@ function Invitations({ eventId }: { eventId: string }) {
   const [text, setText] = React.useState("");
   const [category, setCategory] = React.useState("VIP");
   const [date, setDate] = React.useState("");
-  const [allDays, setAllDays] = React.useState(false);
+  const [dayMode, setDayMode] = React.useState<"any" | "one" | "all">("any");
+  const allDays = dayMode === "all";
   const [admits, setAdmits] = React.useState(2);
   const [message, setMessage] = React.useState(DEFAULT_MESSAGE);
   const [image, setImage] = React.useState(DEFAULT_IMAGE);
@@ -110,7 +111,9 @@ function Invitations({ eventId }: { eventId: string }) {
   const invalidLines = invitees.length - validInvitees.length;
   const dayLabel = allDays
     ? "todos los días"
-    : days.find((d) => d.date === date)?.display || (date ? date : "día de inauguración");
+    : dayMode === "any"
+      ? "un día a elección"
+      : days.find((d) => d.date === date)?.display || (date ? date : "día de inauguración");
 
   // "Así le llega": el HTML real del correo, pedido al servidor cuando el texto se asienta.
   // Como texto: un objeto nuevo en cada render no dejaría asentarse al debounce.
@@ -147,7 +150,7 @@ function Invitations({ eventId }: { eventId: string }) {
   const send = useMutation({
     mutationFn: () =>
       createInvitations({
-        eventId, invitees, category, admits, allDays, date: allDays ? undefined : date || undefined,
+        eventId, invitees, category, admits, allDays, anyDay: dayMode === "any", date: dayMode === "one" ? date || undefined : undefined,
         image: image || undefined,
         message: message.trim() && message.trim() !== DEFAULT_MESSAGE ? message.trim() : undefined,
         deadline: deadline || undefined,
@@ -287,11 +290,12 @@ function Invitations({ eventId }: { eventId: string }) {
 
             <Typography variant="caption" color="text.secondary" display="block" mt={2.5} mb={0.75}>¿Qué días puede entrar?</Typography>
             <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} alignItems={{ sm: "center" }}>
-              <ToggleButtonGroup exclusive size="small" value={allDays ? "all" : "one"} onChange={(_, v) => v && setAllDays(v === "all")}>
-                <ToggleButton value="one" sx={{ textTransform: "none", px: 2 }}>Un día</ToggleButton>
+              <ToggleButtonGroup exclusive size="small" value={dayMode} onChange={(_, v) => v && setDayMode(v)}>
+                <ToggleButton value="any" sx={{ textTransform: "none", px: 2 }}>Un día a elección</ToggleButton>
+                <ToggleButton value="one" sx={{ textTransform: "none", px: 2 }}>Un día fijo</ToggleButton>
                 <ToggleButton value="all" sx={{ textTransform: "none", px: 2 }}>Todos los días</ToggleButton>
               </ToggleButtonGroup>
-              {!allDays && (
+              {dayMode === "one" && (
                 <TextField select size="small" value={date} onChange={(e) => setDate(e.target.value)} sx={{ minWidth: 220 }}
                   SelectProps={{ displayEmpty: true }}>
                   <MenuItem value="">Inauguración (primer día)</MenuItem>
