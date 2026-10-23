@@ -29,6 +29,9 @@ const DEFAULT_MESSAGE = [
   "Lo esperamos en la feria.",
 ].join("\n\n");
 
+/** Pieza gráfica de la invitación (misma que DEFAULT_INVITE_IMAGE en tickets-svc). */
+const DEFAULT_IMAGE = "https://res.cloudinary.com/dg9gzic4s/image/upload/v1792766636/feria-del-millon/invitaciones/iylfoxvij7y7b3jnhino.jpg";
+
 const CATEGORIES = ["VIP", "Prensa", "Coleccionista", "Comprador", "Aliado", "Artista", "Mentor", "Curador", "Asistente"];
 
 type Base = "vip" | "mentor" | "curador" | "asistente" | "comprador";
@@ -99,7 +102,7 @@ function Invitations({ eventId }: { eventId: string }) {
   const [allDays, setAllDays] = React.useState(false);
   const [admits, setAdmits] = React.useState(2);
   const [message, setMessage] = React.useState(DEFAULT_MESSAGE);
-  const [image, setImage] = React.useState("");
+  const [image, setImage] = React.useState(DEFAULT_IMAGE);
   const [uploading, setUploading] = React.useState(false);
   const [deadline, setDeadline] = React.useState("2026-11-01");
   const invitees = parseInvitees(text);
