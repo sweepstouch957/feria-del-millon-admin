@@ -392,6 +392,34 @@ export const previewInvitation = async (
 };
 
 /** Manda el correo de invitación y/o el del pase, de muestra, a estos correos. */
+/* ────────── Invitaciones: listado paginado del panel ────────── */
+export interface InvitationStats {
+  sent: number;
+  pending: number;
+  confirmed: number;
+  declined: number;
+  companions: number;
+  attended: number;
+}
+export type InvitationStatusFilter = "" | "pending" | "confirmed" | "declined" | "attended" | "canceled";
+
+export const getInvitationsAdmin = async (params: {
+  eventId: string; page?: number; limit?: number; q?: string; status?: InvitationStatusFilter; all?: boolean;
+}) => {
+  const { all, ...rest } = params;
+  const { data } = await apiClient.get<{ rows: Ticket[]; total: number; page: number; pages: number; limit: number; stats: InvitationStats }>(
+    "/ticket/tickets/invitations-admin",
+    { params: { ...rest, ...(all ? { all: 1 } : {}) }, withCredentials: true },
+  );
+  return data;
+};
+
+/** Correos ya invitados en la feria (titulares), para el resumen antes de enviar. */
+export const getInvitedEmails = async (eventId: string) => {
+  const { data } = await apiClient.get<string[]>("/ticket/tickets/invitations-admin/emails", { params: { eventId }, withCredentials: true });
+  return data;
+};
+
 /* ────────── Enlaces públicos de registro (/i/:code) ────────── */
 export interface InviteLink {
   id: string;

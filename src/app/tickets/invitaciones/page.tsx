@@ -4,10 +4,10 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, Chip, ToggleButton, ToggleButtonGroup,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, IconButton, Tooltip,
-  Checkbox, FormControlLabel,
+  Checkbox, FormControlLabel, TablePagination, InputAdornment,
 } from "@mui/material";
 import { useDebouncedValue } from "@/hooks/useAuth";
-import { FileUp, ImagePlus, Send, UserPlus, X } from "lucide-react";
+import { FileUp, ImagePlus, Search, Send, UserPlus, X } from "lucide-react";
 import { uploadCampaignImage } from "@services/upload.service";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -15,7 +15,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTickets, getTicketDays, previewInvitation, resendInvitation, sendInvitationTest, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import { listUsers } from "@services/user.service";
@@ -258,17 +258,27 @@ function Invitations({ eventId }: { eventId: string }) {
     }
   };
 
-  // ponytail: primeras 200 invitaciones (tope del backend); paginar con nextCursor si pasan de eso.
-  const { data: list = [], isFetching } = useQuery({
-    queryKey: ["invitations", eventId],
-    queryFn: async () => (await getTickets({ eventId, type: "invitacion", limit: 200 })).data as Ticket[],
+  // Invitaciones enviadas: paginadas en el servidor, con búsqueda y filtro por estado.
+  const [listPage, setListPage] = React.useState(0);
+  const [listLimit, setListLimit] = React.useState(50);
+  const [listStatus, setListStatus] = React.useState<InvitationStatusFilter>("");
+  const [listQ, setListQ] = React.useState("");
+  const listQDebounced = useDebouncedValue(listQ.trim(), 350);
+  React.useEffect(() => setListPage(0), [listQDebounced, listStatus, listLimit]);
+  const { data: listData, isFetching } = useQuery({
+    queryKey: ["invitations", eventId, "list", listPage, listLimit, listStatus, listQDebounced],
+    queryFn: () => getInvitationsAdmin({ eventId, page: listPage + 1, limit: listLimit, status: listStatus, q: listQDebounced || undefined }),
+    placeholderData: (prev) => prev,
   });
+  const list = (listData?.rows || []) as Ticket[];
+  const stats = listData?.stats;
 
-  // Estado de cada fila de la lista para el resumen antes de enviar.
-  const invitedEmails = React.useMemo(
-    () => new Set((list as Ticket[]).filter((t) => !t.inviteParent).map((t) => String(t.buyer?.email || "").toLowerCase())),
-    [list],
-  );
+  // Todos los correos ya invitados (no solo la página visible), para el resumen antes de enviar.
+  const { data: invitedList = [] } = useQuery({
+    queryKey: ["invitations", eventId, "emails"],
+    queryFn: () => getInvitedEmails(eventId),
+  });
+  const invitedEmails = React.useMemo(() => new Set(invitedList), [invitedList]);
   const alreadyInvited = validInvitees.filter((i) => invitedEmails.has(i.email.toLowerCase())).length;
   const summaryRows = invitees.map((r, idx) => {
     const e = r.email.toLowerCase();
@@ -317,10 +327,21 @@ function Invitations({ eventId }: { eventId: string }) {
     toast.message(`${fresh.length} contactos de ${BASES.find((b) => b.key === role)?.label} agregados`);
   };
 
-  const hosts = list.filter((t) => !t.inviteParent);
-
-  const exportCsv = () =>
-    downloadCsv(`invitaciones_${stamp()}.csv`, toCsv(list, [
+  const [exporting, setExporting] = React.useState(false);
+  // Exporta TODAS las invitaciones del filtro actual, no solo la página.
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all = (await getInvitationsAdmin({ eventId, status: listStatus, q: listQDebounced || undefined, all: true })).rows as Ticket[];
+      exportRows(all);
+    } catch {
+      toast.error("No se pudo exportar");
+    } finally {
+      setExporting(false);
+    }
+  };
+  const exportRows = (rows: Ticket[]) =>
+    downloadCsv(`invitaciones_${stamp()}.csv`, toCsv(rows, [
       { header: "Nombre", value: (t) => t.buyer?.name },
       { header: "Email", value: (t) => t.buyer?.email },
       // Acompañante: tiene su propio QR; aquí se ve de parte de quién va.
@@ -351,9 +372,9 @@ function Invitations({ eventId }: { eventId: string }) {
         description="El invitado recibe un correo con botón de confirmación; al confirmar recibe su QR."
         actions={[
           {
-            label: "Exportar Excel",
+            label: exporting ? "Exportando…" : "Exportar Excel",
             kind: "sec",
-            disabled: !list.length,
+            disabled: exporting || !listData?.total,
             onClick: exportCsv,
           },
         ]}
@@ -361,11 +382,12 @@ function Invitations({ eventId }: { eventId: string }) {
 
       <KpiStrip
         items={[
-          { label: "Enviadas", value: hosts.length },
-          { label: "Confirmadas", value: hosts.filter((t) => ["sold", "checked_in"].includes(t.status)).length },
-          { label: "Declinaron", value: hosts.filter((t) => t.status === "declined").length },
-          { label: "Acompañantes", value: list.length - hosts.length },
-          { label: "Asistieron", value: list.filter((t) => t.status === "checked_in").length, accent: true },
+          { label: "Enviadas", value: stats?.sent ?? "…" },
+          { label: "Pendientes", value: stats?.pending ?? "…" },
+          { label: "Confirmadas", value: stats?.confirmed ?? "…" },
+          { label: "Declinaron", value: stats?.declined ?? "…" },
+          { label: "Acompañantes", value: stats?.companions ?? "…" },
+          { label: "Asistieron", value: stats?.attended ?? "…", accent: true },
           { label: "En este envío", value: invitees.length },
         ]}
       />
@@ -606,9 +628,24 @@ function Invitations({ eventId }: { eventId: string }) {
       <Card>
         {isFetching && <LinearProgress />}
         <CardContent>
-          <Typography sx={{ fontSize: 17, letterSpacing: "0.01em", pb: 1.5, mb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-            Invitaciones enviadas
-          </Typography>
+          <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "center" }} gap={1.5} sx={{ pb: 1.5, mb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
+            <Typography sx={{ fontSize: 17, letterSpacing: "0.01em" }}>
+              Invitaciones enviadas {listData ? <Typography component="span" color="text.secondary">({listData.total})</Typography> : null}
+            </Typography>
+            <TextField
+              size="small" placeholder="Buscar nombre, correo o documento" value={listQ} onChange={(e) => setListQ(e.target.value)}
+              sx={{ ml: { md: "auto" }, minWidth: 260 }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Search size={15} /></InputAdornment> }}
+            />
+            <TextField select size="small" label="Estado" value={listStatus} onChange={(e) => setListStatus(e.target.value as InvitationStatusFilter)} sx={{ minWidth: 170 }}>
+              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="pending">Pendientes</MenuItem>
+              <MenuItem value="confirmed">Confirmadas</MenuItem>
+              <MenuItem value="declined">Declinaron</MenuItem>
+              <MenuItem value="attended">Asistieron</MenuItem>
+              <MenuItem value="canceled">Anuladas</MenuItem>
+            </TextField>
+          </Stack>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
               <TableHead><TableRow>
@@ -618,7 +655,9 @@ function Invitations({ eventId }: { eventId: string }) {
               </TableRow></TableHead>
               <TableBody>
                 {list.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>Aún no hay invitaciones.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>
+                    {listQDebounced || listStatus ? "Nada coincide con la búsqueda." : "Aún no hay invitaciones."}
+                  </TableCell></TableRow>
                 ) : list.map((t) => (
                   <TableRow key={t.id} hover>
                     <TableCell>
@@ -660,6 +699,17 @@ function Invitations({ eventId }: { eventId: string }) {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={listData?.total ?? 0}
+            page={listPage}
+            onPageChange={(_, p) => setListPage(p)}
+            rowsPerPage={listLimit}
+            onRowsPerPageChange={(e) => setListLimit(parseInt(e.target.value, 10))}
+            rowsPerPageOptions={[25, 50, 100, 200]}
+            labelRowsPerPage="Por página"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+          />
         </CardContent>
       </Card>
     </Box>
