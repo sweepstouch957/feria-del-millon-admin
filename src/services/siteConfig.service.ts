@@ -1,5 +1,16 @@
 import apiClient from "@/axios";
 
+export type MailFlow = "invitations" | "tickets" | "orders" | "applications" | "campaigns" | "account";
+export const MAIL_FLOWS: { key: MailFlow; label: string; hint: string }[] = [
+  { key: "invitations", label: "Invitaciones", hint: "Invitación especial y pase con QR" },
+  { key: "tickets", label: "Entradas", hint: "Compra de entradas y sus QR" },
+  { key: "orders", label: "Compras de obras", hint: "Confirmación al comprador y aviso al artista" },
+  { key: "applications", label: "Convocatoria", hint: "Postulaciones, resultados y avisos a artistas" },
+  { key: "campaigns", label: "Comunicaciones", hint: "Boletín y campañas masivas" },
+  { key: "account", label: "Cuenta", hint: "Recuperar contraseña" },
+];
+const EMPTY_SENDERS = Object.fromEntries(MAIL_FLOWS.map((f) => [f.key, { email: "", name: "" }])) as Record<MailFlow, { email: string; name: string }>;
+
 export interface SiteTheme {
   accent: string;
   accentDark: string;
@@ -91,6 +102,8 @@ export interface LandingConfig {
   priceLabel: string;
   /** Congelamiento de la venta en línea (días de feria). Fechas YYYY-MM-DD inclusive, hora Bogotá. */
   catalogSales: { pausedFrom: string; pausedTo: string; message: string };
+  /** Remitente por tipo de correo. Vacío = el general. El dominio tiene que estar verificado en Mandrill. */
+  mailSenders: Record<MailFlow, { email: string; name: string }>;
   convocatoriaPage: ConvocatoriaPage;
   linktree: LinktreeConfig;
 }
@@ -288,6 +301,7 @@ export const LANDING_DEFAULTS: LandingConfig = {
   showPrices: true,
   priceLabel: "$1.000.000",
   catalogSales: { pausedFrom: "", pausedTo: "", message: "Durante los días de feria las obras se compran en el recinto. La venta en línea se reabre al terminar." },
+  mailSenders: EMPTY_SENDERS,
   convocatoriaPage: CONVOCATORIA_PAGE_DEFAULTS,
   linktree: LINKTREE_DEFAULTS,
 };
@@ -431,6 +445,9 @@ function mergeLanding(l: any): LandingConfig {
     showPrices: l.showPrices ?? D.showPrices,
     priceLabel: l.priceLabel || D.priceLabel,
     catalogSales: { ...D.catalogSales, ...(l.catalogSales || {}) },
+    mailSenders: Object.fromEntries(
+      MAIL_FLOWS.map((f) => [f.key, { ...EMPTY_SENDERS[f.key], ...((l.mailSenders || {})[f.key] || {}) }]),
+    ) as Record<MailFlow, { email: string; name: string }>,
     convocatoriaPage: mergeConvPage(l.convocatoriaPage),
     linktree: {
       ...D.linktree,

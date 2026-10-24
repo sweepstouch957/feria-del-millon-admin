@@ -11,6 +11,7 @@ import {
   ExternalLink as ExternalLinkIcon, QrCode as QrIcon,
 } from "lucide-react";
 import {
+  MAIL_FLOWS,
   getSiteConfig, updateSiteConfig, SITE_DEFAULTS, SECTION_LABELS,
   type SiteConfig, type SectionKey, type LinktreeConfig,
 } from "@services/siteConfig.service";
@@ -321,6 +322,7 @@ export default function PersonalizacionPage() {
       ["landing.programs"], ["landing.convocatoria"], ["landing.convocatoriaPage"],
       ["landing.newsletter"], ["landing.linktree"],
       ["landing.footer", "landing.priceLabel", "landing.showPrices"],
+      ["landing.mailSenders"], ["landing.catalogSales"],
       ["content.featured"], ["content.techniques"], ["content.contact"], ["content.social"],
     ];
     return groups.filter((paths) =>
@@ -936,6 +938,33 @@ export default function PersonalizacionPage() {
           <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
             <Stack direction="row" flexWrap="wrap" alignItems="center"><Switch checked={landing.showPrices} onChange={() => setL((l) => ({ ...l, showPrices: !l.showPrices }))} color="success" /><Typography variant="body2">Mostrar precios en obras</Typography></Stack>
             <TextField size="small" label="Precio de referencia" value={landing.priceLabel} onChange={(e) => setL((l) => ({ ...l, priceLabel: e.target.value }))} sx={{ minWidth: 160 }} />
+          </Stack>
+        </Section>
+
+        {/* Remitente por tipo de correo */}
+        <Section
+          title="Remitentes de correo"
+          hint="Desde qué dirección sale cada tipo de correo. Vacío = el remitente general. El dominio tiene que estar verificado en Mandrill (DKIM y DMARC); si no, esos correos se rechazan."
+          paths={["landing.mailSenders"]}
+        >
+          <Stack spacing={1.5}>
+            {MAIL_FLOWS.map((f) => {
+              const v = landing.mailSenders[f.key];
+              const bad = !!v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim());
+              return (
+                <Stack key={f.key} direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "flex-start" }}>
+                  <Box sx={{ minWidth: 190, pt: { md: 1 } }}>
+                    <Typography variant="body2" fontWeight={600}>{f.label}</Typography>
+                    <Typography variant="caption" color="text.secondary">{f.hint}</Typography>
+                  </Box>
+                  <TextField size="small" label="Correo remitente" placeholder="invitaciones@feriadelmillon.com" value={v.email} error={bad}
+                    helperText={bad ? "Correo no válido" : " "} sx={{ flex: 1 }}
+                    onChange={(e) => setL((l) => ({ ...l, mailSenders: { ...l.mailSenders, [f.key]: { ...l.mailSenders[f.key], email: e.target.value } } }))} />
+                  <TextField size="small" label="Nombre que se ve" placeholder="Feria del Millón" value={v.name} helperText=" " sx={{ flex: 1 }}
+                    onChange={(e) => setL((l) => ({ ...l, mailSenders: { ...l.mailSenders, [f.key]: { ...l.mailSenders[f.key], name: e.target.value } } }))} />
+                </Stack>
+              );
+            })}
           </Stack>
         </Section>
 
