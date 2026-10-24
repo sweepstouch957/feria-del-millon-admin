@@ -173,8 +173,13 @@ function Invitations({ eventId }: { eventId: string }) {
       setImportingFile(false);
     }
   };
-  const validInvitees = invitees.filter((i) => i.email);
-  const invalidLines = invitees.length - validInvitees.length;
+  // Un correo una sola vez: repetirlo en la misma lista reiniciaría su propia invitación.
+  const validInvitees = invitees.filter(
+    (i, idx) => i.email && invitees.findIndex((j) => j.email.toLowerCase() === i.email.toLowerCase()) === idx,
+  );
+  const invalidLines = invitees.filter((i) => !i.email).length;
+  const repeatedLines = invitees.length - validInvitees.length - invalidLines;
+  const [showSummary, setShowSummary] = React.useState(true);
   const dayLabel = allDays
     ? "todos los días"
     : dayMode === "any"
@@ -240,6 +245,20 @@ function Invitations({ eventId }: { eventId: string }) {
   const { data: list = [], isFetching } = useQuery({
     queryKey: ["invitations", eventId],
     queryFn: async () => (await getTickets({ eventId, type: "invitacion", limit: 200 })).data as Ticket[],
+  });
+
+  // Estado de cada fila de la lista para el resumen antes de enviar.
+  const invitedEmails = React.useMemo(
+    () => new Set((list as Ticket[]).filter((t) => !t.inviteParent).map((t) => String(t.buyer?.email || "").toLowerCase())),
+    [list],
+  );
+  const alreadyInvited = validInvitees.filter((i) => invitedEmails.has(i.email.toLowerCase())).length;
+  const summaryRows = invitees.map((r, idx) => {
+    const e = r.email.toLowerCase();
+    if (!r.email) return { ...r, send: false, label: "Sin correo · se omite", tone: "warning" as const };
+    if (invitees.findIndex((j) => j.email.toLowerCase() === e) !== idx) return { ...r, send: false, label: "Repetido · se omite", tone: "default" as const };
+    if (invitedEmails.has(e)) return { ...r, send: true, label: "Ya invitado · se reinicia", tone: "info" as const };
+    return { ...r, send: true, label: "Nueva invitación", tone: "success" as const };
   });
 
   const send = useMutation({
@@ -360,12 +379,54 @@ function Invitations({ eventId }: { eventId: string }) {
             <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} mt={1}>
               <Chip size="small" color={validInvitees.length ? "secondary" : "default"} label={`${validInvitees.length} con correo válido`} />
               {invalidLines > 0 && <Chip size="small" color="warning" variant="outlined" label={`${invalidLines} sin correo (se omiten)`} />}
+              {repeatedLines > 0 && <Chip size="small" variant="outlined" label={`${repeatedLines} repetidos (se envía una vez)`} />}
+              {alreadyInvited > 0 && <Chip size="small" color="info" variant="outlined" label={`${alreadyInvited} ya invitados (se reinician)`} />}
               <Button component="label" size="small" variant="outlined" startIcon={<FileUp size={14} />} sx={{ textTransform: "none" }} disabled={importingFile}>
                 {importingFile ? "Leyendo archivo…" : "Importar Excel o CSV"}
                 <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={(e) => { onPickFile(e.target.files?.[0]); e.target.value = ""; }} />
               </Button>
               {!!text.trim() && <Button size="small" onClick={() => setText("")} sx={{ textTransform: "none", ml: "auto" }}>Vaciar lista</Button>}
             </Stack>
+
+            {/* Resumen: a quién se le va a enviar, fila por fila */}
+            {invitees.length > 0 && (
+              <Box sx={{ mt: 1.5, border: "1px solid", borderColor: "divider" }}>
+                <Stack direction="row" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: showSummary ? "1px solid" : 0, borderColor: "divider" }}>
+                  <Typography fontSize={13} fontWeight={600}>
+                    Se enviará a {validInvitees.length} {validInvitees.length === 1 ? "persona" : "personas"}
+                  </Typography>
+                  <Button size="small" onClick={() => setShowSummary((v) => !v)} sx={{ ml: "auto", textTransform: "none" }}>
+                    {showSummary ? "Ocultar" : "Ver lista"}
+                  </Button>
+                </Stack>
+                {showSummary && (
+                  <TableContainer sx={{ maxHeight: 320 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: 44 }}>#</TableCell>
+                          <TableCell>Nombre</TableCell>
+                          <TableCell>Correo</TableCell>
+                          <TableCell>Estado</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {summaryRows.map((r, i) => (
+                          <TableRow key={i} sx={{ opacity: r.send ? 1 : 0.55 }}>
+                            <TableCell sx={{ color: "text.secondary" }}>{i + 1}</TableCell>
+                            <TableCell>{r.name || "—"}</TableCell>
+                            <TableCell sx={{ wordBreak: "break-all" }}>{r.email || "—"}</TableCell>
+                            <TableCell>
+                              <Chip size="small" variant={r.send ? "filled" : "outlined"} color={r.tone} label={r.label} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
+            )}
             <Typography variant="caption" color="text.secondary" display="block" mt={1.5} mb={0.5}>
               O trae contactos de las bases:
             </Typography>
