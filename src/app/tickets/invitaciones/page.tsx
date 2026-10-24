@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { createInvitations, getTickets, getTicketDays, previewInvitation, resendInvitation, sendInvitationTest, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
+import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import { listUsers } from "@services/user.service";
 import { listCustomers } from "@services/orders.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
@@ -520,6 +521,8 @@ function Invitations({ eventId }: { eventId: string }) {
           </CardContent></Card>
         </Box>
       </Box>
+
+      <InviteLinksCard eventId={eventId} />
 
       <Card>
         {isFetching && <LinearProgress />}

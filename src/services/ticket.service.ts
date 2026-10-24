@@ -392,6 +392,42 @@ export const previewInvitation = async (
 };
 
 /** Manda el correo de invitación y/o el del pase, de muestra, a estos correos. */
+/* ────────── Enlaces públicos de registro (/i/:code) ────────── */
+export interface InviteLink {
+  id: string;
+  code: string;
+  label: string;
+  category: string;
+  admits: number;
+  allDays: boolean;
+  anyDay: boolean;
+  date: string | null;
+  maxUses: number;
+  uses: number;
+  remaining: number;
+  active: boolean;
+  open: boolean;
+  createdAt?: string;
+}
+
+export const listInviteLinks = async (eventId: string) => {
+  const { data } = await apiClient.get<InviteLink[]>("/ticket/tickets/invite-links", { params: { eventId }, withCredentials: true });
+  return data;
+};
+
+export const createInviteLink = async (input: {
+  eventId: string; code?: string; label?: string; category?: string; admits?: number;
+  allDays?: boolean; anyDay?: boolean; date?: string; maxUses?: number;
+}) => {
+  const { data } = await apiClient.post<InviteLink>("/ticket/tickets/invite-links", input, { withCredentials: true });
+  return data;
+};
+
+export const updateInviteLink = async (id: string, body: { active?: boolean; maxUses?: number; label?: string }) => {
+  const { data } = await apiClient.patch<InviteLink>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}`, body, { withCredentials: true });
+  return data;
+};
+
 export const sendInvitationTest = async (
   input: Pick<CreateInvitationsInput, "eventId" | "image" | "message" | "admits" | "deadline" | "allDays" | "anyDay"> & {
     emails: string[];
