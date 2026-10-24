@@ -3,7 +3,7 @@ import * as React from "react";
 import NextLink from "next/link";
 import {
   Box, Card, CardContent, Stack, TextField, Typography, Button, Divider,
-  Snackbar, Alert, CircularProgress, IconButton, Tooltip, Switch, FormControlLabel,
+  Snackbar, Alert, CircularProgress, IconButton, Tooltip, Switch, FormControlLabel, Tabs, Tab,
 } from "@mui/material";
 import {
   Save as SaveIcon, RotateCcw as ResetIcon, Palette as PaletteIcon,
@@ -45,7 +45,18 @@ type PersoCtxValue = {
   saveSection: (paths: string[]) => void;
   query: string;
   onlyDirty: boolean;
+  tab: TabKey;
 };
+
+const TABS = [
+  { key: "sitio", label: "Sitio y marca" },
+  { key: "inicio", label: "Página de inicio" },
+  { key: "convocatoria", label: "Convocatoria" },
+  { key: "ventas", label: "Ventas y correos" },
+  { key: "contacto", label: "Contacto y enlaces" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
 const PersoCtx = React.createContext<PersoCtxValue | null>(null);
 
 /** Lee "content.brand" dentro de un objeto. */
@@ -71,11 +82,14 @@ const norm = (t: string) =>
   t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function Section({
+  group,
   title,
   hint,
   paths,
   children,
 }: {
+  /** Pestaña donde vive la tarjeta. */
+  group: TabKey;
   title: string;
   /** Una línea que explica dónde se ve esto en el sitio. */
   hint?: string;
@@ -96,6 +110,10 @@ function Section({
   const matches = !q || norm(title).includes(q) || norm(hint || "").includes(q);
   if (!matches) return null;
   if (ctx.onlyDirty && !dirty) return null;
+  // Solo se monta la pestaña activa (la página entera eran ~25 tarjetas con
+  // cientos de campos: cada tecla volvía a pintarlo todo). Buscar o "solo con
+  // cambios" miran en todas las pestañas.
+  if (!q && !ctx.onlyDirty && group !== ctx.tab) return null;
 
   const saving = ctx.savingPath === paths.join("|");
 
@@ -210,6 +228,19 @@ export default function PersonalizacionPage() {
   const [savingPath, setSavingPath] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
   const [onlyDirty, setOnlyDirty] = React.useState(false);
+  const [tab, setTab] = React.useState<TabKey>("sitio");
+  // La última pestaña usada (se lee después de montar: en el servidor no hay localStorage).
+  React.useEffect(() => {
+    try {
+      const v = localStorage.getItem("perso-tab") as TabKey | null;
+      if (v && TABS.some((t) => t.key === v)) setTab(v);
+    } catch { /* sin storage */ }
+  }, []);
+  const changeTab = (t: TabKey) => {
+    setTab(t);
+    try { localStorage.setItem("perso-tab", t); } catch { /* sin storage */ }
+    window.scrollTo({ top: 0 });
+  };
 
   React.useEffect(() => {
     getSiteConfig()
@@ -393,13 +424,26 @@ export default function PersonalizacionPage() {
         ]}
       />
 
-      {/* Buscador: 23 tarjetas en una página son muchas para recorrer a ojo. */}
+      {/* Pestañas: una categoría a la vez. */}
+      <Box sx={{ position: "sticky", top: 0, zIndex: 5, bgcolor: "background.default", borderBottom: 1, borderColor: "divider", mb: 2 }}>
+        <Tabs
+          value={query || onlyDirty ? false : tab}
+          onChange={(_, v) => changeTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
+          {TABS.map((t) => <Tab key={t.key} value={t.key} label={t.label} sx={{ textTransform: "none" }} />)}
+        </Tabs>
+      </Box>
+
+      {/* Buscador: busca en todas las pestañas. */}
       <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.5} mb={2.5}>
         <TextField
           size="small"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar sección…"
+          placeholder="Buscar en todas las secciones…"
           sx={{ flex: "1 1 220px", maxWidth: 340 }}
         />
         <Button
@@ -420,11 +464,12 @@ export default function PersonalizacionPage() {
       </Stack>
 
       <PersoCtx.Provider
-        value={{ cfg, savedCfg, savingPath, saveSection, query, onlyDirty }}
+        value={{ cfg, savedCfg, savingPath, saveSection, query, onlyDirty, tab }}
       >
       <Stack spacing={2.5}>
         {/* Marca y SEO */}
         <Section
+          group="sitio"
           title="Marca y SEO"
           hint="Nombre, lema y cómo aparece el sitio en buscadores."
           paths={["content.brand", "content.seo"]}
@@ -472,6 +517,7 @@ export default function PersonalizacionPage() {
 
         {/* Tema — paleta editorial de la landing */}
         <Section
+          group="sitio"
           title="Tema — colores de la landing"
           hint="Paleta que usa todo el sitio público."
           paths={["theme"]}
@@ -512,6 +558,7 @@ export default function PersonalizacionPage() {
 
         {/* Secciones: orden + visibilidad */}
         <Section
+          group="sitio"
           title="Secciones — orden y visibilidad"
           hint="Qué bloques se muestran en la portada y en qué orden."
           paths={["sections"]}
@@ -539,6 +586,7 @@ export default function PersonalizacionPage() {
 
         {/* Navbar — pestañas configurables */}
         <Section
+          group="sitio"
           title="Navbar — pestañas del menú"
           hint="Enlaces de la barra superior."
           paths={["nav"]}
@@ -586,6 +634,7 @@ export default function PersonalizacionPage() {
 
         {/* Hero */}
         <Section
+          group="inicio"
           title="Portada (hero)"
           hint="Lo primero que se ve al entrar."
           paths={["content.hero"]}
@@ -641,6 +690,7 @@ export default function PersonalizacionPage() {
 
         {/* Hero — barra y datos */}
         <Section
+          group="inicio"
           title="Portada — barra superior y datos"
           hint="Edición, ciudad y año sobre la portada."
           paths={["landing.heroMeta"]}
@@ -664,6 +714,7 @@ export default function PersonalizacionPage() {
 
         {/* Ticker */}
         <Section
+          group="inicio"
           title="Ticker (cinta que se desliza)"
           hint="Cinta de texto en movimiento bajo la portada."
           paths={["landing.ticker", "landing.showTicker"]}
@@ -676,6 +727,7 @@ export default function PersonalizacionPage() {
 
         {/* La feria (about) */}
         <Section
+          group="inicio"
           title="La feria (intro + estadísticas)"
           hint="Bloque de presentación con cifras."
           paths={["landing.about"]}
@@ -702,6 +754,7 @@ export default function PersonalizacionPage() {
 
         {/* Técnicas — tarjetas */}
         <Section
+          group="inicio"
           title="Técnicas — tarjetas (imagen + nombre)"
           hint="Tarjetas ilustradas de la sección de técnicas."
           paths={["landing.techniqueItems"]}
@@ -720,6 +773,7 @@ export default function PersonalizacionPage() {
 
         {/* Sedes */}
         <Section
+          group="inicio"
           title="Sedes"
           hint="Ciudades y espacios donde ocurre la feria."
           paths={["landing.sedes"]}
@@ -743,6 +797,7 @@ export default function PersonalizacionPage() {
 
         {/* Programas */}
         <Section
+          group="inicio"
           title="Programas"
           hint="Actividades y programación."
           paths={["landing.programs"]}
@@ -763,6 +818,7 @@ export default function PersonalizacionPage() {
 
         {/* Convocatoria */}
         <Section
+          group="inicio"
           title="Convocatoria"
           hint="Bloque de convocatoria en la portada."
           paths={["landing.convocatoria"]}
@@ -792,6 +848,7 @@ export default function PersonalizacionPage() {
         <Divider textAlign="left"><Typography variant="overline" fontWeight={500} color="text.secondary">Página de convocatoria</Typography></Divider>
 
         <Section
+          group="convocatoria"
           title="Convocatoria — portada"
           hint="Encabezado de la página de convocatoria."
           paths={["landing.convocatoriaPage"]}
@@ -836,6 +893,7 @@ export default function PersonalizacionPage() {
         </Section>
 
         <Section
+          group="convocatoria"
           title="Convocatoria — textos"
           hint="Copys de la página de convocatoria."
           paths={["landing.convocatoriaPage"]}
@@ -855,6 +913,7 @@ export default function PersonalizacionPage() {
         </Section>
 
         <Section
+          group="convocatoria"
           title="Convocatoria — quién participa / requisitos"
           hint="Condiciones para postular."
           paths={["landing.convocatoriaPage"]}
@@ -869,6 +928,7 @@ export default function PersonalizacionPage() {
         </Section>
 
         <Section
+          group="convocatoria"
           title="Convocatoria — documentos y pasos"
           hint="Qué debe preparar el artista."
           paths={["landing.convocatoriaPage"]}
@@ -894,6 +954,7 @@ export default function PersonalizacionPage() {
         </Section>
 
         <Section
+          group="convocatoria"
           title="Convocatoria — rechazo, comisiones y compromisos"
           hint="Reglas del proceso y letra chica."
           paths={["landing.convocatoriaPage"]}
@@ -917,6 +978,7 @@ export default function PersonalizacionPage() {
 
         {/* Boletín */}
         <Section
+          group="inicio"
           title="Boletín (newsletter)"
           hint="Bloque de suscripción por correo."
           paths={["landing.newsletter"]}
@@ -930,6 +992,7 @@ export default function PersonalizacionPage() {
 
         {/* Footer + ajustes */}
         <Section
+          group="sitio"
           title="Pie de página y ajustes"
           hint="Pie del sitio y visibilidad de precios."
           paths={["landing.footer", "landing.priceLabel", "landing.showPrices"]}
@@ -943,6 +1006,7 @@ export default function PersonalizacionPage() {
 
         {/* Remitente por tipo de correo */}
         <Section
+          group="ventas"
           title="Remitentes de correo"
           hint="Desde qué dirección sale cada tipo de correo. Vacío = el remitente general. El dominio tiene que estar verificado en Mandrill (DKIM y DMARC); si no, esos correos se rechazan."
           paths={["landing.mailSenders"]}
@@ -970,6 +1034,7 @@ export default function PersonalizacionPage() {
 
         {/* Venta en línea congelada durante la feria */}
         <Section
+          group="ventas"
           title="Venta en línea del catálogo"
           hint="Entre estas fechas (inclusive) el catálogo se ve pero no se compra en línea: prioridad a quien está en la feria. La caja sigue vendiendo. Vacío = nunca se pausa."
           paths={["landing.catalogSales"]}
@@ -983,6 +1048,7 @@ export default function PersonalizacionPage() {
 
         {/* Obras destacadas (título de sección; las obras salen del catálogo) */}
         <Section
+          group="inicio"
           title="Obras destacadas"
           hint="Textos de la sección de obras destacadas."
           paths={["content.featured"]}
@@ -993,6 +1059,7 @@ export default function PersonalizacionPage() {
           </Stack>
         </Section>
         <Section
+          group="inicio"
           title="Técnicas"
           hint="Textos de la sección de técnicas."
           paths={["content.techniques"]}
@@ -1003,6 +1070,7 @@ export default function PersonalizacionPage() {
 
         {/* Contacto */}
         <Section
+          group="contacto"
           title="Contacto"
           hint="Datos de contacto públicos."
           paths={["content.contact"]}
@@ -1018,6 +1086,7 @@ export default function PersonalizacionPage() {
 
         {/* Redes sociales */}
         <Section
+          group="contacto"
           title="Redes sociales"
           hint="Enlaces a redes."
           paths={["content.social"]}
@@ -1041,6 +1110,7 @@ export default function PersonalizacionPage() {
 
         {/* Página de enlaces (/links): la del QR */}
         <Section
+          group="contacto"
           title="Página de enlaces (QR)"
           hint="La página corta que abre el QR: feria-millon.immsai.com/links. Enlaces, cifras y el PDF de las bases."
           paths={["landing.linktree"]}
