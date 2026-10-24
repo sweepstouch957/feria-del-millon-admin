@@ -436,6 +436,11 @@ export interface InviteLink {
   active: boolean;
   open: boolean;
   createdAt?: string;
+  /** Correo del enlace: pieza, texto y fecha límite (YYYY-MM-DD). Vacío = los de siempre. */
+  emailImage?: string;
+  emailMessage?: string;
+  emailDeadline?: string;
+  emailsSent?: number;
 }
 
 export const listInviteLinks = async (eventId: string) => {
@@ -451,8 +456,27 @@ export const createInviteLink = async (input: {
   return data;
 };
 
-export const updateInviteLink = async (id: string, body: { active?: boolean; maxUses?: number; label?: string }) => {
+export const updateInviteLink = async (
+  id: string,
+  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string },
+) => {
   const { data } = await apiClient.patch<InviteLink>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}`, body, { withCredentials: true });
+  return data;
+};
+
+/** HTML del correo del enlace con el borrador (sin guardar). */
+export const previewInviteLinkEmail = async (id: string, draft: { emailImage?: string; emailMessage?: string; emailDeadline?: string }) => {
+  const { data } = await apiClient.post<{ html: string }>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}/preview`, draft, { withCredentials: true });
+  return data.html;
+};
+
+/** Manda el correo del enlace a esos correos (test = solo prueba, asunto [PRUEBA]). */
+export const sendInviteLinkEmails = async (id: string, emails: string[], test = false) => {
+  const { data } = await apiClient.post<{ ok: boolean; sent?: number; failed?: { email: string; error: string }[]; queued?: boolean; total?: number }>(
+    `/ticket/tickets/invite-links/${encodeURIComponent(id)}/send`,
+    { emails, test },
+    { withCredentials: true },
+  );
   return data;
 };
 

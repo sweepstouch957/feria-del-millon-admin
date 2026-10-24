@@ -5,7 +5,8 @@ import {
   Box, Button, Card, CardContent, Chip, IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from "@mui/material";
-import { Copy, Download, Link2 } from "lucide-react";
+import { Copy, Download, Link2, Mail } from "lucide-react";
+import InviteLinkEmailDialog from "./InviteLinkEmailDialog";
 import QRCode from "qrcode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -21,7 +22,8 @@ const base = SHOP_URL.replace(/\/+$/, "");
 const shortUrl = (code: string) => `${base}/i/${code}`;
 const prettyUrl = (code: string) => shortUrl(code).replace(/^https?:\/\//, "");
 
-export default function InviteLinksCard({ eventId }: { eventId: string }) {
+export default function InviteLinksCard({ eventId, defaultMessage = "" }: { eventId: string; defaultMessage?: string }) {
+  const [emailFor, setEmailFor] = React.useState<InviteLink | null>(null);
   const qc = useQueryClient();
   const { data: links = [], isLoading } = useQuery({
     queryKey: ["invite-links", eventId],
@@ -137,6 +139,9 @@ export default function InviteLinksCard({ eventId }: { eventId: string }) {
                       <Switch size="small" checked={l.active} onChange={(e) => update.mutate({ id: l.id, active: e.target.checked })} />
                     </TableCell>
                     <TableCell align="right">
+                      <Button size="small" variant="outlined" startIcon={<Mail size={14} />} onClick={() => setEmailFor(l)} sx={{ mr: 1, textTransform: "none" }}>
+                        Correo{l.emailsSent ? ` (${l.emailsSent})` : ""}
+                      </Button>
                       <Tooltip title="Copiar enlace"><IconButton size="small" onClick={() => copy(l.code)}><Copy size={16} /></IconButton></Tooltip>
                       <Tooltip title="Descargar QR para la pieza"><IconButton size="small" onClick={() => downloadQr(l.code)}><Download size={16} /></IconButton></Tooltip>
                     </TableCell>
@@ -152,6 +157,13 @@ export default function InviteLinksCard({ eventId }: { eventId: string }) {
           </Typography>
         </Box>
       </CardContent>
+      <InviteLinkEmailDialog
+        link={emailFor ? links.find((x: InviteLink) => x.id === emailFor.id) || emailFor : null}
+        open={!!emailFor}
+        onClose={() => setEmailFor(null)}
+        defaultMessage={defaultMessage}
+        shortUrl={emailFor ? shortUrl(emailFor.code) : ""}
+      />
     </Card>
   );
 }

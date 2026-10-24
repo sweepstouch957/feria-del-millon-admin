@@ -623,7 +623,7 @@ function Invitations({ eventId }: { eventId: string }) {
         </Box>
       </Box>
 
-      <InviteLinksCard eventId={eventId} />
+      <InviteLinksCard eventId={eventId} defaultMessage={DEFAULT_MESSAGE} />
 
       <Card>
         {isFetching && <LinearProgress />}
