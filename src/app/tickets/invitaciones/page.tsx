@@ -55,26 +55,43 @@ const STATUS: Record<string, { label: string; tone: PillTone }> = {
 };
 
 /** "Nombre, correo" / "Nombre;correo" / "correo" por línea. */
-const EMAIL_IN = /[^\s,;<>"']+@[^\s,;<>"']+\.[^\s,;<>"']+/;
+const EMAIL_IN = /[^\s,;<>"'/()[\]]+@[^\s,;<>"'/()[\]]+\.[a-z]{2,}(?![a-z0-9-])/i;
+const EMAIL_ALL = new RegExp(EMAIL_IN.source, "gi");
 // Celdas que no son nombre: número de fila, etiquetas como "INVITADO ESPECIAL".
 const isNoise = (c: string) => /^\d+$/.test(c) || /^invitad[oa]s?\s+especial(es)?$/i.test(c);
+// Fila de encabezado de Excel: "Nombre  Apellido  Correo".
+const isHeader = (l: string) => /^(#\s*)?(nombres?|name)\b.*\b(correo|e-?mail)\b/i.test(l.replace(/\s+/g, " "));
+// Espacios raros de Excel (dobles, no separables, invisibles) → uno solo.
+const cleanText = (s: string) => s.replace(/[\s\u00a0\u200b\ufeff]+/g, " ").replace(/\s*\/\s*/g, " / ").trim();
+// "DANIEL RIPOLL" → "Daniel Ripoll"; deja igual lo que ya viene en mayúsculas y minúsculas.
+const titleIfShouting = (s: string) =>
+  s
+    .split(" ")
+    .map((w) => (w.length > 1 && w === w.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(w) ? w[0] + w.slice(1).toLowerCase() : w))
+    .join(" ");
+
+type ParsedInvitee = { name: string; email: string; extraEmails: number; brokenEmail: boolean };
 
 /** Una línea por invitado. Acepta "Nombre, correo", "Nombre Apellido correo" o
- *  filas pegadas de Excel (columnas separadas por tabulador, con número de fila). */
-function parseInvitees(text: string) {
+ *  filas pegadas de Excel (columnas con tabulador, número de fila, encabezado,
+ *  dos correos en la misma celda). Usa el primer correo válido de cada fila. */
+function parseInvitees(text: string): ParsedInvitee[] {
   return text
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter(Boolean)
+    .filter((l) => l && !isHeader(l))
     .map((l) => {
-      const email = l.match(EMAIL_IN)?.[0] || "";
+      const emails = l.match(EMAIL_ALL) || [];
+      const email = (emails[0] || "").toLowerCase();
       const cells = l
-        .replace(email, " ")
+        .replace(EMAIL_ALL, " ")
         .split(/[\t,;<>|]+/)
-        .map((c) => c.replace(/\s+/g, " ").trim())
-        .filter((c) => c && !isNoise(c));
-      const name = cells.join(" ").trim() || email.split("@")[0];
-      return { name, email };
+        .map(cleanText)
+        .map((c) => c.replace(/^\/|\/$/g, "").trim())
+        // Un "correo" sin dominio completo (x@empresa-co) no va al nombre.
+        .filter((c) => c && c !== "/" && !isNoise(c) && !/\S+@\S+/.test(c));
+      const name = titleIfShouting(cleanText(cells.join(" "))) || email.split("@")[0];
+      return { name, email, extraEmails: Math.max(emails.length - 1, 0), brokenEmail: !email && /\S@\S/.test(l) };
     });
 }
 
@@ -99,7 +116,7 @@ async function readInviteesFile(file: File): Promise<{ name: string; email: stri
         cName >= 0
           ? [cells[cName], cLast >= 0 ? cells[cLast] : ""].filter(Boolean).join(" ")
           : cells.filter((c: string) => c && !EMAIL_IN.test(c) && !isNoise(c)).join(" ");
-      out.push({ name: name.replace(/\s+/g, " ").trim() || email.split("@")[0], email: email.toLowerCase() });
+      out.push({ name: titleIfShouting(cleanText(name)) || email.split("@")[0], email: email.toLowerCase() });
     }
   }
   return out;
@@ -255,10 +272,11 @@ function Invitations({ eventId }: { eventId: string }) {
   const alreadyInvited = validInvitees.filter((i) => invitedEmails.has(i.email.toLowerCase())).length;
   const summaryRows = invitees.map((r, idx) => {
     const e = r.email.toLowerCase();
-    if (!r.email) return { ...r, send: false, label: "Sin correo · se omite", tone: "warning" as const };
+    if (!r.email) return { ...r, send: false, label: r.brokenEmail ? "Correo incompleto · se omite" : "Sin correo · se omite", tone: "warning" as const };
     if (invitees.findIndex((j) => j.email.toLowerCase() === e) !== idx) return { ...r, send: false, label: "Repetido · se omite", tone: "default" as const };
-    if (invitedEmails.has(e)) return { ...r, send: true, label: "Ya invitado · se reinicia", tone: "info" as const };
-    return { ...r, send: true, label: "Nueva invitación", tone: "success" as const };
+    const extra = r.extraEmails ? ` · usa el 1.er correo` : "";
+    if (invitedEmails.has(e)) return { ...r, send: true, label: `Ya invitado · se reinicia${extra}`, tone: "info" as const };
+    return { ...r, send: true, label: `Nueva invitación${extra}`, tone: "success" as const };
   });
 
   const send = useMutation({
