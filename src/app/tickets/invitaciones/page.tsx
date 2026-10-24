@@ -7,7 +7,7 @@ import {
   Checkbox, FormControlLabel,
 } from "@mui/material";
 import { useDebouncedValue } from "@/hooks/useAuth";
-import { ImagePlus, Send, UserPlus, X } from "lucide-react";
+import { FileUp, ImagePlus, Send, UserPlus, X } from "lucide-react";
 import { uploadCampaignImage } from "@services/upload.service";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -54,16 +54,54 @@ const STATUS: Record<string, { label: string; tone: PillTone }> = {
 };
 
 /** "Nombre, correo" / "Nombre;correo" / "correo" por línea. */
+const EMAIL_IN = /[^\s,;<>"']+@[^\s,;<>"']+\.[^\s,;<>"']+/;
+// Celdas que no son nombre: número de fila, etiquetas como "INVITADO ESPECIAL".
+const isNoise = (c: string) => /^\d+$/.test(c) || /^invitad[oa]s?\s+especial(es)?$/i.test(c);
+
+/** Una línea por invitado. Acepta "Nombre, correo", "Nombre Apellido correo" o
+ *  filas pegadas de Excel (columnas separadas por tabulador, con número de fila). */
 function parseInvitees(text: string) {
   return text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean)
     .map((l) => {
-      const email = l.match(/[^\s,;<>]+@[^\s,;<>]+\.[^\s,;<>]+/)?.[0] || "";
-      const name = l.replace(email, "").replace(/[,;<>]/g, " ").trim() || email.split("@")[0];
+      const email = l.match(EMAIL_IN)?.[0] || "";
+      const cells = l
+        .replace(email, " ")
+        .split(/[\t,;<>|]+/)
+        .map((c) => c.replace(/\s+/g, " ").trim())
+        .filter((c) => c && !isNoise(c));
+      const name = cells.join(" ").trim() || email.split("@")[0];
       return { name, email };
     });
+}
+
+/** Lee un .xlsx / .xls / .csv: busca las columnas de nombre, apellido y correo
+ *  por su encabezado (o, sin encabezado, la celda que parece correo). */
+async function readInviteesFile(file: File): Promise<{ name: string; email: string }[]> {
+  const XLSX = await import("xlsx");
+  const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const out: { name: string; email: string }[] = [];
+  for (const sheetName of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: "", raw: false });
+    const norm = (v: any) => String(v ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const hi = rows.findIndex((r) => r.some((c) => /^(correo|email|e-mail|mail)/.test(norm(c))));
+    const head = hi >= 0 ? rows[hi].map(norm) : [];
+    const col = (re: RegExp) => head.findIndex((h) => re.test(h));
+    const cName = col(/^(nombres?|name)$/), cLast = col(/^(apellidos?|last ?name)$/), cMail = col(/^(correo|email|e-mail|mail)/);
+    for (const r of rows.slice(hi + 1)) {
+      const cells = r.map((c: any) => String(c ?? "").trim());
+      const email = (cMail >= 0 ? cells[cMail] : cells.find((c: string) => EMAIL_IN.test(c)) || "").match(EMAIL_IN)?.[0] || "";
+      if (!email) continue;
+      const name =
+        cName >= 0
+          ? [cells[cName], cLast >= 0 ? cells[cLast] : ""].filter(Boolean).join(" ")
+          : cells.filter((c: string) => c && !EMAIL_IN.test(c) && !isNoise(c)).join(" ");
+      out.push({ name: name.replace(/\s+/g, " ").trim() || email.split("@")[0], email: email.toLowerCase() });
+    }
+  }
+  return out;
 }
 
 /** Un paso del formulario: número, título, pista y su contenido. */
@@ -109,6 +147,31 @@ function Invitations({ eventId }: { eventId: string }) {
   const [uploading, setUploading] = React.useState(false);
   const [deadline, setDeadline] = React.useState("2026-11-01");
   const invitees = parseInvitees(text);
+
+  // Importar un Excel/CSV: se agregan a la lista (sin repetir correos) para revisarlos antes de enviar.
+  const [importingFile, setImportingFile] = React.useState(false);
+  const onPickFile = async (file?: File) => {
+    if (!file) return;
+    setImportingFile(true);
+    try {
+      const rows = await readInviteesFile(file);
+      const seen = new Set(parseInvitees(text).map((i) => i.email.toLowerCase()));
+      const fresh: string[] = [];
+      let dup = 0;
+      for (const r of rows) {
+        if (seen.has(r.email)) { dup++; continue; }
+        seen.add(r.email);
+        fresh.push(`${r.name}, ${r.email}`);
+      }
+      setText((t) => [t.trim(), ...fresh].filter(Boolean).join("\n"));
+      if (!rows.length) toast.error("No encontramos correos en el archivo. Revise que tenga una columna de correo.");
+      else toast.success(`${fresh.length} invitados agregados desde ${file.name}${dup ? ` · ${dup} correos repetidos omitidos` : ""}`);
+    } catch {
+      toast.error("No pudimos leer el archivo. Use .xlsx, .xls o .csv.");
+    } finally {
+      setImportingFile(false);
+    }
+  };
   const validInvitees = invitees.filter((i) => i.email);
   const invalidLines = invitees.length - validInvitees.length;
   const dayLabel = allDays
@@ -287,7 +350,7 @@ function Invitations({ eventId }: { eventId: string }) {
           </Typography>
 
           {/* 1 · A quién */}
-          <Step n={1} title="¿A quién invitas?" hint="Uno por línea: Nombre, correo. Puedes pegar dos columnas de un Excel.">
+          <Step n={1} title="¿A quién invitas?" hint="Uno por línea: Nombre, correo. Puedes pegar filas de un Excel o importar el archivo (.xlsx o .csv con columnas Nombre, Apellido y Correo).">
             <TextField
               multiline minRows={5} maxRows={12} fullWidth size="small"
               placeholder={"Diego Garzón, diego@correo.com\nJuan Ricardo Rincón, juan@correo.com"}
@@ -296,6 +359,10 @@ function Invitations({ eventId }: { eventId: string }) {
             <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} mt={1}>
               <Chip size="small" color={validInvitees.length ? "secondary" : "default"} label={`${validInvitees.length} con correo válido`} />
               {invalidLines > 0 && <Chip size="small" color="warning" variant="outlined" label={`${invalidLines} sin correo (se omiten)`} />}
+              <Button component="label" size="small" variant="outlined" startIcon={<FileUp size={14} />} sx={{ textTransform: "none" }} disabled={importingFile}>
+                {importingFile ? "Leyendo archivo…" : "Importar Excel o CSV"}
+                <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={(e) => { onPickFile(e.target.files?.[0]); e.target.value = ""; }} />
+              </Button>
               {!!text.trim() && <Button size="small" onClick={() => setText("")} sx={{ textTransform: "none", ml: "auto" }}>Vaciar lista</Button>}
             </Stack>
             <Typography variant="caption" color="text.secondary" display="block" mt={1.5} mb={0.5}>
