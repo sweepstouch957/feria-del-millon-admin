@@ -79,10 +79,15 @@ export interface Ticket {
 
 /** ────────── DTOs ────────── */
 /** token = qrToken (JWT) leído del QR; code = código corto digitado a mano. */
-export type ValidateQrDto = { token: string } | { code: string };
+export type ValidateQrDto = ({ token: string } | { code: string }) & {
+  /** Práctica: ignora la fecha y no registra el ingreso. */
+  practice?: boolean;
+};
 
 export interface ValidateQrResponse {
   ok: boolean;
+  /** Respuesta en modo práctica: no se registró el ingreso. */
+  practice?: boolean;
   status: "checked_in" | "already_checked_in";
   sameDay: boolean;
   ticket: {

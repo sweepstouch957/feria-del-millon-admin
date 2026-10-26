@@ -10,6 +10,8 @@ import {
   CardHeader,
   Divider,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   TextField,
   Typography,
   Modal,
@@ -29,6 +31,7 @@ import { validateQr, TICKET_TYPE_LABEL, type ValidateQrResponse } from "@service
 import { BetterQrScanner } from "./BetterQrScanner";
 
 type ValidationResult = {
+  practice?: boolean;
   ok: boolean;
   status?: "checked_in" | "already_checked_in";
   sameDay?: boolean;
@@ -43,6 +46,8 @@ export function QrValidationPanel() {
   const [token, setToken] = useState("");
   const [lastResult, setLastResult] = useState<ValidationResult | null>(null);
   const [scannerOpen, setScannerOpen] = useState(true);
+  // Práctica: para capacitar o probar antes de la feria sin gastar ingresos.
+  const [practice, setPractice] = useState(false);
 
   // Overlay de éxito
   const [showSuccess, setShowSuccess] = useState(false);
@@ -55,9 +60,10 @@ export function QrValidationPanel() {
     // Lo digitado a mano es el código corto impreso bajo el QR (8 caracteres);
     // lo leído por la cámara es el token completo.
     mutationFn: ({ token }: { token: string }) =>
-      validateQr(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }),
+      validateQr({ ...(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }), practice }),
     onSuccess: (data) => {
       const result: ValidationResult = {
+        practice: !!data.practice,
         ok: data.ok,
         status: data.status,
         sameDay: data.sameDay,
@@ -149,6 +155,11 @@ export function QrValidationPanel() {
   const statusLabel = () => {
     if (!lastResult) return "";
     if (!lastResult.ok && lastResult.error) return lastResult.error;
+    if (lastResult.practice) {
+      return lastResult.status === "already_checked_in"
+        ? "PRÁCTICA · Este pase ya se usó: en la feria se rechazaría."
+        : "PRÁCTICA · Pase válido: en la feria entraría. No se registró el ingreso.";
+    }
 
     if (lastResult.status === "already_checked_in") {
       if (lastResult.sameDay) {
@@ -187,6 +198,20 @@ export function QrValidationPanel() {
         />
         <CardContent>
           <Stack spacing={1.5}>
+            <ToggleButtonGroup
+              exclusive
+              fullWidth
+              value={practice ? "practica" : "real"}
+              onChange={(_, v) => { if (v) { setPractice(v === "practica"); setLastResult(null); } }}
+            >
+              <ToggleButton value="real" color="success" sx={{ py: 1.25 }}>Real · registra el ingreso</ToggleButton>
+              <ToggleButton value="practica" color="warning" sx={{ py: 1.25 }}>Práctica · no gasta el pase</ToggleButton>
+            </ToggleButtonGroup>
+            {practice && (
+              <Alert severity="warning" sx={{ py: 0 }}>
+                Práctica activada: los QR NO quedan marcados como usados. Apágalo antes de abrir la puerta.
+              </Alert>
+            )}
             {/* Campo para pegar token manualmente */}
             <TextField
               label="Código de la boleta"
@@ -349,11 +374,19 @@ export function QrValidationPanel() {
                 sx={{ fontSize: 52, color: "#3FA46E", mb: 1 }}
               />
               <Typography variant="h5" fontWeight={500} gutterBottom>
-                Acceso permitido
+                {lastResult?.practice ? "Práctica: pase válido" : "Acceso permitido"}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Boleto válido para hoy. Puede ingresar
+                {lastResult?.practice
+                  ? "En la feria entraría. No se registró el ingreso."
+                  : "Boleto válido para hoy. Puede ingresar"}
               </Typography>
+              {lastResult?.info?.name && (
+                <Typography sx={{ mt: 1.5, fontSize: 18 }}>
+                  {lastResult.info.name}
+                  {(lastResult.info.admits || 1) > 1 ? ` · ${lastResult.info.admits} personas` : ""}
+                </Typography>
+              )}
 
               {lastResult?.shortCode && (
                 <Typography
