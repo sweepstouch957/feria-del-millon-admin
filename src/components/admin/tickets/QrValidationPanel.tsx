@@ -52,7 +52,10 @@ export function QrValidationPanel() {
   const lastScannedTokenRef = useRef<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (payload: { token: string }) => validateQr(payload),
+    // Lo digitado a mano es el código corto impreso bajo el QR (8 caracteres);
+    // lo leído por la cámara es el token completo.
+    mutationFn: ({ token }: { token: string }) =>
+      validateQr(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }),
     onSuccess: (data) => {
       const result: ValidationResult = {
         ok: data.ok,
@@ -180,20 +183,24 @@ export function QrValidationPanel() {
         <CardHeader
           avatar={<QrCodeIcon />}
           title="Validación de acceso por QR"
-          subheader="Escanea el QR con la cámara o pega el token para validar la entrada."
+          subheader="Escanea el QR con la cámara. Si no lee, digita el código que va debajo del QR."
         />
         <CardContent>
           <Stack spacing={1.5}>
             {/* Campo para pegar token manualmente */}
             <TextField
-              label="Token del QR"
-              placeholder="Pega aquí el token leído por el escáner"
+              label="Código de la boleta"
+              placeholder="Ej: 3F9A1C2B (va debajo del QR)"
               value={token}
               onChange={(e) => setToken(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleValidate();
+                }
+              }}
               fullWidth
-              size="small"
-              multiline
-              minRows={2}
+              slotProps={{ htmlInput: { autoCapitalize: "characters", autoComplete: "off" } }}
             />
 
             <Stack direction="row" flexWrap="wrap" spacing={1}>

@@ -78,9 +78,8 @@ export interface Ticket {
 }
 
 /** ────────── DTOs ────────── */
-export interface ValidateQrDto {
-  token: string; // qrToken (JWT) leído del QR
-}
+/** token = qrToken (JWT) leído del QR; code = código corto digitado a mano. */
+export type ValidateQrDto = { token: string } | { code: string };
 
 export interface ValidateQrResponse {
   ok: boolean;
@@ -317,7 +316,7 @@ export interface BoxOfficeSaleInput {
   type: Exclude<TicketType, "invitacion">;
   date?: string; // YYYY-MM-DD (tipos de un día)
   quantity: number;
-  method: "cash" | "card_offline";
+  method: "cash" | "card_offline" | "transfer";
   buyer: TicketBuyer;
   idempotencyKey?: string;
 }

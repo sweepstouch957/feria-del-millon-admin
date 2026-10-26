@@ -15,13 +15,12 @@ import { listOrders, registerAbono, type OrderDoc } from "@services/orders.servi
 import { formatCOP } from "@/utils/money";
 import { formatDate } from "@/utils/date";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
+import { CAJA_METHODS, type CajaMethod } from "@features/caja/model/sale";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 
-const METHODS = [
-  { value: "cash", label: "Efectivo" },
-  { value: "card_offline", label: "Tarjeta (datáfono)" },
-] as const;
+const METHODS = CAJA_METHODS;
+type Method = CajaMethod;
 
 export default function CarteraPage() {
   const qc = useQueryClient();
@@ -36,7 +35,7 @@ export default function CarteraPage() {
 
   const [target, setTarget] = React.useState<OrderDoc | null>(null);
   const [amount, setAmount] = React.useState<number>(0);
-  const [method, setMethod] = React.useState<"cash" | "card_offline">("cash");
+  const [method, setMethod] = React.useState<Method>("cash");
   const [note, setNote] = React.useState("");
 
   const openAbono = (o: OrderDoc) => {
@@ -200,7 +199,7 @@ export default function CarteraPage() {
             <TextField label="Monto del abono (COP)" type="number" size="small" fullWidth
               value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
             <TextField label="Método" select size="small" fullWidth value={method}
-              onChange={(e) => setMethod(e.target.value as "cash" | "card_offline")}>
+              onChange={(e) => setMethod(e.target.value as Method)}>
               {METHODS.map((m) => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
             </TextField>
             <TextField label="Nota (opcional)" size="small" fullWidth value={note} onChange={(e) => setNote(e.target.value)} />

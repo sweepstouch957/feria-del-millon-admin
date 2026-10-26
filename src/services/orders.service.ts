@@ -167,11 +167,28 @@ export const listOrders = async (params?: {
     return data.map(normalizeId);
 };
 
+/**
+ * POST /order/orders/:id/claim-stock — descuenta el stock ANTES de cobrar.
+ * 409 `sin_stock` = la pieza ya se vendió (no cobrar).
+ */
+export const claimOrderStock = async (orderId: string): Promise<{ ok: boolean; already?: boolean }> => {
+    const { data } = await apiClient.post(`/order/orders/${orderId}/claim-stock`, {}, { withCredentials: true });
+    return data;
+};
+
+/** POST /order/orders/:id/refund — reembolso; devuelve la obra al inventario. */
+export const refundOrder = async (
+    orderId: string
+): Promise<{ ok: boolean; already?: boolean; restoreError?: string }> => {
+    const { data } = await apiClient.post(`/order/orders/${orderId}/refund`, {}, { withCredentials: true });
+    return data;
+};
+
 export const markOrderPaid = async (
     orderId: string,
     payload: MarkOrderPaidInput
-): Promise<{ ok: boolean; already?: boolean }> => {
-    const { data } = await apiClient.post<{ ok: boolean; already?: boolean }>(
+): Promise<{ ok: boolean; already?: boolean; fulfillmentError?: string }> => {
+    const { data } = await apiClient.post<{ ok: boolean; already?: boolean; fulfillmentError?: string }>(
         `/order/orders/${orderId}/paid`,
         payload,
         { withCredentials: true }
@@ -214,6 +231,7 @@ export interface SalesBucket { key: string; label: string; amount: number; units
 export interface SalesLine {
     day: string; orderId: string; artwork: string; artist: string; technique: string; pavilion: string;
     qty: number; amount: number; channel: string; method: string; buyer: string; buyerEmail: string; buyerPhone: string;
+    cashier?: string;
 }
 export interface SalesReport {
     total: number; units: number; orders: number;
@@ -224,6 +242,8 @@ export interface SalesReport {
 /** GET /order/reports/sales — ventas pagadas agregadas (staff). Fechas YYYY-MM-DD, hora Bogotá. */
 export const getSalesReport = async (params: {
     event?: string; from?: string; to?: string; artist?: string; technique?: string; pavilion?: string;
+    /** 1 = solo lo que cobró quien consulta (cierre de la cajera). */
+    mine?: 1;
 }): Promise<SalesReport> => {
     const { data } = await apiClient.get<SalesReport>("/order/reports/sales", { params, withCredentials: true });
     return data;

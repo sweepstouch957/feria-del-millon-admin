@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ClipboardCheck,
+  Wallet,
 } from "lucide-react";
 
 import { LAYOUT_COLORS as C } from "../layoutConfig";
@@ -61,7 +62,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const isBoxOffice = !!(roles as { taquilla?: boolean }).taquilla;
   const isEditor = !!(roles as { editor?: boolean }).editor;
 
-  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/orders"));
+  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/orders") || pathname.startsWith("/caja"));
   const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));
 
   const go = (href: string) => () => {
@@ -110,10 +111,11 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       onRailClick={go("/orders")}
       icon={<ShoppingBag {...ICON} />}
       text="Pedidos"
-      active={pathname.startsWith("/orders")}
+      active={pathname.startsWith("/orders") || pathname.startsWith("/caja")}
     >
       {kid("/orders", "Listado de pedidos")}
-      {kid("/orders/new", "Crear pedido")}
+      {kid("/caja", "Vender obra (caja)")}
+      {kid("/caja/cierre", "Mi cierre del día")}
       {kid("/orders/cartera", "Cartera / Fiado")}
     </CollapsibleGroup>
   );
@@ -293,9 +295,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
         {!isSuperUser && isCashier && (
           <>
-            {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
-            <SectionTitle label="Operación" rail={rail} />
-            {ordersGroup}
+            <SectionTitle label="Caja" rail={rail} />
+            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
+            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
+            {item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+            {item("/orders", "Pedidos", <FileText {...ICON} />)}
+            {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
           </>
         )}
 

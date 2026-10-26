@@ -11,8 +11,6 @@ export default function QrValidatorPage() {
         crumb="Boletos"
         title="Validador QR"
         description="Escanea la boleta en la entrada del pabellón para permitir o rechazar el acceso."
-        back="/tickets"
-        backLabel="Boletos"
       />
       <QrValidationPanel />
     </Box>

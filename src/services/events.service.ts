@@ -233,3 +233,21 @@ export const createConvocatoria = async (payload: CreateConvocatoriaDto): Promis
   const { data } = await apiClient.post("/event/convocatorias", payload, { withCredentials: true });
   return data;
 };
+
+export interface EventArtistOption { id: string; label: string }
+
+/** GET /event/events/:eventId/artists — artistas con obras en la feria. Público:
+ *  la caja lo usa porque /auth/users solo lo puede leer el staff. */
+export const listEventArtists = async (
+  eventId: string,
+  params: { q?: string; pavilionId?: string; artistId?: string; limit?: number } = {},
+): Promise<EventArtistOption[]> => {
+  const { data } = await apiClient.get<{ rows?: { artist: { id?: string; _id?: string; firstName?: string; lastName?: string; email?: string } }[] }>(
+    `/event/events/${encodeURIComponent(eventId)}/artists${buildQuery(params) ? `?${buildQuery(params)}` : ""}`,
+    { withCredentials: true },
+  );
+  return (data.rows ?? []).map(({ artist: a }) => ({
+    id: String(a.id ?? a._id),
+    label: [a.firstName, a.lastName].filter(Boolean).join(" ") || a.email || "Artista",
+  }));
+};

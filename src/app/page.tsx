@@ -1,6 +1,7 @@
 // app/page.tsx
 import ScreenFallback from "@/components/common/ScreenFallback";
 import HomeClient from "@/components/HomeClient";
+import RoleHomeRedirect from "@/components/common/RoleHomeRedirect";
 import { Suspense } from "react";
 
 export default function Page() {
@@ -8,7 +9,9 @@ export default function Page() {
     <Suspense
       fallback={<ScreenFallback text="Cargando…"/>}
     >
-      <HomeClient />
+      <RoleHomeRedirect>
+        <HomeClient />
+      </RoleHomeRedirect>
     </Suspense>
   );
 }

@@ -21,6 +21,7 @@ import {
   setAuthHeaderFromCookie,
   clearAuth,
 } from "@/services/auth.service";
+import { homeFor } from "@/lib/roleHome";
 
 type AuthContextType = {
   user: AuthUser | null;
@@ -134,10 +135,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
       } catch {}
       return me;
     },
-    onSuccess: () => {
-      // Después de login, puedes llevar al home o a la última ruta pretendida
-      router.replace("/");
-    },
+    // Cada rol entra a su pantalla de trabajo (caja, puerta) y no al tablero.
+    onSuccess: (me) => router.replace(homeFor(me?.roles)),
   });
 
   const registerMutation = useMutation({

@@ -1,7 +1,6 @@
-// app/orders/new/page.tsx
-
-import ManualOrderPage from "@/components/views/orders/ManualOrderPage";
+// app/orders/new/page.tsx — la venta en caja vive ahora en /caja.
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ManualOrderPage />;
+  redirect("/caja");
 }

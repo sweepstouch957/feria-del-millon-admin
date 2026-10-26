@@ -77,6 +77,7 @@ export default function SalesReportPage() {
       { header: "Comprador", value: (l) => l.buyer },
       { header: "Email", value: (l) => l.buyerEmail },
       { header: "Teléfono", value: (l) => l.buyerPhone, text: true },
+      { header: "Cajero", value: (l) => l.cashier },
     ]));
 
   return (

@@ -31,6 +31,8 @@ export type ArtworksCursorFilters = {
   limit?: number;
   artist?: string;
   includeHidden?: boolean | number | string;
+  /** Campos extra a proyectar (p. ej. "tagId"). */
+  project?: string;
   /** false = no consulta (p. ej. pestaña que no muestra obras). */
   enabled?: boolean;
 };
@@ -45,6 +47,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       limit: filters.limit ?? 24,
       artist: filters.artist || undefined,
       includeHidden: filters.includeHidden || undefined,
+      project: filters.project || undefined,
     }),
     [
       filters.q,
@@ -54,6 +57,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       filters.limit,
       filters.artist,
       filters.includeHidden,
+      filters.project,
     ]
   );
 

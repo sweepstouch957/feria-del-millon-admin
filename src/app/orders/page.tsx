@@ -16,6 +16,7 @@ import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
+import { RefundButton } from "@features/caja/components/RefundButton";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 
@@ -87,7 +88,7 @@ export default function OrdersPage() {
         title="Listado de pedidos"
         description="Todas las ventas de obras, en línea y en caja."
         actions={[
-          { label: "Crear pedido", kind: "pri", icon: <Plus size={14} />, href: "/orders/new" },
+          { label: "Vender obra", kind: "pri", icon: <Plus size={14} />, href: "/caja" },
           {
             label: exporting ? "Exportando…" : "Exportar compradores",
             kind: "sec",
@@ -144,6 +145,7 @@ export default function OrdersPage() {
                   { label: "Fecha", value: formatDate(o.createdAt) },
                   ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
                 ],
+                actions: <RefundButton order={o} />,
               }))}
             >
               <TableContainer component={Paper} elevation={0}>
@@ -156,11 +158,12 @@ export default function OrdersPage() {
                       <TableCell>Método</TableCell>
                       <TableCell align="right">Total</TableCell>
                       <TableCell>Estado</TableCell>
+                      <TableCell />
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {rows.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} align="center" sx={{ color: "text.secondary", py: 3 }}>No hay pedidos con estos filtros.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>No hay pedidos con estos filtros.</TableCell></TableRow>
                     ) : rows.map((o) => (
                       <TableRow key={o.id} hover>
                         <TableCell>{formatDate(o.createdAt)}</TableCell>
@@ -177,6 +180,7 @@ export default function OrdersPage() {
                             <Typography variant="caption" color="error" display="block">Pagada sin descontar stock: {o.fulfillmentError}</Typography>
                           )}
                         </TableCell>
+                        <TableCell align="right"><RefundButton order={o} /></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
