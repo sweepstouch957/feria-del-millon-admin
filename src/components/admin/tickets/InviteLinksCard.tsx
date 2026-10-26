@@ -49,7 +49,7 @@ function parseCompanies(text: string): CompanyRow[] {
 const companyMessage = (company: string, seats: number) =>
   [
     `La Feria del Millón tiene el gusto de invitar a los colaboradores de ${company} a la 14.ª Feria del Millón, la feria que visibiliza el trabajo de artistas emergentes.`,
-    `Este enlace es para su equipo: le agradecemos compartirlo con sus colaboradores. Cada persona se registra con sus datos y recibe al instante su pase de acceso personal con código QR, válido para un día de la feria a su elección. Cupo: ${seats} ${seats === 1 ? "pase" : "pases"}.`,
+    `Este enlace es para su equipo: le agradecemos compartirlo con sus colaboradores. Cada persona se registra con sus datos y los de su acompañante, y cada uno recibe al instante su pase de acceso con código QR, válido para un día de la feria a su elección. Cupo: ${seats} ${seats === 1 ? "invitación" : "invitaciones"} (cada una para 2 personas).`,
     "Lugar: Cl. 97 #17-31 (Antiguo Carulla Calle 100), Bogotá\n(A 100 metros del round point de la carrera 15)",
     "Horarios de la feria:\n* Jueves 5 de noviembre: 5:00 p. m. a 10:00 p. m. (Entrada solo para mayores de edad)\n* Viernes 6 de noviembre: 12:00 p. m. a 10:00 p. m.\n* Sábado 7 de noviembre: 12:00 p. m. a 10:00 p. m.\n* Domingo 8 de noviembre: 12:00 p. m. a 10:00 p. m.",
   ].join("\n\n");
@@ -70,7 +70,7 @@ function CompanyLinksBulk({ eventId, existingCodes, onDone }: { eventId: string;
     const failed: string[] = [];
     for (const r of ok) {
       try {
-        const l = await createInviteLink({ eventId, code: r.code, label: r.company, category: "Empresa", admits: 1, maxUses: r.seats, anyDay: true });
+        const l = await createInviteLink({ eventId, code: r.code, label: r.company, category: "Empresa", admits: 2, maxUses: r.seats, anyDay: true });
         created++;
         // El texto del correo queda guardado en el enlace: el botón "Correo" lo reenvía igual.
         await updateInviteLink(l.id, { emailMessage: companyMessage(r.company, r.seats) });
@@ -90,7 +90,8 @@ function CompanyLinksBulk({ eventId, existingCodes, onDone }: { eventId: string;
     <Box sx={{ mb: 2.5, p: 1.5, border: "1px dashed", borderColor: "divider" }}>
       <Typography fontWeight={600} fontSize={14}>Enlaces para empresas (en lote)</Typography>
       <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-        Pega del Excel una fila por empresa: Empresa · correo del contacto · cupo. Cada una recibe su enlace (ej. {prettyUrl("itau")}) con ese cupo, para repartir entre sus empleados.
+        Pega del Excel una fila por empresa: Empresa · correo del contacto · cupo. Cada una recibe su enlace (ej. {prettyUrl("itau")}) para repartir entre sus empleados.
+        El cupo es de invitaciones: cada empleado se registra con un acompañante (2 QR), así que 100 = hasta 200 personas.
       </Typography>
       <TextField
         multiline minRows={3} maxRows={10} fullWidth size="small" value={text} onChange={(e) => setText(e.target.value)}
@@ -140,7 +141,8 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
 
   const [code, setCode] = React.useState("");
   const [label, setLabel] = React.useState("");
-  const [admits, setAdmits] = React.useState(1);
+  // Invitado + acompañante: es el pase de casi todos los enlaces.
+  const [admits, setAdmits] = React.useState(2);
   const [maxUses, setMaxUses] = React.useState(100);
   const codeBad = !!code && !/^[a-z0-9-]{3,24}$/.test(code);
 
