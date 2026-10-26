@@ -70,57 +70,110 @@ const titleIfShouting = (s: string) =>
     .map((w) => (w.length > 1 && w === w.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(w) ? w[0] + w.slice(1).toLowerCase() : w))
     .join(" ");
 
-type ParsedInvitee = { name: string; email: string; extraEmails: number; brokenEmail: boolean };
+type Contact = { firstName?: string; lastName?: string; phone?: string; city?: string; address?: string };
+type ParsedInvitee = Contact & { name: string; email: string; extraEmails: number; brokenEmail: boolean };
+
+const norm = (v: any) => String(v ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+// Celular o fijo: 7 o más dígitos, con espacios, guiones o "+".
+const isPhone = (c: string) => /^\+?[\d\s().-]{7,20}$/.test(c) && c.replace(/\D/g, "").length >= 7;
+
+/** Columnas de un encabezado de Excel (Nombre, Apellido, Teléfono, Correo, Ciudad, Dirección). */
+type Cols = { name: number; last: number; phone: number; mail: number; city: number; addr: number };
+function headerCols(cells: string[]): Cols | null {
+  const h = cells.map(norm);
+  const col = (re: RegExp) => h.findIndex((x) => re.test(x));
+  const mail = col(/^(correo|email|e-mail|mail)/);
+  if (mail < 0) return null;
+  return {
+    name: col(/^(nombres?|name)$/), last: col(/^(apellidos?|last ?name)$/), mail,
+    phone: col(/^(telefono|celular|movil|whatsapp|phone)/), city: col(/^(ciudad|city)$/), addr: col(/^(direccion|address)/),
+  };
+}
+
+/** Una fila en celdas → invitado. Con encabezado, por columna; sin él, por
+ *  posición: antes del correo van nombre(s) y teléfono, después ciudad y dirección. */
+function parseCells(raw: string[], cols: Cols | null): ParsedInvitee {
+  const cells = raw.map((c) => cleanText(String(c ?? "")));
+  const line = cells.join(" ");
+  const emails = line.match(EMAIL_ALL) || [];
+  const email = (emails[0] || "").toLowerCase();
+  const at = (i: number) => (i >= 0 ? cells[i] || "" : "");
+  let c: Contact;
+  let fullName = "";
+  if (cols) {
+    c = { firstName: at(cols.name), lastName: at(cols.last), phone: at(cols.phone), city: at(cols.city), address: at(cols.addr) };
+    // Sin columna de apellido no se sabe dónde parte el nombre: va entero.
+    if (cols.last < 0) { fullName = c.firstName || ""; c.firstName = ""; }
+  } else {
+    const e = cells.findIndex((x) => EMAIL_IN.test(x));
+    // La celda del correo también puede traer el nombre ("Diego diego@x.co").
+    const before = (e >= 0 ? [...cells.slice(0, e), cells[e]] : cells)
+      .map((x) => x.replace(EMAIL_ALL, " ").replace(/^\/|\/$/g, "").trim())
+      // Un "correo" sin dominio completo (x@empresa-co) no va al nombre.
+      .filter((x) => x && x !== "/" && !/\S+@\S+/.test(x));
+    const phone = before.find(isPhone) || "";
+    const names = before.filter((x) => !isPhone(x) && !isNoise(x));
+    const after = e >= 0 ? cells.slice(e + 1) : [];
+    // Sin columna de ciudad, lo que parece dirección (tiene números) es dirección.
+    const cityLooksAddress = /\d/.test(after[0] || "");
+    // Dos celdas = nombre y apellido; una sola ("Diego Garzón") va entera.
+    if (names.length !== 2) fullName = names.join(" ");
+    c = {
+      ...(names.length === 2 ? { firstName: names[0], lastName: names[1] } : {}),
+      phone,
+      city: cityLooksAddress ? "" : after[0] || "",
+      address: (cityLooksAddress ? after : after.slice(1)).filter(Boolean).join(" "),
+    };
+  }
+  const firstName = titleIfShouting(c.firstName || "");
+  const lastName = titleIfShouting(c.lastName || "");
+  const name = titleIfShouting(cleanText(fullName || [firstName, lastName].filter(Boolean).join(" "))) || email.split("@")[0];
+  return {
+    name, email, firstName, lastName, phone: c.phone, city: c.city, address: c.address,
+    extraEmails: Math.max(emails.length - 1, 0), brokenEmail: !email && /\S@\S/.test(line),
+  };
+}
 
 /** Una línea por invitado. Acepta "Nombre, correo", "Nombre Apellido correo" o
  *  filas pegadas de Excel (columnas con tabulador, número de fila, encabezado,
- *  dos correos en la misma celda). Usa el primer correo válido de cada fila. */
+ *  dos correos en la misma celda). Usa el primer correo válido de cada fila.
+ *  Si se pega el encabezado, las columnas se toman de ahí. */
 function parseInvitees(text: string): ParsedInvitee[] {
-  return text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && !isHeader(l))
-    .map((l) => {
-      const emails = l.match(EMAIL_ALL) || [];
-      const email = (emails[0] || "").toLowerCase();
-      const cells = l
-        .replace(EMAIL_ALL, " ")
-        .split(/[\t,;<>|]+/)
-        .map(cleanText)
-        .map((c) => c.replace(/^\/|\/$/g, "").trim())
-        // Un "correo" sin dominio completo (x@empresa-co) no va al nombre.
-        .filter((c) => c && c !== "/" && !isNoise(c) && !/\S+@\S+/.test(c));
-      const name = titleIfShouting(cleanText(cells.join(" "))) || email.split("@")[0];
-      return { name, email, extraEmails: Math.max(emails.length - 1, 0), brokenEmail: !email && /\S@\S/.test(l) };
-    });
+  let cols: Cols | null = null;
+  const out: ParsedInvitee[] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const l = raw.trim();
+    if (!l) continue;
+    const tabbed = raw.includes("\t");
+    if (isHeader(l)) {
+      if (tabbed) cols = headerCols(raw.split("\t"));
+      continue;
+    }
+    out.push(parseCells(tabbed ? raw.split("\t") : l.split(/[,;<>|]+/), tabbed ? cols : null));
+  }
+  return out;
 }
 
-/** Lee un .xlsx / .xls / .csv: busca las columnas de nombre, apellido y correo
- *  por su encabezado (o, sin encabezado, la celda que parece correo). */
-async function readInviteesFile(file: File): Promise<{ name: string; email: string }[]> {
+/** Lee un .xlsx / .xls / .csv: columnas por encabezado (o, sin él, por posición). */
+async function readInviteesFile(file: File): Promise<ParsedInvitee[]> {
   const XLSX = await import("xlsx");
   const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
-  const out: { name: string; email: string }[] = [];
+  const out: ParsedInvitee[] = [];
   for (const sheetName of wb.SheetNames) {
     const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: "", raw: false });
-    const norm = (v: any) => String(v ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
     const hi = rows.findIndex((r) => r.some((c) => /^(correo|email|e-mail|mail)/.test(norm(c))));
-    const head = hi >= 0 ? rows[hi].map(norm) : [];
-    const col = (re: RegExp) => head.findIndex((h) => re.test(h));
-    const cName = col(/^(nombres?|name)$/), cLast = col(/^(apellidos?|last ?name)$/), cMail = col(/^(correo|email|e-mail|mail)/);
+    const cols = hi >= 0 ? headerCols(rows[hi].map((c) => String(c ?? ""))) : null;
     for (const r of rows.slice(hi + 1)) {
-      const cells = r.map((c: any) => String(c ?? "").trim());
-      const email = (cMail >= 0 ? cells[cMail] : cells.find((c: string) => EMAIL_IN.test(c)) || "").match(EMAIL_IN)?.[0] || "";
-      if (!email) continue;
-      const name =
-        cName >= 0
-          ? [cells[cName], cLast >= 0 ? cells[cLast] : ""].filter(Boolean).join(" ")
-          : cells.filter((c: string) => c && !EMAIL_IN.test(c) && !isNoise(c)).join(" ");
-      out.push({ name: titleIfShouting(cleanText(name)) || email.split("@")[0], email: email.toLowerCase() });
+      const p = parseCells(r.map((c: any) => String(c ?? "")), cols);
+      if (p.email) out.push(p);
     }
   }
   return out;
 }
+
+/** De vuelta a una línea de la caja de texto (con tabuladores, como Excel). */
+const toLine = (p: ParsedInvitee) =>
+  (p.firstName && p.lastName ? [p.firstName, p.lastName] : [p.name, ""]).concat([p.phone || "", p.email, p.city || "", p.address || ""]).join("\t");
 
 /** Un paso del formulario: número, título, pista y su contenido. */
 function Step({ n, title, hint, last, children }: { n: number; title: string; hint?: string; last?: boolean; children: React.ReactNode }) {
@@ -179,7 +232,7 @@ function Invitations({ eventId }: { eventId: string }) {
       for (const r of rows) {
         if (seen.has(r.email)) { dup++; continue; }
         seen.add(r.email);
-        fresh.push(`${r.name}, ${r.email}`);
+        fresh.push(toLine(r));
       }
       setText((t) => [t.trim(), ...fresh].filter(Boolean).join("\n"));
       if (!rows.length) toast.error("No encontramos correos en el archivo. Revise que tenga una columna de correo.");
@@ -280,12 +333,13 @@ function Invitations({ eventId }: { eventId: string }) {
   });
   const invitedEmails = React.useMemo(() => new Set(invitedList), [invitedList]);
   const alreadyInvited = validInvitees.filter((i) => invitedEmails.has(i.email.toLowerCase())).length;
+  const newInvitees = validInvitees.length - alreadyInvited;
   const summaryRows = invitees.map((r, idx) => {
     const e = r.email.toLowerCase();
     if (!r.email) return { ...r, send: false, label: r.brokenEmail ? "Correo incompleto · se omite" : "Sin correo · se omite", tone: "warning" as const };
     if (invitees.findIndex((j) => j.email.toLowerCase() === e) !== idx) return { ...r, send: false, label: "Repetido · se omite", tone: "default" as const };
     const extra = r.extraEmails ? ` · usa el 1.er correo` : "";
-    if (invitedEmails.has(e)) return { ...r, send: true, label: `Ya invitado · se reinicia${extra}`, tone: "info" as const };
+    if (invitedEmails.has(e)) return { ...r, send: true, label: `Ya invitado · solo se actualizan datos${extra}`, tone: "info" as const };
     return { ...r, send: true, label: `Nueva invitación${extra}`, tone: "success" as const };
   });
 
@@ -300,8 +354,8 @@ function Invitations({ eventId }: { eventId: string }) {
     onSuccess: (r) => {
       toast.success(
         `${r.created} invitaciones enviadas` +
-          (r.reset?.length ? ` · ${r.reset.length} reiniciadas desde cero` : "") +
-          (r.skipped.length ? ` · ${r.skipped.length} omitidas (inválidas o ya entraron a la feria)` : ""),
+          (r.updated?.length ? ` · ${r.updated.length} ya invitados: datos actualizados, sin reenviar` : "") +
+          (r.skipped.length ? ` · ${r.skipped.length} omitidas (inválidas)` : ""),
       );
       setText("");
       qc.invalidateQueries({ queryKey: ["invitations", eventId] });
@@ -410,17 +464,17 @@ function Invitations({ eventId }: { eventId: string }) {
           </Typography>
 
           {/* 1 · A quién */}
-          <Step n={1} title="¿A quién invitas?" hint="Uno por línea: Nombre, correo. Puedes pegar filas de un Excel o importar el archivo (.xlsx o .csv con columnas Nombre, Apellido y Correo).">
+          <Step n={1} title="¿A quién invitas?" hint="Uno por línea: Nombre, correo. O pega filas de un Excel / importa el archivo con columnas Nombre, Apellido, Teléfono, Correo, Ciudad y Dirección. Si el correo ya fue invitado, solo se actualizan sus datos (no se le reenvía).">
             <TextField
               multiline minRows={5} maxRows={12} fullWidth size="small"
-              placeholder={"Diego Garzón, diego@correo.com\nJuan Ricardo Rincón, juan@correo.com"}
+              placeholder={"Diego Garzón, diego@correo.com\nNombre\tApellido\tTeléfono\tCorreo\tCiudad\tDirección  ← o pegado de Excel"}
               value={text} onChange={(e) => setText(e.target.value)}
             />
             <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} mt={1}>
               <Chip size="small" color={validInvitees.length ? "secondary" : "default"} label={`${validInvitees.length} con correo válido`} />
               {invalidLines > 0 && <Chip size="small" color="warning" variant="outlined" label={`${invalidLines} sin correo (se omiten)`} />}
               {repeatedLines > 0 && <Chip size="small" variant="outlined" label={`${repeatedLines} repetidos (se envía una vez)`} />}
-              {alreadyInvited > 0 && <Chip size="small" color="info" variant="outlined" label={`${alreadyInvited} ya invitados (se reinician)`} />}
+              {alreadyInvited > 0 && <Chip size="small" color="info" variant="outlined" label={`${alreadyInvited} ya invitados (solo se actualizan datos)`} />}
               <Button component="label" size="small" variant="outlined" startIcon={<FileUp size={14} />} sx={{ textTransform: "none" }} disabled={importingFile}>
                 {importingFile ? "Leyendo archivo…" : "Importar Excel o CSV"}
                 <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={(e) => { onPickFile(e.target.files?.[0]); e.target.value = ""; }} />
@@ -433,7 +487,8 @@ function Invitations({ eventId }: { eventId: string }) {
               <Box sx={{ mt: 1.5, border: "1px solid", borderColor: "divider" }}>
                 <Stack direction="row" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: showSummary ? "1px solid" : 0, borderColor: "divider" }}>
                   <Typography fontSize={13} fontWeight={600}>
-                    Se enviará a {validInvitees.length} {validInvitees.length === 1 ? "persona" : "personas"}
+                    Se enviará a {newInvitees} {newInvitees === 1 ? "persona" : "personas"}
+                    {alreadyInvited > 0 && ` · ${alreadyInvited} se actualizan sin reenviar`}
                   </Typography>
                   <Button size="small" onClick={() => setShowSummary((v) => !v)} sx={{ ml: "auto", textTransform: "none" }}>
                     {showSummary ? "Ocultar" : "Ver lista"}
@@ -447,6 +502,7 @@ function Invitations({ eventId }: { eventId: string }) {
                           <TableCell sx={{ width: 44 }}>#</TableCell>
                           <TableCell>Nombre</TableCell>
                           <TableCell>Correo</TableCell>
+                          <TableCell>Teléfono · ciudad · dirección</TableCell>
                           <TableCell>Estado</TableCell>
                         </TableRow>
                       </TableHead>
@@ -456,6 +512,7 @@ function Invitations({ eventId }: { eventId: string }) {
                             <TableCell sx={{ color: "text.secondary" }}>{i + 1}</TableCell>
                             <TableCell>{r.name || "—"}</TableCell>
                             <TableCell sx={{ wordBreak: "break-all" }}>{r.email || "—"}</TableCell>
+                            <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>{[r.phone, r.city, r.address].filter(Boolean).join(" · ") || "—"}</TableCell>
                             <TableCell>
                               <Chip size="small" variant={r.send ? "filled" : "outlined"} color={r.tone} label={r.label} />
                             </TableCell>
@@ -610,13 +667,23 @@ function Invitations({ eventId }: { eventId: string }) {
                 fullWidth variant="contained" size="large" startIcon={<Send size={16} />} sx={{ textTransform: "none", mt: 2 }}
                 disabled={!validInvitees.length || send.isPending || uploading}
                 onClick={() => {
-                  if (window.confirm(`¿Enviar ${validInvitees.length} invitación(es) ahora? Los correos salen de inmediato.`)) send.mutate();
+                  const what = [
+                    newInvitees ? `enviar ${newInvitees} invitación(es) (los correos salen de inmediato)` : "",
+                    alreadyInvited ? `actualizar los datos de ${alreadyInvited} ya invitado(s)` : "",
+                  ].filter(Boolean).join(" y ");
+                  if (window.confirm(`¿${what[0].toUpperCase()}${what.slice(1)}?`)) send.mutate();
                 }}
               >
-                {send.isPending ? "Enviando…" : validInvitees.length ? `Enviar ${validInvitees.length} invitación${validInvitees.length === 1 ? "" : "es"}` : "Enviar invitaciones"}
+                {send.isPending
+                  ? "Enviando…"
+                  : newInvitees
+                    ? `Enviar ${newInvitees} invitación${newInvitees === 1 ? "" : "es"}${alreadyInvited ? ` · actualizar ${alreadyInvited}` : ""}`
+                    : alreadyInvited
+                      ? `Actualizar datos de ${alreadyInvited}`
+                      : "Enviar invitaciones"}
               </Button>
               <Typography variant="caption" color="text.secondary" display="block" mt={1}>
-                A quien ya tiene invitación para esta feria no se le vuelve a enviar.
+                A quien ya tiene invitación para esta feria no se le vuelve a enviar: solo se actualizan sus datos.
               </Typography>
             </Box>
           </CardContent></Card>

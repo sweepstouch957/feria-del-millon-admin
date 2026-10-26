@@ -365,7 +365,8 @@ export interface CreateInvitationsInput {
   anyDay?: boolean;
   admits?: number;
   category?: string;
-  invitees: { name: string; email: string }[];
+  /** Datos extra de la lista (Excel): prellenan su formulario. */
+  invitees: { name: string; email: string; firstName?: string; lastName?: string; phone?: string; city?: string; address?: string }[];
   /** Imagen de cabecera del correo (URL https ya subida). */
   image?: string;
   /** Cuerpo del correo; párrafos separados por línea en blanco. Vacío = el de siempre. */
@@ -376,7 +377,7 @@ export interface CreateInvitationsInput {
 
 /** POST /ticket/tickets/invitations — crea y envía el correo con botón de confirmación. */
 export const createInvitations = async (input: CreateInvitationsInput) => {
-  const { data } = await apiClient.post<{ created: number; skipped: { email: string; reason: string }[]; reset?: string[] }>(
+  const { data } = await apiClient.post<{ created: number; skipped: { email: string; reason: string }[]; updated?: string[] }>(
     "/ticket/tickets/invitations",
     input,
     { withCredentials: true },
