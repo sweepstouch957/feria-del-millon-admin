@@ -563,25 +563,31 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
    · Artista invitado: la feria lo invita sin convocatoria. Además de la cuenta
      se le crea su postulación YA ACEPTADA, que es lo que le permite aparecer en
      el selector de artistas de un pabellón y cargar su inventario. */
-type NewUserKind = "team" | "artist";
+type NewUserKind = "cajera" | "team" | "artist";
 
 // Sin rol por defecto: quien crea la cuenta decide qué es, no el formulario.
 const EMPTY_NEW_USER: CreateUserPayload = { email: "", password: "", firstName: "", lastName: "", roles: {} };
+
+// Contraseña temporal legible para dictarla: sin 0/O ni 1/l/I. Aleatoria de verdad (crypto).
+const PASS_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+const makePassword = () => Array.from(crypto.getRandomValues(new Uint32Array(10)), (n) => PASS_CHARS[n % PASS_CHARS.length]).join("");
+
+const LOGIN_URL = typeof window !== "undefined" ? `${window.location.origin}/login` : "/login";
 function CreateUserDialog({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: () => void;
 }) {
-  const [kind,    setKind]    = React.useState<NewUserKind>("team");
+  const [kind,    setKind]    = React.useState<NewUserKind>("cajera");
   const [form,    setForm]    = React.useState<CreateUserPayload>(EMPTY_NEW_USER);
   const [saving,  setSaving]  = React.useState(false);
   const [created, setCreated] = React.useState<{ email: string; password: string } | null>(null);
   const [toast,   setToast]   = React.useState({ open: false, msg: "", sev: "success" as "success"|"error" });
 
-  React.useEffect(() => { if (open) { setForm(EMPTY_NEW_USER); setCreated(null); setKind("team"); } }, [open]);
+  // La contraseña sale generada: nadie tiene que inventarla.
+  React.useEffect(() => {
+    if (open) { setForm({ ...EMPTY_NEW_USER, password: makePassword() }); setCreated(null); setKind("cajera"); }
+  }, [open]);
 
-  const genPassword = () => {
-    const rnd = () => Math.random().toString(36).slice(-4);
-    setForm(f => ({ ...f, password: rnd() + rnd().toUpperCase() + Math.floor(Math.random() * 90 + 10) }));
-  };
+  const genPassword = () => setForm(f => ({ ...f, password: makePassword() }));
   const toggleRole = (key: keyof RolesMap) =>
     setForm(f => ({ ...f, roles: { ...(f.roles || {}), [key]: !f.roles?.[key] } }));
 
@@ -607,8 +613,10 @@ function CreateUserDialog({ open, onClose, onCreated }: {
           sev: "success",
         });
       } else {
-        await createUser({ ...form, email });
-        setToast({ open: true, msg: "Cuenta creada", sev: "success" });
+        // Cajera: caja de obras (vende, cierra el día y valida entradas en la puerta).
+        const roles = kind === "cajera" ? { ...form.roles, cajero: true } : form.roles;
+        await createUser({ ...form, email, roles });
+        setToast({ open: true, msg: kind === "cajera" ? "Cajera creada" : "Cuenta creada", sev: "success" });
       }
       setCreated({ email, password: form.password });
       onCreated();
@@ -618,7 +626,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
   };
 
   const copyCreds = () => {
-    if (created) navigator.clipboard?.writeText(`Email: ${created.email}\nContraseña: ${created.password}`);
+    if (created) navigator.clipboard?.writeText(`Entra en: ${LOGIN_URL}\nCorreo: ${created.email}\nContraseña: ${created.password}`);
     setToast({ open: true, msg: "Credenciales copiadas", sev: "success" });
   };
 
@@ -635,7 +643,9 @@ function CreateUserDialog({ open, onClose, onCreated }: {
           <Typography sx={{ fontSize: 12, color: TM, mt: 0.5 }}>
             {kind === "artist"
               ? "El artista invitado no pasa por convocatoria: queda aceptado y se le puede asignar pabellón enseguida."
-              : "Se crea con una contraseña temporal; pásasela a la persona para que entre."}
+              : kind === "cajera"
+                ? "Vende obras, cierra su caja y valida entradas. La contraseña ya está generada: cópiala al terminar."
+                : "La contraseña ya está generada; pásasela a la persona para que entre."}
           </Typography>
         </Box>
 
@@ -644,6 +654,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
             <Stack spacing={1.5} sx={{ pt: 0.5 }}>
               <Box sx={{ p: 2, borderRadius: 0, bgcolor: alpha(G, 0.06), border: `1px solid ${alpha(G, 0.25)}` }}>
                 <Typography sx={{ fontSize: 12, color: G, fontWeight: 500, mb: 1 }}>✓ Cuenta creada — guardá estas credenciales</Typography>
+                <Typography sx={{ fontSize: 13, color: "#EDEBE4", fontFamily: "monospace", wordBreak: "break-all" }}>Entra en: {LOGIN_URL}</Typography>
                 <Typography sx={{ fontSize: 13, color: "#EDEBE4", fontFamily: "monospace" }}>Email: {created.email}</Typography>
                 <Typography sx={{ fontSize: 13, color: "#EDEBE4", fontFamily: "monospace" }}>Contraseña: {created.password}</Typography>
               </Box>
@@ -661,6 +672,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
                 </Typography>
                 <Stack direction="row" gap={0.75} flexWrap="wrap">
                   {([
+                    { k: "cajera" as const, label: "Cajera" },
                     { k: "team" as const, label: "Equipo de la feria" },
                     { k: "artist" as const, label: "Artista invitado" },
                   ]).map((o) => (
@@ -688,7 +700,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
               <TextField
                 label="Contraseña temporal *" size="small" fullWidth value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                helperText="Mínimo 6 caracteres"
+                helperText="Generada automáticamente. Puedes cambiarla o generar otra."
                 InputProps={{
                   endAdornment: (
                     <Button size="small" onClick={genPassword} startIcon={<KeyRound size={13} />}
@@ -698,7 +710,14 @@ function CreateUserDialog({ open, onClose, onCreated }: {
                   ),
                 }}
               />
-              {kind === "team" ? (
+              {kind === "cajera" ? (
+                <Box sx={{ p: 1.5, border: `1px solid ${alpha(G, 0.25)}`, bgcolor: alpha(G, 0.06) }}>
+                  <Typography sx={{ fontSize: 12, color: TM, lineHeight: 1.6 }}>
+                    Entra directo a <strong style={{ color: "#EDEBE4" }}>Vender obra</strong>. Asígnala a su pabellón en
+                    Ferias → pabellón → cajeros para que solo cobre las obras de ese pabellón.
+                  </Typography>
+                </Box>
+              ) : kind === "team" ? (
                 <Box>
                   <Typography sx={{ fontSize: 11, color: TM, fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.6, mb: 0.75 }}>Roles</Typography>
                   <Stack direction="row" gap={0.75} flexWrap="wrap">
@@ -741,7 +760,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
               <Button onClick={handleCreate} disabled={!canSave}
                 startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <UserPlus size={15} />}
                 sx={{ bgcolor: G, color: "#000", fontWeight: 500, fontSize: 13, borderRadius: 0, px: 2.5, "&:hover": { bgcolor: GD }, "&:disabled": { bgcolor: alpha(G, 0.3), color: alpha("#000", 0.4) } }}>
-                {saving ? "Creando…" : kind === "artist" ? "Invitar artista" : "Crear cuenta"}
+                {saving ? "Creando…" : kind === "artist" ? "Invitar artista" : kind === "cajera" ? "Crear cajera" : "Crear cuenta"}
               </Button>
             </>
           )}

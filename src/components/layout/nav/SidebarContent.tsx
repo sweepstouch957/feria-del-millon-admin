@@ -23,6 +23,7 @@ import {
   PanelLeftOpen,
   ClipboardCheck,
   Wallet,
+  ScanLine,
 } from "lucide-react";
 
 import { LAYOUT_COLORS as C } from "../layoutConfig";
@@ -62,7 +63,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const isBoxOffice = !!(roles as { taquilla?: boolean }).taquilla;
   const isEditor = !!(roles as { editor?: boolean }).editor;
 
-  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/orders") || pathname.startsWith("/caja"));
+  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/orders"));
   const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));
 
   const go = (href: string) => () => {
@@ -111,13 +112,22 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       onRailClick={go("/orders")}
       icon={<ShoppingBag {...ICON} />}
       text="Pedidos"
-      active={pathname.startsWith("/orders") || pathname.startsWith("/caja")}
+      active={pathname.startsWith("/orders")}
     >
       {kid("/orders", "Listado de pedidos")}
-      {kid("/caja", "Vender obra (caja)")}
-      {kid("/caja/cierre", "Mi cierre del día")}
       {kid("/orders/cartera", "Cartera / Fiado")}
     </CollapsibleGroup>
+  );
+
+  // Lo mismo que ve la cajera, para que el admin pueda cubrir una caja.
+  const cajaSection = (
+    <>
+      <SectionTitle label="Caja" rail={rail} />
+      {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
+      {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
+      {item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
+      {item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+    </>
   );
 
   return (
@@ -239,6 +249,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <>
             {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
 
+            {cajaSection}
+
             <SectionTitle label="Inventario" rail={rail} />
             {item("/inventory/artworks", "Obras", <Paintbrush2 {...ICON} />)}
             {item("/inventory/artworks/qr", "QR de artistas y obras", <QrCode {...ICON} />)}
@@ -278,7 +290,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
         {!isSuperUser && isBoxOffice && (
           <>
             <SectionTitle label="Taquilla" rail={rail} />
-            {item("/tickets/validator", "Validador QR", <QrCode {...ICON} />)}
+            {!isCashier && item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
             {item("/tickets/taquilla", "Taquilla", <Ticket {...ICON} />)}
             {item("/tickets/asistentes", "Informe de asistentes", <BarChart3 {...ICON} />)}
           </>
@@ -295,10 +307,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
         {!isSuperUser && isCashier && (
           <>
-            <SectionTitle label="Caja" rail={rail} />
-            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
-            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
-            {item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+            {cajaSection}
             {item("/orders", "Pedidos", <FileText {...ICON} />)}
             {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
           </>
