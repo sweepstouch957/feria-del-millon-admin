@@ -377,7 +377,7 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
                       helperText={t.pickDay && !r.price ? "Vacío = precio del día" : " "}
                       slotProps={{
                         htmlInput: { inputMode: "numeric" },
-                        input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                        input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
                         inputLabel: { shrink: true },
                       }}
                     />

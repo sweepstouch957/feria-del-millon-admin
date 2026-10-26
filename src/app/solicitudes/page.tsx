@@ -406,7 +406,7 @@ function ApplicationDetailDialog({
           </Stack>
           {conv && (
             <Typography variant="body2" sx={{ mt: 2, opacity: 0.8, pl: 10, fontWeight: 500, color: "#C6C2B6" }}>
-              {conv.name} <span style={{ color: '#3FA46E', margin: '0 8px' }}>•</span> Inscripción {conv.fee ? `$${conv.fee.toLocaleString()} ${conv.currency || "COP"}` : ""}
+              {conv.name} <span style={{ color: '#3FA46E', margin: '0 8px' }}>•</span> Inscripción {conv.fee ? `${conv.currency || "COP"} ${conv.fee.toLocaleString("es-CO")}` : ""}
             </Typography>
           )}
         </Box>

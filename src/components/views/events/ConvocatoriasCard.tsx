@@ -18,6 +18,7 @@ import { getConvocatorias, type Convocatoria } from "@services/events.service";
 import { getApplicationStats } from "@services/applications.service";
 import StatusPill from "@components/ui/StatusPill";
 import { eyebrow } from "@/app/theme";
+import { formatCOP } from "@/utils/money";
 import ConvocatoriaDialog from "./ConvocatoriaDialog";
 
 /* Las convocatorias de la feria.
@@ -53,9 +54,7 @@ const fmt = (iso?: string) =>
     : "—";
 
 const money = (n?: number, currency = "COP") =>
-  typeof n === "number"
-    ? new Intl.NumberFormat("es-CO", { style: "currency", currency, maximumFractionDigits: 0 }).format(n)
-    : "—";
+  typeof n === "number" ? formatCOP(n, { currency }) : "—";
 
 /** Cuántas postulaciones recibió esta convocatoria, y cuántas se aceptaron.
  *  Es el número por el que se entra a mirar una convocatoria pasada. */

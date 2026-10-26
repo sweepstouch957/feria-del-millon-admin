@@ -9,6 +9,7 @@ import {
   Button,
   Collapse,
   FormControlLabel,
+  InputAdornment,
   Stack,
   Switch,
   TextField,
@@ -180,11 +181,15 @@ export function SaleForm({
           <Collapse in={apartar} unmountOnExit>
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
               <TextField
-                label="Abono hoy (COP)"
+                label="Abono hoy"
                 type="number"
-                slotProps={{ htmlInput: { min: 0, inputMode: "numeric" } }}
+                slotProps={{
+                  htmlInput: { min: 0, inputMode: "numeric" },
+                  input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
+                }}
                 {...register("abono", { valueAsNumber: true })}
-                {...err("abono")}
+                error={!!errors.abono}
+                helperText={errors.abono?.message ?? (Number(abono) > 0 ? `${formatCOP(abono)} · queda ${formatCOP(Math.max(0, total - Number(abono)))}` : undefined)}
               />
               <TextField label="Paga el resto antes de" type="date" slotProps={{ inputLabel: { shrink: true } }} {...register("dueDate")} />
             </Box>

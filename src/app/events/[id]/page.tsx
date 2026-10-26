@@ -53,7 +53,7 @@ const fmtDate = (iso?: string) =>
       })
     : "—";
 
-const fmtMoney = (n?: number) => (n == null ? "?" : `$${n.toLocaleString("es-CO")}`);
+const fmtMoney = (n?: number) => (n == null ? "?" : `COP ${n.toLocaleString("es-CO")}`);
 
 const priceRange = (min?: number, max?: number, currency = "COP") =>
   min == null && max == null ? "—" : `${fmtMoney(min)} – ${fmtMoney(max)} ${currency}`;

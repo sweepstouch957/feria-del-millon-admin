@@ -600,7 +600,7 @@ export default function ArtworkDetailPage() {
                       }
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position="start">$</InputAdornment>
+                          <InputAdornment position="start">COP</InputAdornment>
                         ),
                       }}
                       sx={{ flex: 1 }}

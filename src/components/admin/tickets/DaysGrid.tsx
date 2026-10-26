@@ -211,7 +211,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                 onChange={(e) => setEdit({ ...edit, price: e.target.value.replace(/\D/g, "") })}
                 slotProps={{
                   htmlInput: { inputMode: "numeric" },
-                  input: { startAdornment: <InputAdornment position="start">$</InputAdornment>, endAdornment: <InputAdornment position="end">COP</InputAdornment> },
+                  input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
                 }}
                 helperText={edit.price ? formatCOP(Number(edit.price)) : " "}
               />
