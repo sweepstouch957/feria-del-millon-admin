@@ -95,8 +95,14 @@ function CompanyLinksBulk({ eventId, existingCodes, onDone }: { eventId: string;
       </Typography>
       <TextField
         multiline minRows={3} maxRows={10} fullWidth size="small" value={text} onChange={(e) => setText(e.target.value)}
-        placeholder={"Itaú\tEMPRESA\tmaria.gomez@itau.co\t100\nBavaria- Stella\tEMPRESA\tmaria.manriquea@ab-inbev.com\t30"}
+        // El ejemplo dice que es ejemplo: en gris parecía que ya había empresas cargadas.
+        placeholder={"Pega aquí las filas del Excel. Ejemplo:\nItaú        EMPRESA   maria.gomez@itau.co   100"}
       />
+      {!text.trim() && (
+        <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+          En el Excel selecciona las filas de las empresas (Empresa, EMPRESA, correo, cupo), copia (Ctrl+C) y pega aquí (Ctrl+V).
+        </Typography>
+      )}
       {rows.length > 0 && (
         <Table size="small" sx={{ mt: 1 }}>
           <TableHead><TableRow>
