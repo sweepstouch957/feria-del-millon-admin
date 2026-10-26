@@ -65,6 +65,7 @@ export interface Ticket {
   inviteHostName?: string;
   declinedAt?: string;
   whatsappSentAt?: string;
+  companionRequestSentAt?: string;
   paymentMethod?: string;
   qrToken?: string; // presente al comprar
   shortCode?: string; // humano-legible
@@ -497,4 +498,9 @@ export const sendInvitationTest = async (
 
 export const resendInvitation = async (ticketId: string) => {
   await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
+};
+
+/** Correo "agregue a su acompañante" a quien confirmó sin nombrarlo. */
+export const requestCompanion = async (ticketId: string) => {
+  await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/companion-request`, {}, { withCredentials: true });
 };

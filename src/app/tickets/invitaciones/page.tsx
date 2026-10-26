@@ -15,7 +15,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import { listUsers } from "@services/user.service";
@@ -690,6 +690,23 @@ function Invitations({ eventId }: { eventId: string }) {
                         <Tooltip title="Reenviar correo">
                           <IconButton size="small" onClick={() => resendInvitation(t.id).then(() => toast.success("Reenviada"), () => toast.error("No se pudo reenviar"))}>
                             <Send size={14} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {/* Confirmó una invitación doble sin nombrar acompañante: el cupo sigue en su QR. */}
+                      {t.status === "sold" && !t.inviteParent && (t.admits ?? 1) > 1 && (
+                        <Tooltip title={t.companionRequestSentAt
+                          ? `Pedir acompañante otra vez (enviado ${new Date(t.companionRequestSentAt).toLocaleDateString("es-CO", { day: "numeric", month: "short" })})`
+                          : "Enviar correo para agregar acompañante"}>
+                          <IconButton
+                            size="small"
+                            color={t.companionRequestSentAt ? "default" : "primary"}
+                            onClick={() => requestCompanion(t.id).then(
+                              () => { toast.success(`Correo enviado a ${t.buyer?.email}`); qc.invalidateQueries({ queryKey: ["invitations", eventId] }); },
+                              () => toast.error("No se pudo enviar"),
+                            )}
+                          >
+                            <UserPlus size={14} />
                           </IconButton>
                         </Tooltip>
                       )}
