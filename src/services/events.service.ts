@@ -127,6 +127,18 @@ export const setInventoryClose = async (eventId: string, closeAt: string | null)
   return data;
 };
 
+export type InventoryExtension = { artist: string; until: string };
+
+// Plazo extendido de un artista para cargar obras después del cierre. until=null lo quita.
+export const setInventoryExtension = async (eventId: string, artist: string, until: string | null) => {
+  const { data } = await apiClient.put<{ ok: boolean; inventoryExtensions: InventoryExtension[] }>(
+    `/event/events/${encodeURIComponent(eventId)}/inventory-extensions`,
+    { artist, until },
+    { withCredentials: true }
+  );
+  return data;
+};
+
 /* ========= Convocatorias ========= */
 export type ConvocatoriaStatus =
   | "draft"

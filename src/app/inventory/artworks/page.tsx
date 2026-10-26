@@ -41,7 +41,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { useTechniques } from "@/hooks/useTechniques";
 import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
-import { setCatalogReveal, setInventoryClose } from "@services/events.service";
+import { setCatalogReveal, setInventoryClose, setInventoryExtension, type InventoryExtension } from "@services/events.service";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { formatCOP } from "@/utils/money";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
@@ -139,6 +139,29 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     try {
       await setInventoryClose(event, value ? new Date(value).toISOString() : null);
       await refetchEvent();
+    } finally {
+      setRevealBusy(false);
+    }
+  };
+
+  // Plazo extendido: estos artistas siguen cargando obras después del cierre.
+  const allArtists = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of pavilions)
+      for (const a of (p as any).artistInfo ?? []) map.set(String(a.id), `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || a.email);
+    return map;
+  }, [pavilions]);
+  const extensions = (selectedEvent?.inventoryExtensions ?? []) as InventoryExtension[];
+  const [extArtist, setExtArtist] = useState("");
+  const [extUntil, setExtUntil] = useState("");
+  const saveExtension = async (artistId: string, until: string | null) => {
+    setRevealBusy(true);
+    try {
+      await setInventoryExtension(event, artistId, until);
+      await refetchEvent();
+      setExtArtist("");
+    } catch (e: any) {
+      window.alert(e?.response?.data?.error || "No se pudo guardar. Intenta de nuevo.");
     } finally {
       setRevealBusy(false);
     }
@@ -245,6 +268,53 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
               />
             </Tooltip>
           </Stack>
+
+          {/* Excepciones al cierre: artistas que siguen cargando hasta su fecha. */}
+          <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+              Plazo extendido para artistas
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                pueden crear y editar obras hasta su fecha, aunque la carga haya cerrado
+              </Typography>
+            </Typography>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }} flexWrap="wrap" useFlexGap>
+              <TextField select size="small" label="Artista" value={extArtist} onChange={(e) => setExtArtist(e.target.value)} sx={{ minWidth: 240 }}>
+                {[...allArtists.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => (
+                  <MenuItem key={id} value={id}>{name}</MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                size="small"
+                type="datetime-local"
+                label="Hasta"
+                InputLabelProps={{ shrink: true }}
+                value={extUntil}
+                onChange={(e) => setExtUntil(e.target.value)}
+                sx={{ minWidth: 220 }}
+              />
+              <Button
+                variant="contained"
+                size="small"
+                disabled={revealBusy || !extArtist || !extUntil}
+                onClick={() => saveExtension(extArtist, new Date(extUntil).toISOString())}
+              >
+                Dar plazo
+              </Button>
+              {extensions.map((x) => {
+                const past = new Date(x.until).getTime() < Date.now();
+                return (
+                  <Chip
+                    key={x.artist}
+                    size="small"
+                    color={past ? "default" : "success"}
+                    variant={past ? "outlined" : "filled"}
+                    label={`${allArtists.get(String(x.artist)) ?? "Artista"} · hasta ${new Date(x.until).toLocaleString("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}${past ? " (vencido)" : ""}`}
+                    onDelete={revealBusy ? undefined : () => saveExtension(String(x.artist), null)}
+                  />
+                );
+              })}
+            </Stack>
+          </Box>
         </CardContent>
       </Card>
 
