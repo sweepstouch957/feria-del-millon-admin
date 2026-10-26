@@ -90,6 +90,7 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
           note: values.notes,
           by: user?.id,
           dueDate: values.dueDate || undefined,
+          receiptUrl: values.receiptUrl || undefined,
         });
         return { order: r.order ?? order, artwork, values, kind: r.settled ? "paid" : "layaway" };
       }
@@ -101,6 +102,7 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
         details: {
           cashierId: user?.id,
           authCode: values.authCode || undefined,
+          receiptUrl: values.receiptUrl || undefined,
           notes: values.notes || undefined,
           deliveryAddress: buyer.address,
         },
@@ -112,6 +114,7 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
       // Stock y cierre del día cambian con cada venta.
       qc.invalidateQueries({ queryKey: ["artworks"] });
       qc.invalidateQueries({ queryKey: ["caja", "my-sales"] });
+      qc.invalidateQueries({ queryKey: ["caja", "customers"] }); // el comprador nuevo ya sale en el buscador
     },
   });
 }

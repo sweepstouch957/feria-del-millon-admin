@@ -33,7 +33,7 @@ export function useArtworkFinder(eventId?: string) {
       ? pavilionId(pavs.options[0])
       : pickedPavilion;
 
-  const q = useDebouncedValue(text.trim(), 300);
+  const q = useDebouncedValue(text.trim(), 200);
   const list = useArtworksCursor({
     q: q || undefined,
     event: eventId,
@@ -44,6 +44,7 @@ export function useArtworkFinder(eventId?: string) {
     project: "tagId,dimensionsText",
     limit: 24,
     enabled: !!eventId,
+    keepPrevious: true,
   });
 
   const techniques = useTechniques();
@@ -97,6 +98,7 @@ export function useArtworkFinder(eventId?: string) {
     artist, setArtist, setArtistQ, artistOptions: artists.data ?? [],
     rows: list.rows as CajaArtwork[],
     isLoading: list.isLoading,
+    isSearching: list.isFetching && !list.isFetchingNextPage,
     hasNextPage: list.hasNextPage,
     isFetchingNextPage: list.isFetchingNextPage,
     loadMore: list.loadMore,

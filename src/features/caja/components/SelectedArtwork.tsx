@@ -1,6 +1,9 @@
 "use client";
 
-import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { useState } from "react";
+import { Alert, Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
+import { Maximize2 } from "lucide-react";
+import { ImageLightbox } from "./ImageLightbox";
 import { eyebrow, FDM } from "@/app/theme";
 import { formatCOP } from "@/utils/money";
 import { artistName, imageOf, stockOf, type CajaArtwork } from "../model/artwork";
@@ -18,6 +21,7 @@ export function SelectedArtwork({
 }) {
   const img = imageOf(artwork);
   const stock = stockOf(artwork);
+  const [zoom, setZoom] = useState(false);
   const facts = [
     artwork.techniqueInfo?.name,
     artwork.dimensionsText,
@@ -27,17 +31,28 @@ export function SelectedArtwork({
   return (
     <Stack spacing={1.5}>
       <Box sx={{ display: "flex", gap: 1.5 }}>
-        <Box
+        <ButtonBase
+          aria-label="Ver la imagen en grande"
+          onClick={() => setZoom(true)}
+          disabled={!img}
           sx={{
-            width: { xs: 96, sm: 120 },
+            position: "relative",
+            width: { xs: 120, sm: 160 },
             aspectRatio: "1",
             flexShrink: 0,
             bgcolor: "action.hover",
             backgroundImage: img ? `url(${img})` : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
+            cursor: "zoom-in",
           }}
-        />
+        >
+          {img && (
+            <Box sx={{ position: "absolute", right: 6, bottom: 6, p: 0.5, display: "flex", bgcolor: "rgba(0,0,0,0.6)", color: "#fff" }}>
+              <Maximize2 size={16} />
+            </Box>
+          )}
+        </ButtonBase>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ ...eyebrow, color: "text.secondary" }}>{artistName(artwork) || "Artista"}</Typography>
           <Typography sx={{ fontSize: 18, lineHeight: 1.25, mt: 0.25 }}>{artwork.title || "Sin título"}</Typography>
@@ -61,6 +76,12 @@ export function SelectedArtwork({
       <Button size="small" onClick={onChange} sx={{ alignSelf: "flex-start" }}>
         Cambiar obra
       </Button>
+      <ImageLightbox
+        src={img}
+        caption={[artwork.title, artistName(artwork)].filter(Boolean).join(" · ")}
+        open={zoom}
+        onClose={() => setZoom(false)}
+      />
     </Stack>
   );
 }

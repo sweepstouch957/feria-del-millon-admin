@@ -107,7 +107,7 @@ export interface OrderDoc {
         balanceDue?: number;
         dueDate?: string;
         stockClaimed?: boolean;
-        installments?: { amount: number; method?: string; at?: string; note?: string; by?: string }[];
+        installments?: { amount: number; method?: string; at?: string; note?: string; by?: string; receiptUrl?: string }[];
     };
     createdAt?: string;
     updatedAt?: string;
@@ -199,7 +199,7 @@ export const markOrderPaid = async (
 /** POST /order/orders/:id/abono — registra un abono (pago parcial o saldo). */
 export const registerAbono = async (
     orderId: string,
-    payload: { amount: number; method?: PaymentMethod; note?: string; by?: string; dueDate?: string }
+    payload: { amount: number; method?: PaymentMethod; note?: string; by?: string; dueDate?: string; receiptUrl?: string }
 ): Promise<{ ok: boolean; settled?: boolean; order?: OrderDoc }> => {
     const { data } = await apiClient.post<{ ok: boolean; settled?: boolean; order?: OrderDoc }>(
         `/order/orders/${orderId}/abono`,
@@ -214,6 +214,7 @@ export interface CustomerDoc {
     email: string;
     name?: string;
     phone?: string | null;
+    document?: string | null;
     address?: AddressInput | null;
     ordersCount?: number;
     totalSpent?: number;

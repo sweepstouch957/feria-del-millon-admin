@@ -33,8 +33,12 @@ export const saleSchema = z
     apartar: z.boolean(),
     abono: z.number({ error: "Valor del abono" }).min(0, "No puede ser negativo"),
     dueDate: z.string(),
+    /** Foto del comprobante de transferencia (Cloudinary). Opcional. */
+    receiptUrl: z.string(),
   })
   .superRefine((v, ctx) => {
+    // El servidor no aparta sin plata: el abono tiene que ser mayor a cero.
+    if (v.apartar && !(v.abono > 0)) ctx.addIssue({ code: "custom", path: ["abono"], message: "Escribe cuánto abona hoy" });
     if (v.delivery && !v.addressLine1) ctx.addIssue({ code: "custom", path: ["addressLine1"], message: "Dirección de envío" });
     if (v.delivery && !v.cityId) ctx.addIssue({ code: "custom", path: ["cityId"], message: "Ciudad de envío" });
   });
@@ -56,4 +60,5 @@ export const SALE_DEFAULTS: SaleValues = {
   apartar: false,
   abono: 0,
   dueDate: "",
+  receiptUrl: "",
 };

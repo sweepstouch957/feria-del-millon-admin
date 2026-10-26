@@ -19,6 +19,10 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { RefundButton } from "@features/caja/components/RefundButton";
 
 const money = (n?: number) => formatCOP(n, { code: true });
+// Foto de la transferencia: en el pago (venta completa) o en el último abono que la trajo.
+const receiptOf = (o: OrderDoc): string | undefined =>
+  o.payment?.details?.receiptUrl ||
+  [...(o.layaway?.installments ?? [])].reverse().find((i) => i.receiptUrl)?.receiptUrl;
 
 const STATUS: Record<OrderDoc["status"], { label: string; tone: PillTone }> = {
   created: { label: "Creado", tone: "mid" },
@@ -144,6 +148,7 @@ export default function OrdersPage() {
                   { label: "Método", value: o.payment?.method || "—" },
                   { label: "Fecha", value: formatDate(o.createdAt) },
                   ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
+                  ...(receiptOf(o) ? [{ label: "Comprobante", value: <a href={receiptOf(o)} target="_blank" rel="noreferrer">Ver foto</a> }] : []),
                 ],
                 actions: <RefundButton order={o} />,
               }))}
@@ -172,7 +177,14 @@ export default function OrdersPage() {
                           <Typography variant="caption" color="text.secondary">{o.buyer?.email || o.buyer?.phone || ""}</Typography>
                         </TableCell>
                         <TableCell><Typography variant="caption">{items(o)}</Typography></TableCell>
-                        <TableCell>{o.payment?.method || "—"}</TableCell>
+                        <TableCell>
+                          {o.payment?.method || "—"}
+                          {receiptOf(o) && (
+                            <Typography component="a" href={receiptOf(o)} target="_blank" rel="noreferrer" variant="caption" display="block">
+                              Comprobante
+                            </Typography>
+                          )}
+                        </TableCell>
                         <TableCell align="right">{money(o.total)}</TableCell>
                         <TableCell>
                           {chip(o.status)}

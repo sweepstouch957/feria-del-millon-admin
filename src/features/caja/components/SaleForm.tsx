@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -20,6 +20,9 @@ import { Banknote, CreditCard, Landmark } from "lucide-react";
 import { eyebrow } from "@/app/theme";
 import { formatCOP } from "@/utils/money";
 import type { CityDoc } from "@services/city.service";
+import type { CustomerDoc } from "@services/orders.service";
+import { CustomerPicker } from "./CustomerPicker";
+import { ReceiptInput } from "./ReceiptInput";
 import { stockOf, type CajaArtwork } from "../model/artwork";
 import { CAJA_METHODS, SALE_DEFAULTS, saleSchema, type SaleValues } from "../model/sale";
 
@@ -46,7 +49,7 @@ export function SaleForm({
   isPending: boolean;
   onSubmit: (values: SaleValues) => void;
 }) {
-  const { control, register, handleSubmit, formState: { errors } } = useForm<SaleValues>({
+  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<SaleValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: SALE_DEFAULTS,
     mode: "onTouched",
@@ -56,10 +59,22 @@ export function SaleForm({
     name: ["method", "delivery", "apartar", "qty", "abono"],
   });
 
+  const [uploading, setUploading] = useState(false);
   const stock = stockOf(artwork);
   const total = Number(artwork.price ?? 0) * (Number(qty) || 0);
   const err = (k: keyof SaleValues) => ({ error: !!errors[k], helperText: errors[k]?.message });
-  const blocked = disabled || stock <= 0 || isPending;
+  const blocked = disabled || stock <= 0 || isPending || uploading;
+
+  // Cliente que ya compró: se llenan sus datos (y se pueden corregir).
+  const fillCustomer = (c: CustomerDoc) => {
+    const opts = { shouldValidate: true, shouldDirty: true } as const;
+    setValue("buyerName", c.name ?? "", opts);
+    setValue("buyerEmail", c.email ?? "", opts);
+    setValue("buyerPhone", c.phone ?? "", opts);
+    setValue("buyerDocument", c.document ?? "", opts);
+    setValue("addressLine1", c.address?.line1 ?? "");
+    setValue("cityId", c.address?.city ? String(c.address.city) : "");
+  };
 
   return (
     <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
@@ -100,9 +115,17 @@ export function SaleForm({
           {method === "card_offline" && (
             <TextField label="N.º de aprobación del voucher (opcional)" slotProps={{ htmlInput: { inputMode: "numeric" } }} {...register("authCode")} />
           )}
+          {method === "whatsapp" && (
+            <Controller
+              control={control}
+              name="receiptUrl"
+              render={({ field }) => <ReceiptInput value={field.value} onChange={field.onChange} onUploading={setUploading} />}
+            />
+          )}
         </Section>
 
         <Section title="Comprador">
+          <CustomerPicker onPick={fillCustomer} />
           <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
             <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
             <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
@@ -193,7 +216,7 @@ export function SaleForm({
             </Typography>
           </Box>
           <Button type="submit" variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: 52, px: 3 }}>
-            {isPending ? "Registrando…" : apartar ? "Apartar" : "Cobrar"}
+            {isPending ? "Registrando…" : uploading ? "Subiendo foto…" : apartar ? "Apartar" : "Cobrar"}
           </Button>
         </Box>
       </Stack>

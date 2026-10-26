@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import {
   listArtworks,
   type CursorListResponse,
@@ -35,6 +35,8 @@ export type ArtworksCursorFilters = {
   project?: string;
   /** false = no consulta (p. ej. pestaña que no muestra obras). */
   enabled?: boolean;
+  /** Deja la lista anterior mientras llega la nueva (buscador sin parpadeo). */
+  keepPrevious?: boolean;
 };
 
 export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
@@ -74,6 +76,7 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
     initialPageParam: undefined,
     staleTime: 10_000,
     enabled: filters.enabled ?? true,
+    placeholderData: filters.keepPrevious ? keepPreviousData : undefined,
   });
 
   const pages = useMemo(

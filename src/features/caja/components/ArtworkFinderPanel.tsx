@@ -7,6 +7,7 @@ import {
   Button,
   IconButton,
   InputAdornment,
+  LinearProgress,
   MenuItem,
   Stack,
   TextField,
@@ -81,6 +82,8 @@ export function ArtworkFinderPanel({
           },
         }}
       />
+
+      <LinearProgress sx={{ height: 2, mt: "-12px !important", visibility: finder.isSearching ? "visible" : "hidden" }} />
 
       <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1.3fr" } }}>
         <TextField

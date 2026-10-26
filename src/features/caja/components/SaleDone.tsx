@@ -56,6 +56,12 @@ export function SaleDone({ result, onNext }: { result: SaleResult; onNext: () =>
         ))}
       </Box>
 
+      {values.receiptUrl && (
+        <Typography component="a" href={values.receiptUrl} target="_blank" rel="noreferrer" variant="body2" sx={{ color: "primary.main" }}>
+          Ver comprobante adjunto
+        </Typography>
+      )}
+
       <Button autoFocus variant="contained" color="secondary" size="large" onClick={onNext} sx={{ minHeight: 52 }}>
         Nueva venta
       </Button>
