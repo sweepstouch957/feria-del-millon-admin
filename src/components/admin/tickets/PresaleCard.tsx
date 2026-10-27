@@ -308,6 +308,7 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
                       <Typography variant="h6" sx={{ opacity: r.enabled ? 1 : 0.55 }}>{t.label}</Typography>
+                      {!r.enabled && <Chip size="small" label="Oculto en la tienda" variant="outlined" />}
                       {dirty && <Chip size="small" label="Sin guardar" color="primary" variant="outlined" />}
                     </Stack>
                     {t.desc && (
