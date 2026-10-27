@@ -18,6 +18,7 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
+import { useDialogs } from "@/components/ui/DialogsProvider";
 import { listUsers } from "@services/user.service";
 import { listCustomers } from "@services/orders.service";
 
@@ -389,6 +390,7 @@ function Invitations({ eventId }: { eventId: string }) {
 
   const [exporting, setExporting] = React.useState(false);
   const [newOpen, setNewOpen] = React.useState(false);
+  const dialogs = useDialogs();
   const [tab, setTab] = React.useState(0);
   // Reporte completo del evento (no solo lo filtrado): resumen con KPIs y gráficos + una hoja por estado.
   const exportCsv = async () => {
@@ -661,12 +663,19 @@ function Invitations({ eventId }: { eventId: string }) {
               <Button
                 fullWidth variant="contained" size="large" startIcon={<Send size={16} />} sx={{ textTransform: "none", mt: 2 }}
                 disabled={!validInvitees.length || send.isPending || uploading}
-                onClick={() => {
-                  const what = [
-                    newInvitees ? `enviar ${newInvitees} invitación(es) (los correos salen de inmediato)` : "",
-                    alreadyInvited ? `actualizar los datos de ${alreadyInvited} ya invitado(s)` : "",
-                  ].filter(Boolean).join(" y ");
-                  if (window.confirm(`¿${what[0].toUpperCase()}${what.slice(1)}?`)) send.mutate();
+                onClick={async () => {
+                  const ok = await dialogs.confirm({
+                    eyebrow: "Nueva invitación",
+                    title: newInvitees ? `¿Enviar ${newInvitees} invitación${newInvitees === 1 ? "" : "es"}?` : `¿Actualizar los datos de ${alreadyInvited} invitado${alreadyInvited === 1 ? "" : "s"}?`,
+                    message: (
+                      <>
+                        {newInvitees > 0 && <>Los correos salen de inmediato · {category} · {admits === 1 ? "pase personal" : `${admits} QR por invitación`} · {dayLabel}.<br /></>}
+                        {alreadyInvited > 0 && <>{alreadyInvited} ya estaban invitados: solo se actualizan sus datos, no se les reenvía.</>}
+                      </>
+                    ),
+                    confirmText: newInvitees ? "Enviar" : "Actualizar",
+                  });
+                  if (ok) send.mutate();
                 }}
               >
                 {send.isPending
@@ -731,8 +740,14 @@ function Invitations({ eventId }: { eventId: string }) {
             <Button
               size="small" variant="outlined" startIcon={<Send size={14} />} sx={{ textTransform: "none", whiteSpace: "nowrap" }}
               disabled={!stats?.pending || remind.isPending}
-              onClick={() => {
-                if (window.confirm(`¿Reenviar la invitación a las ${stats?.pending} personas que no han confirmado? Les llega como "Recordatorio".`)) remind.mutate();
+              onClick={async () => {
+                const ok = await dialogs.confirm({
+                  eyebrow: "Recordatorio",
+                  title: `¿Reenviar la invitación a ${stats?.pending} personas?`,
+                  message: "Les llega el mismo correo de invitación con “Recordatorio:” en el asunto, para que confirmen. No les llega a quienes ya confirmaron o declinaron.",
+                  confirmText: "Enviar recordatorio",
+                });
+                if (ok) remind.mutate();
               }}
             >
               {remind.isPending ? "Enviando…" : `Recordar a pendientes${stats?.pending ? ` (${stats.pending})` : ""}`}
@@ -742,7 +757,8 @@ function Invitations({ eventId }: { eventId: string }) {
           </Stack>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
-              <TableHead><TableRow>
+              {/* Título e ⓘ en una sola línea. */}
+              <TableHead sx={{ "& th": { whiteSpace: "nowrap" } }}><TableRow>
                 <TableCell>Invitado</TableCell>
                 <TableCell><Tooltip arrow title="Grupo con el que se invitó (VIP, Empresa, Artista…). El invitado no la ve."><span>Categoría ⓘ</span></Tooltip></TableCell>
                 <TableCell><Tooltip arrow title="Datos que dejó el invitado al confirmar (documento, celular, ciudad). “Sin inscribir” = todavía no confirma."><span>Inscripción ⓘ</span></Tooltip></TableCell>

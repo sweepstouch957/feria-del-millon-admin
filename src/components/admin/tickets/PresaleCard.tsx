@@ -16,6 +16,7 @@ import {
   getTicketTypes, saveTicketTypes,
   type SaveTicketTypeInput, type TicketTypeConfig, type TicketTypeKey,
 } from "@services/ticket.service";
+import { useDialogs } from "@/components/ui/DialogsProvider";
 
 /* Preventa de entradas: qué se vende, a qué precio, con qué cupo y entre qué
    fechas. Todo editable para no depender de un despliegue — y para poder probar
@@ -93,6 +94,7 @@ function Stat({ label, value, hint }: { label: string; value: React.ReactNode; h
 export default function PresaleCard({ eventId }: { eventId: string }) {
   const theme = useTheme();
   const qc = useQueryClient();
+  const dialogs = useDialogs();
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["ticketTypes", eventId],
     queryFn: () => getTicketTypes(eventId),
@@ -181,8 +183,8 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
   });
 
   /** Atajos: mueven la ventana de TODOS los tipos y guardan de una. */
-  const applyWindow = (salesFrom: string, salesTo: string, confirmText?: string) => {
-    if (confirmText && !window.confirm(confirmText)) return;
+  const applyWindow = async (salesFrom: string, salesTo: string, confirmText?: string) => {
+    if (confirmText && !(await dialogs.confirm({ eyebrow: "Venta de entradas", title: confirmText, confirmText: "Sí, aplicar" }))) return;
     const next = Object.fromEntries(
       Object.entries(rows).map(([k, r]) => [k, { ...r, salesFrom, salesTo }]),
     );

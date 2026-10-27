@@ -15,6 +15,7 @@ import {
 } from "@services/siteConfig.service";
 import { useAuth } from "@/provider/authProvider";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
+import { useDialogs } from "@/components/ui/DialogsProvider";
 
 // Mismas claves que ROLE_AUDIENCES/OTHER_AUDIENCES en event-svc.
 const AUDIENCES: { key: string; label: string }[] = [
@@ -33,6 +34,7 @@ const STATUS_LABEL: Record<string, string> = { sent: "Enviada", partial: "Parcia
 
 export default function CommunicationsPage() {
   const qc = useQueryClient();
+  const dialogs = useDialogs();
   const { user } = useAuth();
   const [audiences, setAudiences] = React.useState<string[]>(["suscriptores"]);
   const [subject, setSubject] = React.useState("");
@@ -132,8 +134,15 @@ export default function CommunicationsPage() {
             <Button
               variant="contained" startIcon={<Send size={16} />} sx={{ textTransform: "none" }}
               disabled={!ready || send.isPending || !preview?.total}
-              onClick={() => {
-                if (confirm(`Se enviará a ${preview?.total} correos. ¿Confirmas?`)) send.mutate(undefined);
+              onClick={async () => {
+                const ok = await dialogs.confirm({
+                  eyebrow: "Envío masivo",
+                  title: `¿Enviar a ${preview?.total} correos?`,
+                  message: "Los correos salen de inmediato y no se pueden recoger. Si no lo revisaste, mándate antes una prueba.",
+                  confirmText: `Enviar a ${preview?.total}`,
+                  danger: true,
+                });
+                if (ok) send.mutate(undefined);
               }}
             >
               {send.isPending ? "Enviando…" : `Enviar a ${preview?.total ?? 0}`}

@@ -10,6 +10,7 @@ import { AuthProvider } from "@/provider/authProvider";
 import MuiLocalizationProvider from "@/provider/MuiLocalizationProvider";
 import I18nProvider from "./i18nProvider";
 import { ThemeModeProvider } from "@/provider/ThemeModeProvider";
+import DialogsProvider from "@/components/ui/DialogsProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,9 +53,11 @@ export default function RootLayout({
             <MuiLocalizationProvider>
               <ThemeModeProvider>
                 <ClientThemeProvider>
-                  <AuthProvider>
-                    <AuthenticatedLayout>{children}</AuthenticatedLayout>
-                  </AuthProvider>
+                  <DialogsProvider>
+                    <AuthProvider>
+                      <AuthenticatedLayout>{children}</AuthenticatedLayout>
+                    </AuthProvider>
+                  </DialogsProvider>
                 </ClientThemeProvider>
               </ThemeModeProvider>
             </MuiLocalizationProvider>

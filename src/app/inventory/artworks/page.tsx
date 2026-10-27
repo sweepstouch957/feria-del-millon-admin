@@ -48,6 +48,8 @@ import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import PublishArtworksDialog from "@components/views/events/PublishArtworksDialog";
+import { useDialogs } from "@/components/ui/DialogsProvider";
+import { toast } from "sonner";
 
 /* Obras de la feria activa. Una sola fila de filtros (buscar, pabellón,
    artista, técnica, estado) y "Publicar" publica LO QUE ESTÁ FILTRADO: antes
@@ -161,7 +163,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
       await refetchEvent();
       setExtArtist("");
     } catch (e: any) {
-      window.alert(e?.response?.data?.error || "No se pudo guardar. Intenta de nuevo.");
+      toast.error(e?.response?.data?.error || "No se pudo guardar. Intenta de nuevo.");
     } finally {
       setRevealBusy(false);
     }
@@ -169,16 +171,21 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
 
   // Devolver una obra al artista: puede editarla UNA vez aunque la carga haya
   // cerrado (p. ej. subió una serie con stock 1). Al guardar él, se vuelve a cerrar.
-  // ponytail: window.prompt para la nota; diálogo propio si hace falta más que un texto.
+  const dialogs = useDialogs();
   const [returningId, setReturningId] = useState<string | null>(null);
   const toggleReturn = async (art: any) => {
     const unlock = !art.editUnlocked;
     let editNote = "";
     if (unlock) {
-      const note = window.prompt(
-        `Devolver “${art.title}” al artista para que la corrija.\n¿Qué tiene que revisar? (opcional)`,
-        "Revisa el número de reproducciones (stock)."
-      );
+      const note = await dialogs.prompt({
+        eyebrow: "Devolver al artista",
+        title: `Devolver “${art.title}” para que la corrija`,
+        message: "El artista puede editar esta obra una vez, aunque la carga esté cerrada. La nota le sale junto a la obra.",
+        label: "¿Qué tiene que revisar? (opcional)",
+        defaultValue: "Revisa el número de reproducciones (stock).",
+        multiline: true,
+        confirmText: "Devolver",
+      });
       if (note === null) return; // canceló
       editNote = note.trim();
     }
@@ -187,7 +194,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
       await patchArtwork(String(art.id), { editUnlocked: unlock, editNote });
       await refetch();
     } catch (e: any) {
-      window.alert(e?.response?.data?.error || "No se pudo cambiar. Intenta de nuevo.");
+      toast.error(e?.response?.data?.error || "No se pudo cambiar. Intenta de nuevo.");
     } finally {
       setReturningId(null);
     }

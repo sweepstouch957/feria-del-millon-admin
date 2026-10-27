@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import { Copy, Download, Link2, Mail } from "lucide-react";
 import InviteLinkEmailDialog from "./InviteLinkEmailDialog";
+import { useDialogs } from "@/components/ui/DialogsProvider";
 import QRCode from "qrcode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -57,6 +58,7 @@ const companyMessage = (company: string, seats: number) =>
 function CompanyLinksBulk({ eventId, existingCodes, onDone }: { eventId: string; existingCodes: Set<string>; onDone: () => void }) {
   const [text, setText] = React.useState("");
   const [sendMail, setSendMail] = React.useState(true);
+  const dialogs = useDialogs();
   const [busy, setBusy] = React.useState(false);
   const rows = parseCompanies(text);
   const problem = (r: CompanyRow) =>
@@ -64,7 +66,15 @@ function CompanyLinksBulk({ eventId, existingCodes, onDone }: { eventId: string;
   const ok = rows.filter((r) => !problem(r));
 
   const run = async () => {
-    if (!window.confirm(`¿Crear ${ok.length} enlace(s)${sendMail ? " y enviar a cada empresa su correo" : ""}?`)) return;
+    const yes = await dialogs.confirm({
+      eyebrow: "Enlaces para empresas",
+      title: `¿Crear ${ok.length} enlace${ok.length === 1 ? "" : "s"}?`,
+      message: sendMail
+        ? `Cada empresa recibe por correo su enlace para repartir entre sus empleados: ${ok.map((r) => r.company).join(", ")}.`
+        : `Se crean sin enviar correo: ${ok.map((r) => r.company).join(", ")}. Puedes mandarlos después con el botón Correo.`,
+      confirmText: sendMail ? "Crear y enviar" : "Crear",
+    });
+    if (!yes) return;
     setBusy(true);
     let created = 0;
     const failed: string[] = [];
@@ -152,6 +162,7 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
   const [maxUses, setMaxUses] = React.useState(100);
   const codeBad = !!code && !/^[a-z0-9-]{3,24}$/.test(code);
   const [creating, setCreating] = React.useState<"" | "one" | "companies">("");
+  const dialogs = useDialogs();
 
   const create = useMutation({
     mutationFn: () => createInviteLink({ eventId, code: code || undefined, label, admits, maxUses, anyDay: true, category: "VIP" }),
@@ -255,11 +266,11 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Enlace</TableCell>
-                  <TableCell>Para quién</TableCell>
-                  <TableCell align="center"><Tooltip arrow title="Personas registradas / cupo del enlace. Toca la cifra para ampliar el cupo."><span>Registros ⓘ</span></Tooltip></TableCell>
-                  <TableCell align="center"><Tooltip arrow title="Apagado, el enlace deja de recibir registros (los ya registrados conservan su pase)."><span>Activo ⓘ</span></Tooltip></TableCell>
-                  <TableCell align="right"><Tooltip arrow title="Correo: envía el enlace a una o varias personas. Copiar: copia la dirección. Descargar: QR del enlace para una pieza impresa."><span>Acciones ⓘ</span></Tooltip></TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>Enlace</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>Para quién</TableCell>
+                  <TableCell align="center" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Personas registradas / cupo del enlace. Toca la cifra para ampliar el cupo."><span>Registros ⓘ</span></Tooltip></TableCell>
+                  <TableCell align="center" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Apagado, el enlace deja de recibir registros (los ya registrados conservan su pase)."><span>Activo ⓘ</span></Tooltip></TableCell>
+                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Correo: envía el enlace a una o varias personas. Copiar: copia la dirección. Descargar: QR del enlace para una pieza impresa."><span>Acciones ⓘ</span></Tooltip></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -275,10 +286,18 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
                         size="small"
                         color={l.uses >= l.maxUses ? "warning" : "default"}
                         label={`${l.uses} / ${l.maxUses}`}
-                        onClick={() => {
-                          const v = window.prompt(`Nuevo cupo para ${l.code} (hoy ${l.maxUses}):`, String(l.maxUses + 50));
-                          const n = Number(v);
-                          if (v !== null && n >= 1) update.mutate({ id: l.id, maxUses: n });
+                        onClick={async () => {
+                          const v = await dialogs.prompt({
+                            eyebrow: prettyUrl(l.code),
+                            title: "Cambiar el cupo del enlace",
+                            message: `Lleva ${l.uses} registro${l.uses === 1 ? "" : "s"} de ${l.maxUses}. Al llenarse deja de recibir.`,
+                            label: "Nuevo cupo (registros)",
+                            type: "number",
+                            defaultValue: String(l.maxUses + 50),
+                            validate: (s) => (Number(s) >= Math.max(1, l.uses) ? null : `Mínimo ${Math.max(1, l.uses)} (los que ya se registraron)`),
+                            confirmText: "Guardar cupo",
+                          });
+                          if (v !== null) update.mutate({ id: l.id, maxUses: Number(v) });
                         }}
                       />
                     </TableCell>

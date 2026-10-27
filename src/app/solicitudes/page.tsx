@@ -40,6 +40,7 @@ import { getConvocatorias, type Convocatoria } from "@services/events.service";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
+import { useDialogs } from "@/components/ui/DialogsProvider";
 
 /* ── HEIC → JPEG via Cloudinary ────────────────────────────────────────────── */
 function resolveImgUrl(url?: string): string {
@@ -218,6 +219,7 @@ function ApplicationDetailDialog({
   app, open, onClose, onRefresh,
 }: { app: ArtistApplication | null; open: boolean; onClose: () => void; onRefresh: () => void }) {
   const muiTheme = useTheme();
+  const dialogs = useDialogs();
   const dk = muiTheme.palette.mode === "dark";
   const [tab, setTab] = React.useState(0);
   const reviewRef = React.useRef<HTMLDivElement | null>(null);
@@ -308,7 +310,13 @@ function ApplicationDetailDialog({
   };
 
   const handleMarkAsPaid = async () => {
-    if (!window.confirm("¿Seguro que deseas marcar esta postulación como pagada manualmente?")) return;
+    const ok = await dialogs.confirm({
+      eyebrow: "Pago manual",
+      title: "¿Marcar esta postulación como pagada?",
+      message: "Úsalo solo si el pago llegó por fuera de la plataforma (transferencia, efectivo). La postulación queda como pagada.",
+      confirmText: "Marcar como pagada",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await markAsPaid(app._id);

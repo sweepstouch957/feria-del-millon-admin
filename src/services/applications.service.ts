@@ -202,6 +202,12 @@ export interface InventoryStatusDetail {
 }
 
 /** Ficha de un artista en "Estado de carga": proyecto completo y sus obras una por una. */
+/** El equipo corrige el título y la descripción del proyecto de un artista. */
+export const updateApplicationProject = async (id: string, body: { projectTitle?: string; projectReview?: string }) => {
+  const { data } = await apiClient.patch(`/applications/applications/${encodeURIComponent(id)}/project`, body, { headers: ADMIN_HEADERS });
+  return data as { ok: boolean; project: { projectTitle: string; projectReview: string } };
+};
+
 export const getInventoryStatusDetail = async (eventId: string, artistId: string): Promise<InventoryStatusDetail> => {
   const { data } = await apiClient.get(`/applications/applications/inventory-status/${encodeURIComponent(artistId)}`, {
     params: { eventId },

@@ -2,14 +2,15 @@
 
 import * as React from "react";
 import {
-  Alert, Avatar, Box, Button, Chip, Divider, Drawer, IconButton, LinearProgress, Skeleton, Stack, Tab, Tabs, Typography,
+  Alert, Avatar, Box, Button, Chip, Divider, Drawer, IconButton, LinearProgress, Skeleton, Stack, Tab, Tabs, TextField, Typography,
 } from "@mui/material";
-import { AlertTriangle, ImageOff, Images, Mail, MessageCircle, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, ImageOff, Images, Mail, MessageCircle, Pencil, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { formatCOP } from "@/utils/money";
 import { eyebrow } from "@/app/theme";
-import { getInventoryStatusDetail, type InventoryStatusRow } from "@services/applications.service";
+import { getInventoryStatusDetail, updateApplicationProject, type InventoryStatusRow } from "@services/applications.service";
 import ArtworkViewer from "./ArtworkViewer";
 
 /* La ficha de un artista en "Estado de carga". Arriba lo que importa de un
@@ -65,7 +66,22 @@ export default function ArtistLoadDrawer({
   const [tab, setTab] = React.useState(0);
   const [onlyIssues, setOnlyIssues] = React.useState(false);
   const [viewer, setViewer] = React.useState<number | null>(null);
-  React.useEffect(() => { setTab(0); setOnlyIssues(false); setViewer(null); }, [row?.artistId]);
+  // Editar el proyecto: el artista se presenta con otro distinto al de su postulación.
+  const [editing, setEditing] = React.useState(false);
+  const [draftTitle, setDraftTitle] = React.useState("");
+  const [draftReview, setDraftReview] = React.useState("");
+  React.useEffect(() => { setTab(0); setOnlyIssues(false); setViewer(null); setEditing(false); }, [row?.artistId]);
+  const qc = useQueryClient();
+  const saveProject = useMutation({
+    mutationFn: () => updateApplicationProject(data!.application!.id, { projectTitle: draftTitle.trim(), projectReview: draftReview.trim() }),
+    onSuccess: () => {
+      toast.success("Proyecto actualizado");
+      setEditing(false);
+      qc.invalidateQueries({ queryKey: ["inventory-status-detail", eventId, row?.artistId] });
+      qc.invalidateQueries({ queryKey: ["inventory-status"] });
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.error || "No se pudo guardar el proyecto"),
+  });
 
   const artworks = data?.artworks ?? [];
   const shown = onlyIssues ? artworks.filter((a) => a.issues.length) : artworks;
@@ -213,8 +229,30 @@ export default function ArtistLoadDrawer({
               )}
 
               {/* ── Proyecto ── */}
-              {tab === 1 && data && (
+              {tab === 1 && data && editing && (
+                <Box sx={{ maxWidth: 620, display: "grid", gap: 2 }}>
+                  <TextField label="Título del proyecto" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} inputProps={{ maxLength: 160 }} fullWidth />
+                  <TextField
+                    label="Descripción del proyecto" value={draftReview} onChange={(e) => setDraftReview(e.target.value)}
+                    multiline minRows={8} fullWidth inputProps={{ maxLength: 1800 }}
+                    helperText={`${words(draftReview)} palabras · ${draftReview.length}/1800 caracteres. El artista lo verá así en su estudio y en su página.`}
+                  />
+                  <Stack direction="row" gap={1}>
+                    <Button variant="contained" disabled={saveProject.isPending} onClick={() => saveProject.mutate()}>
+                      {saveProject.isPending ? "Guardando…" : "Guardar proyecto"}
+                    </Button>
+                    <Button onClick={() => setEditing(false)} disabled={saveProject.isPending}>Cancelar</Button>
+                  </Stack>
+                </Box>
+              )}
+              {tab === 1 && data && !editing && (
                 <Box sx={{ maxWidth: 620 }}>
+                  {data.application && (
+                    <Button size="small" variant="outlined" startIcon={<Pencil size={14} />} sx={{ float: "right", textTransform: "none" }}
+                      onClick={() => { setDraftTitle(data.application?.projectTitle || ""); setDraftReview(data.application?.projectReview || ""); setEditing(true); }}>
+                      Editar proyecto
+                    </Button>
+                  )}
                   <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Título</Typography>
                   <Typography sx={{ fontSize: 24, lineHeight: 1.25, mt: 0.5 }} color={data.application?.projectTitle ? "text.primary" : "warning.main"}>
                     {data.application?.projectTitle || "Sin título"}
