@@ -505,6 +505,16 @@ export const resendInvitation = async (ticketId: string) => {
   await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
 };
 
+/** Recordatorio a todos los que no han confirmado. Se envía en segundo plano. */
+export const resendPendingInvitations = async (eventId: string) => {
+  const { data } = await apiClient.post<{ ok: boolean; total: number }>(
+    "/ticket/tickets/invitations/resend-pending",
+    { eventId },
+    { withCredentials: true },
+  );
+  return data;
+};
+
 /** Correo "agregue a su acompañante" a quien confirmó sin nombrarlo. */
 export const requestCompanion = async (ticketId: string) => {
   await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/companion-request`, {}, { withCredentials: true });

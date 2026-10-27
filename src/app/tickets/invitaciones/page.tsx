@@ -15,7 +15,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import { listUsers } from "@services/user.service";
@@ -361,6 +361,12 @@ function Invitations({ eventId }: { eventId: string }) {
       qc.invalidateQueries({ queryKey: ["invitations", eventId] });
     },
     onError: () => toast.error("No se pudieron crear las invitaciones."),
+  });
+
+  const remind = useMutation({
+    mutationFn: () => resendPendingInvitations(eventId),
+    onSuccess: (r) => toast.success(`Recordatorio en camino a ${r.total} ${r.total === 1 ? "persona" : "personas"} sin confirmar`),
+    onError: () => toast.error("No se pudo enviar el recordatorio."),
   });
 
   const importRole = async (role: Base) => {
@@ -712,6 +718,16 @@ function Invitations({ eventId }: { eventId: string }) {
               <MenuItem value="attended">Asistieron</MenuItem>
               <MenuItem value="canceled">Anuladas</MenuItem>
             </TextField>
+            {/* Recordatorio masivo: solo a quienes no han confirmado ni declinado. */}
+            <Button
+              size="small" variant="outlined" startIcon={<Send size={14} />} sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+              disabled={!stats?.pending || remind.isPending}
+              onClick={() => {
+                if (window.confirm(`¿Reenviar la invitación a las ${stats?.pending} personas que no han confirmado? Les llega como "Recordatorio".`)) remind.mutate();
+              }}
+            >
+              {remind.isPending ? "Enviando…" : `Recordar a pendientes${stats?.pending ? ` (${stats.pending})` : ""}`}
+            </Button>
           </Stack>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
