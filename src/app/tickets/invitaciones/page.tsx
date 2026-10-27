@@ -20,7 +20,6 @@ import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import { listUsers } from "@services/user.service";
 import { listCustomers } from "@services/orders.service";
-import { toCsv, downloadCsv, stamp } from "@/utils/csv";
 
 /* El texto del correo (mismo que DEFAULT_INVITE_MESSAGE de tickets-svc). Va a
    la vista para poder ajustarlo por envío; el saludo con el nombre lo pone el
@@ -389,40 +388,20 @@ function Invitations({ eventId }: { eventId: string }) {
 
   const [exporting, setExporting] = React.useState(false);
   // Exporta TODAS las invitaciones del filtro actual, no solo la página.
+  // Reporte completo del evento (no solo lo filtrado): resumen con KPIs y gráficos + una hoja por estado.
   const exportCsv = async () => {
     setExporting(true);
     try {
-      const all = (await getInvitationsAdmin({ eventId, status: listStatus, q: listQDebounced || undefined, all: true })).rows as Ticket[];
-      exportRows(all);
-    } catch {
+      const all = (await getInvitationsAdmin({ eventId, all: true })).rows as Ticket[];
+      const { downloadInvitationsReport } = await import("@/utils/invitationsReport");
+      await downloadInvitationsReport(all);
+    } catch (e) {
+      console.error(e);
       toast.error("No se pudo exportar");
     } finally {
       setExporting(false);
     }
   };
-  const exportRows = (rows: Ticket[]) =>
-    downloadCsv(`invitaciones_${stamp()}.csv`, toCsv(rows, [
-      { header: "Nombre", value: (t) => t.buyer?.name },
-      { header: "Email", value: (t) => t.buyer?.email },
-      // Acompañante: tiene su propio QR; aquí se ve de parte de quién va.
-      { header: "Invitado por", value: (t) => t.inviteHostName },
-      { header: "Teléfono", value: (t) => t.buyer?.phone, text: true },
-      // Datos de la inscripción: los llena el invitado al confirmar.
-      { header: "Tipo doc.", value: (t) => t.buyer?.documentType },
-      { header: "Identificación", value: (t) => t.buyer?.documentNumber, text: true },
-      { header: "País", value: (t) => t.buyer?.country },
-      { header: "Ciudad", value: (t) => t.buyer?.city },
-      { header: "Dirección", value: (t) => t.buyer?.address },
-      { header: "Compañía", value: (t) => t.buyer?.company },
-      { header: "Cargo", value: (t) => t.buyer?.position },
-      { header: "Correo institucional", value: (t) => t.buyer?.corporateEmail },
-      { header: "Aceptó datos", value: (t) => (t.buyer?.dataConsentAt ? "Sí" : "") },
-      { header: "WhatsApp enviado", value: (t) => (t.whatsappSentAt ? "Sí" : "") },
-      { header: "Acompañante", value: (t) => t.companionName },
-      { header: "Categoría", value: (t) => t.inviteCategory },
-      { header: "Personas", value: (t) => t.admits ?? 1 },
-      { header: "Estado", value: (t) => STATUS[t.status]?.label || t.status },
-    ]));
 
   return (
     <Box>
