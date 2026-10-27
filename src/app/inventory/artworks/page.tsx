@@ -1,6 +1,9 @@
 "use client";
 
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Card,
   CardContent,
@@ -8,6 +11,7 @@ import {
   Stack,
   Chip,
   Button,
+  Checkbox,
   LinearProgress,
   TextField,
   InputAdornment,
@@ -23,18 +27,20 @@ import {
   Tooltip,
   Paper,
   Switch,
-  FormControlLabel,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   RefreshCw as RefreshIcon,
   Eye as EyeIcon,
+  EyeOff as EyeOffIcon,
+  ExternalLink as ExternalLinkIcon,
   GalleryHorizontal as GalleryIcon,
   UploadCloud as UploadCloudIcon,
   PencilLine as ReturnIcon,
   X as ClearIcon,
+  ChevronDown as ChevronDownIcon,
 } from "lucide-react";
-import { patchArtwork } from "@services/artworks.service";
+import { patchArtwork, publishArtworks } from "@services/artworks.service";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -44,21 +50,32 @@ import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { setCatalogReveal, setInventoryClose, setInventoryExtension, type InventoryExtension } from "@services/events.service";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { formatCOP } from "@/utils/money";
+import { SHOP_URL } from "@/core/constants";
+import { eyebrow } from "@/app/theme";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
+import StatusPill from "@/components/ui/StatusPill";
 import PublishArtworksDialog from "@components/views/events/PublishArtworksDialog";
 import { useDialogs } from "@/components/ui/DialogsProvider";
 import { toast } from "sonner";
 
-/* Obras de la feria activa. Una sola fila de filtros (buscar, pabellón,
-   artista, técnica, estado) y "Publicar" publica LO QUE ESTÁ FILTRADO: antes
-   había que elegir el pabellón en el filtro y otra vez dentro del diálogo. */
+/* Obras de la feria activa.
+   Las cifras de arriba son también las pestañas: Todas / En el catálogo /
+   Ocultas. Cada obra se publica u oculta desde su fila, varias a la vez
+   marcándolas, o todo lo filtrado desde el botón principal (que cambia según
+   la pestaña). Los ajustes de la feria (revelar, cierre, plazos) van plegados:
+   se tocan poco y antes tapaban la lista. */
 
 const formatPrice = (price?: number, currency = "COP") =>
   price == null ? "—" : formatCOP(price, { code: true, currency });
 
-type StatusFilter = "" | "hidden" | "published";
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleString("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+
+type View = "" | "visible" | "hidden";
+
+const artistName = (a: any) => [a?.firstName, a?.lastName].filter(Boolean).join(" ");
 
 export default function ArtworksPage() {
   const { event: activeEvent, eventId, isLoading, isError, refetch } = useActiveEvent();
@@ -72,8 +89,9 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
   const [pavilion, setPavilion] = useState<string>("");
   const [artist, setArtist] = useState<string>("");
   const [technique, setTechnique] = useState<string>("");
-  const [status, setStatus] = useState<StatusFilter>("");
+  const [view, setView] = useState<View>("");
   const [publishOpen, setPublishOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // Pabellones con sus artistas: de aquí salen los dos selectores (y el
   // artista queda acotado al pabellón elegido).
@@ -107,16 +125,93 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     loadMore,
     isFetchingNextPage,
     refetch,
-  } = useArtworksCursor({ q, event, pavilion, artist, technique, limit: 24, includeHidden: 1 });
+  } = useArtworksCursor({
+    q,
+    event,
+    pavilion,
+    artist,
+    technique,
+    limit: 24,
+    includeHidden: 1,
+    visibility: view || undefined,
+    // ponytail: el backend ya lo proyecta; se pide igual por si inventory-svc no se ha redesplegado.
+    project: "hiddenUntilEvent",
+  });
 
-  // ponytail: el estado se filtra en cliente sobre lo cargado; al backend si hay miles de obras.
+  // Respaldo en cliente por si el backend aún no entiende `visibility`.
   const shown = useMemo(
-    () =>
-      status === ""
-        ? rows
-        : rows.filter((a: any) => (status === "hidden" ? !!a.hiddenUntilEvent : !a.hiddenUntilEvent && a.status === "published")),
-    [rows, status]
+    () => (view === "" ? rows : rows.filter((a: any) => (view === "hidden" ? !!a.hiddenUntilEvent : !a.hiddenUntilEvent))),
+    [rows, view]
   );
+
+  // Lo que se publica/oculta en bloque es lo mismo que se está viendo.
+  const publishScope = artist
+    ? { scope: "artist" as const, artist }
+    : pavilion
+      ? { scope: "pavilion" as const, pavilion }
+      : { scope: "all" as const };
+  const scopeLabel = artist
+    ? `las de ${artistOptions.find(([id]) => id === artist)?.[1] ?? "este artista"}`
+    : pavilion
+      ? `las de ${pavilions.find((p) => String(p.id) === pavilion)?.name ?? "este pabellón"}`
+      : "todas";
+
+  // Cuántas hay en el catálogo y cuántas ocultas con este alcance. Sale del
+  // conteo en seco de publicar (no toca nada).
+  // ponytail: cuenta por pabellón/artista, no por búsqueda ni técnica.
+  const counts = useQuery({
+    queryKey: ["artwork-visibility-counts", event, publishScope],
+    queryFn: async () => {
+      const [h, v] = await Promise.all([
+        publishArtworks({ event, ...publishScope, publish: true, dryRun: true }),
+        publishArtworks({ event, ...publishScope, publish: false, dryRun: true }),
+      ]);
+      return { hidden: h.matched, visible: v.matched };
+    },
+    staleTime: 10_000,
+  });
+
+  const refreshAll = () => {
+    refetch();
+    counts.refetch();
+  };
+
+  // Publicar u ocultar obras concretas (una fila o las marcadas).
+  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
+  const setVisible = async (ids: string[], publish: boolean) => {
+    if (!ids.length) return;
+    setBusyIds(new Set(ids));
+    try {
+      const r = await publishArtworks({ event, scope: "ids", ids, publish });
+      toast.success(
+        `${r.modified} ${r.modified === 1 ? "obra" : "obras"} ${publish ? "publicadas en el catálogo" : "ocultas del catálogo"}`
+      );
+      setSelected(new Set());
+      refreshAll();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "No se pudo cambiar. Intenta de nuevo.");
+    } finally {
+      setBusyIds(new Set());
+    }
+  };
+
+  const toggleSel = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const allShownSelected = shown.length > 0 && shown.every((a: any) => selected.has(String(a.id)));
+  const toggleAll = () =>
+    setSelected(allShownSelected ? new Set() : new Set(shown.map((a: any) => String(a.id))));
+  const selectedRows = shown.filter((a: any) => selected.has(String(a.id)));
+  const selVisible = selectedRows.filter((a: any) => !a.hiddenUntilEvent).map((a: any) => String(a.id));
+  const selHidden = selectedRows.filter((a: any) => a.hiddenUntilEvent).map((a: any) => String(a.id));
+
+  const changeView = (v: View) => {
+    setView(v);
+    setSelected(new Set());
+  };
 
   const selectedEvent: any = activeEvent;
   const [revealBusy, setRevealBusy] = useState(false);
@@ -154,6 +249,10 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     return map;
   }, [pavilions]);
   const extensions = (selectedEvent?.inventoryExtensions ?? []) as InventoryExtension[];
+  const now = Date.now();
+  const activeExt = extensions.filter((x) => new Date(x.until).getTime() >= now);
+  const pastExt = extensions.filter((x) => new Date(x.until).getTime() < now);
+  const [showPast, setShowPast] = useState(false);
   const [extArtist, setExtArtist] = useState("");
   const [extUntil, setExtUntil] = useState("");
   const saveExtension = async (artistId: string, until: string | null) => {
@@ -164,6 +263,19 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
       setExtArtist("");
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "No se pudo guardar. Intenta de nuevo.");
+    } finally {
+      setRevealBusy(false);
+    }
+  };
+  const clearPastExtensions = async () => {
+    setRevealBusy(true);
+    try {
+      // Uno por uno: cada llamada reescribe la lista del evento.
+      for (const x of pastExt) await setInventoryExtension(event, String(x.artist), null);
+      await refetchEvent();
+      setShowPast(false);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "No se pudieron quitar todos. Intenta de nuevo.");
     } finally {
       setRevealBusy(false);
     }
@@ -200,132 +312,200 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     }
   };
 
-  const hiddenCount = rows.filter((r: any) => r.hiddenUntilEvent).length;
-  const totalArtists = new Set(rows.map((r: any) => r.artistInfo?._id).filter(Boolean)).size;
-  const hasFilter = !!(q || pavilion || artist || technique || status);
-  const clearFilters = () => { setQ(""); setPavilion(""); setArtist(""); setTechnique(""); setStatus(""); };
+  const hasFilter = !!(q || pavilion || artist || technique);
+  const clearFilters = () => { setQ(""); setPavilion(""); setArtist(""); setTechnique(""); };
 
-  // Lo que se va a publicar es lo mismo que se está viendo.
-  const publishScope = artist
-    ? { scope: "artist" as const, artist }
-    : pavilion
-      ? { scope: "pavilion" as const, pavilion }
-      : { scope: "all" as const };
-  const scopeLabel = artist
-    ? `las de ${artistOptions.find(([id]) => id === artist)?.[1] ?? "este artista"}`
-    : pavilion
-      ? `las de ${pavilions.find((p) => String(p.id) === pavilion)?.name ?? "este pabellón"}`
-      : "todas las de la feria";
+  const revealed = !!selectedEvent?.catalogRevealed;
+  const closeAt = selectedEvent?.inventoryCloseAt as string | undefined;
+  const closed = !!closeAt && new Date(closeAt).getTime() < now;
+
+  const statusPill = (art: any) =>
+    art.hiddenUntilEvent ? <StatusPill tone="warn" label="Oculta" /> : <StatusPill tone="ok" dot label="En el catálogo" />;
+
+  const visibilityButton = (art: any) => {
+    const id = String(art.id);
+    const hidden = !!art.hiddenUntilEvent;
+    return (
+      <Button
+        size="small"
+        variant="outlined"
+        color={hidden ? "success" : "inherit"}
+        disabled={busyIds.has(id)}
+        startIcon={hidden ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
+        onClick={() => setVisible([id], hidden)}
+        sx={{ whiteSpace: "nowrap", minWidth: 104 }}
+      >
+        {hidden ? "Publicar" : "Ocultar"}
+      </Button>
+    );
+  };
 
   return (
     <Box>
       <PageHeader
         crumb="Inventario"
         title="Obras"
-        description={`${selectedEvent?.name ?? "Feria"} · lo que suben los artistas queda cargado pero oculto; publicar es decidir qué sale al catálogo.`}
+        description={`${selectedEvent?.name ?? "Feria"} · lo que suben los artistas llega oculto. Publícalas cuando estén revisadas; puedes volver a ocultarlas cuando quieras.`}
         actions={[
-          { label: `Publicar ${scopeLabel}`, kind: "pri", icon: <UploadCloudIcon size={14} />, onClick: () => setPublishOpen(true) },
+          view === "visible"
+            ? { label: `Ocultar ${scopeLabel}`, kind: "pri", icon: <EyeOffIcon size={14} />, onClick: () => setPublishOpen(true) }
+            : { label: `Publicar ${scopeLabel}`, kind: "pri", icon: <UploadCloudIcon size={14} />, onClick: () => setPublishOpen(true) },
           { label: "Estado de carga", kind: "sec", href: "/inventory/carga" },
-          { label: "Actualizar", kind: "sec", icon: <RefreshIcon size={14} />, disabled: isFetching, onClick: () => refetch() },
+          { label: "Actualizar", kind: "sec", icon: <RefreshIcon size={14} />, disabled: isFetching, onClick: refreshAll },
         ]}
       />
 
+      {/* Las cifras son las pestañas de la lista. */}
       <KpiStrip
-        loading={isLoading}
+        loading={counts.isLoading}
         items={[
-          { label: "Obras cargadas", value: totalLabel },
-          { label: "Sin publicar (de las cargadas aquí)", value: hiddenCount },
-          { label: "Artistas", value: totalArtists },
-          { label: "Pabellones", value: pavilions.length },
+          {
+            label: "Todas",
+            value: (counts.data?.visible ?? 0) + (counts.data?.hidden ?? 0),
+            sub: hasFilter ? "con este pabellón/artista" : "cargadas en la feria",
+            onClick: () => changeView(""),
+            selected: view === "",
+          },
+          {
+            label: "En el catálogo",
+            value: counts.data?.visible ?? 0,
+            sub: "visibles al público",
+            accent: true,
+            onClick: () => changeView("visible"),
+            selected: view === "visible",
+          },
+          {
+            label: "Ocultas",
+            value: counts.data?.hidden ?? 0,
+            sub: revealed ? "se ven: el catálogo está revelado" : "cargadas, sin publicar",
+            onClick: () => changeView("hidden"),
+            selected: view === "hidden",
+          },
         ]}
       />
 
-      {/* Ajustes de la feria que afectan a todas las obras */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ py: 1.5 }}>
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} justifyContent="space-between">
-            <Tooltip title="Al activarlo, las obras marcadas “ocultas hasta el evento” se muestran en el catálogo público ya mismo.">
-              <FormControlLabel
-                sx={{ mr: 0 }}
-                control={
-                  <Switch
-                    color="success"
-                    checked={!!selectedEvent?.catalogRevealed}
-                    disabled={revealBusy}
-                    onChange={(e) => toggleReveal(e.target.checked)}
-                  />
-                }
-                label={<Typography variant="body2" fontWeight={500}>Catálogo revelado al público</Typography>}
+      {/* Ajustes de la feria: plegados, con el resumen a la vista. */}
+      <Accordion disableGutters sx={{ mb: 2, "&:before": { display: "none" } }}>
+        <AccordionSummary expandIcon={<ChevronDownIcon size={16} />}>
+          <Stack direction={{ xs: "column", sm: "row" }} gap={{ xs: 1, sm: 2 }} alignItems={{ sm: "center" }} sx={{ width: "100%", pr: 1 }}>
+            <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>Ajustes de la feria</Typography>
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              <StatusPill tone={revealed ? "ok" : "mid"} dot={revealed} label={revealed ? "Ocultas reveladas" : "Ocultas no se ven"} />
+              <StatusPill
+                tone={closed ? "bad" : closeAt ? "warn" : "mid"}
+                label={closeAt ? `Carga ${closed ? "cerró" : "cierra"} ${fmtDate(closeAt)}` : "Carga sin cierre"}
               />
-            </Tooltip>
-            <Tooltip title="Después de esta fecha los artistas ya no pueden crear ni editar obras. Vacío = sin cierre.">
+              {activeExt.length > 0 && <StatusPill tone="ok" label={`${activeExt.length} con plazo extra`} />}
+            </Stack>
+          </Stack>
+        </AccordionSummary>
+        <AccordionDetails sx={{ pt: 0 }}>
+          <Stack divider={<Box sx={{ borderTop: "1px solid", borderColor: "divider" }} />} gap={2}>
+            {/* Revelar */}
+            <Stack direction={{ xs: "column", md: "row" }} gap={2} justifyContent="space-between" alignItems={{ md: "center" }}>
+              <Box>
+                <Typography variant="body2" fontWeight={500}>Revelar las obras ocultas</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Encendido, el catálogo público muestra también las ocultas (pasa solo el día de la feria). Apagado, solo
+                  las publicadas.
+                </Typography>
+              </Box>
+              <Switch color="success" checked={revealed} disabled={revealBusy} onChange={(e) => toggleReveal(e.target.checked)} />
+            </Stack>
+
+            {/* Cierre de carga */}
+            <Stack direction={{ xs: "column", md: "row" }} gap={2} justifyContent="space-between" alignItems={{ md: "center" }}>
+              <Box>
+                <Typography variant="body2" fontWeight={500}>Cierre de carga para artistas</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Después de esta fecha los artistas ya no crean ni editan obras. Vacío = sin cierre.
+                </Typography>
+              </Box>
               <TextField
-                key={selectedEvent?.inventoryCloseAt || "none"}
+                key={closeAt || "none"}
                 size="small"
                 type="datetime-local"
-                label="Cierre de carga para artistas"
-                InputLabelProps={{ shrink: true }}
-                defaultValue={toLocalInput(selectedEvent?.inventoryCloseAt)}
+                defaultValue={toLocalInput(closeAt)}
                 disabled={revealBusy}
                 onBlur={(e) => {
-                  if (e.target.value !== toLocalInput(selectedEvent?.inventoryCloseAt))
-                    saveInventoryClose(e.target.value);
+                  if (e.target.value !== toLocalInput(closeAt)) saveInventoryClose(e.target.value);
                 }}
-                sx={{ minWidth: 260 }}
+                sx={{ minWidth: 240 }}
               />
-            </Tooltip>
-          </Stack>
+            </Stack>
 
-          {/* Excepciones al cierre: artistas que siguen cargando hasta su fecha. */}
-          <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
-            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
-              Plazo extendido para artistas
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                pueden crear y editar obras hasta su fecha, aunque la carga haya cerrado
+            {/* Plazos extendidos */}
+            <Box>
+              <Typography variant="body2" fontWeight={500}>Plazo extra para artistas</Typography>
+              <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 1.5 }}>
+                Estos artistas pueden seguir cargando y editando hasta su fecha, aunque la carga haya cerrado.
               </Typography>
-            </Typography>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }} flexWrap="wrap" useFlexGap>
-              <TextField select size="small" label="Artista" value={extArtist} onChange={(e) => setExtArtist(e.target.value)} sx={{ minWidth: 240 }}>
-                {[...allArtists.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => (
-                  <MenuItem key={id} value={id}>{name}</MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                size="small"
-                type="datetime-local"
-                label="Hasta"
-                InputLabelProps={{ shrink: true }}
-                value={extUntil}
-                onChange={(e) => setExtUntil(e.target.value)}
-                sx={{ minWidth: 220 }}
-              />
-              <Button
-                variant="contained"
-                size="small"
-                disabled={revealBusy || !extArtist || !extUntil}
-                onClick={() => saveExtension(extArtist, new Date(extUntil).toISOString())}
-              >
-                Dar plazo
-              </Button>
-              {extensions.map((x) => {
-                const past = new Date(x.until).getTime() < Date.now();
-                return (
+              <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
+                <TextField select size="small" label="Artista" value={extArtist} onChange={(e) => setExtArtist(e.target.value)} sx={{ minWidth: 240 }}>
+                  {[...allArtists.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => (
+                    <MenuItem key={id} value={id}>{name}</MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  size="small"
+                  type="datetime-local"
+                  label="Hasta"
+                  InputLabelProps={{ shrink: true }}
+                  value={extUntil}
+                  onChange={(e) => setExtUntil(e.target.value)}
+                  sx={{ minWidth: 220 }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  disabled={revealBusy || !extArtist || !extUntil}
+                  onClick={() => saveExtension(extArtist, new Date(extUntil).toISOString())}
+                >
+                  Dar plazo
+                </Button>
+              </Stack>
+
+              <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: 1.5 }}>
+                {activeExt.length === 0 && (
+                  <Typography variant="caption" color="text.secondary">Nadie tiene plazo extra vigente.</Typography>
+                )}
+                {activeExt.map((x) => (
                   <Chip
                     key={x.artist}
                     size="small"
-                    color={past ? "default" : "success"}
-                    variant={past ? "outlined" : "filled"}
-                    label={`${allArtists.get(String(x.artist)) ?? "Artista"} · hasta ${new Date(x.until).toLocaleString("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}${past ? " (vencido)" : ""}`}
+                    color="success"
+                    label={`${allArtists.get(String(x.artist)) ?? "Artista"} · hasta ${fmtDate(x.until)}`}
                     onDelete={revealBusy ? undefined : () => saveExtension(String(x.artist), null)}
                   />
-                );
-              })}
-            </Stack>
-          </Box>
-        </CardContent>
-      </Card>
+                ))}
+                {pastExt.length > 0 && (
+                  <Button size="small" color="inherit" onClick={() => setShowPast((s) => !s)} sx={{ textTransform: "none" }}>
+                    {showPast ? "Esconder vencidos" : `Ver ${pastExt.length} vencidos`}
+                  </Button>
+                )}
+              </Stack>
+              {showPast && pastExt.length > 0 && (
+                <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: 1 }}>
+                  {pastExt.map((x) => (
+                    <Chip
+                      key={x.artist}
+                      size="small"
+                      variant="outlined"
+                      label={`${allArtists.get(String(x.artist)) ?? "Artista"} · venció ${fmtDate(x.until)}`}
+                      onDelete={revealBusy ? undefined : () => saveExtension(String(x.artist), null)}
+                    />
+                  ))}
+                  <Button size="small" color="error" disabled={revealBusy} onClick={clearPastExtensions} sx={{ textTransform: "none" }}>
+                    Quitar todos los vencidos
+                  </Button>
+                </Stack>
+              )}
+            </Box>
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
 
-      {/* Obras: una sola fila de filtros */}
+      {/* Obras */}
       <Card sx={{ overflow: "hidden" }}>
         <CardContent sx={{ pb: 1 }}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ xs: "stretch", md: "center" }} flexWrap="wrap" useFlexGap>
@@ -361,29 +541,52 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                 <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
               ))}
             </TextField>
-            <TextField select size="small" label="Estado" value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} sx={{ minWidth: 150 }}>
-              <MenuItem value=""><em>Todas</em></MenuItem>
-              <MenuItem value="hidden">Sin publicar</MenuItem>
-              <MenuItem value="published">En el catálogo</MenuItem>
-            </TextField>
             {hasFilter && (
               <Button size="small" color="inherit" startIcon={<ClearIcon size={14} />} onClick={clearFilters} sx={{ textTransform: "none", whiteSpace: "nowrap" }}>
                 Limpiar
               </Button>
             )}
           </Stack>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
-            <Chip size="small" label={`${shown.length} de ${totalLabel} cargadas`} />
-            {hasFilter && <Typography variant="caption" color="text.secondary">“Publicar” aplica a {scopeLabel}.</Typography>}
-          </Stack>
+
+          {/* Barra de selección: aparece al marcar obras. */}
+          {selected.size > 0 ? (
+            <Stack
+              direction="row"
+              gap={1}
+              alignItems="center"
+              flexWrap="wrap"
+              sx={{ mt: 1.5, px: 1.5, py: 1, border: "1px solid", borderColor: "divider", backgroundColor: "action.hover" }}
+            >
+              <Typography variant="body2" fontWeight={500} sx={{ mr: 1 }}>
+                {selected.size} {selected.size === 1 ? "marcada" : "marcadas"}
+              </Typography>
+              {selVisible.length > 0 && (
+                <Button size="small" variant="contained" color="secondary" startIcon={<EyeOffIcon size={14} />} disabled={busyIds.size > 0} onClick={() => setVisible(selVisible, false)}>
+                  Ocultar {selVisible.length}
+                </Button>
+              )}
+              {selHidden.length > 0 && (
+                <Button size="small" variant="contained" color="success" startIcon={<EyeIcon size={14} />} disabled={busyIds.size > 0} onClick={() => setVisible(selHidden, true)}>
+                  Publicar {selHidden.length}
+                </Button>
+              )}
+              <Button size="small" color="inherit" onClick={() => setSelected(new Set())} sx={{ textTransform: "none" }}>
+                Quitar selección
+              </Button>
+            </Stack>
+          ) : (
+            <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 1.5 }}>
+              Mostrando {shown.length} de {totalLabel}
+              {view === "visible" ? " en el catálogo" : view === "hidden" ? " ocultas" : ""} · marca varias para publicarlas u ocultarlas juntas.
+            </Typography>
+          )}
         </CardContent>
 
         {(isLoading || isFetching) && <LinearProgress />}
 
-        {/* Tabla */}
         <ResponsiveRows
           loading={isLoading}
-          emptyText="No hay obras que coincidan con los filtros."
+          emptyText={view === "visible" ? "No hay obras en el catálogo con estos filtros." : view === "hidden" ? "No hay obras ocultas con estos filtros." : "No hay obras que coincidan con los filtros."}
           cards={shown.map((art: any) => ({
             id: String(art.id),
             title: (
@@ -391,34 +594,31 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                 {art.title || "Sin título"}
               </Link>
             ),
-            subtitle:
-              [art.artistInfo?.firstName, art.artistInfo?.lastName]
-                .filter(Boolean)
-                .join(" ") || undefined,
-            badge: art.hiddenUntilEvent ? (
-              <Chip size="small" variant="outlined" color="warning" label="Sin publicar" />
-            ) : (
-              <Chip
-                size="small"
-                label={art.status === "published" ? "En el catálogo" : art.status ?? "—"}
-                color={art.status === "published" ? "success" : "default"}
-              />
-            ),
+            subtitle: artistName(art.artistInfo) || undefined,
+            badge: statusPill(art),
             fields: [
               { label: "Precio", value: formatPrice(art.price) },
               { label: "Stock", value: String(art.stock ?? 0) },
               { label: "Técnica", value: art.techniqueInfo?.name },
               { label: "Pabellón", value: art.pavilionInfo?.name },
             ],
+            actions: visibilityButton(art),
           }))}
         >
         <TableContainer component={Paper}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell>Imagen</TableCell>
-                <TableCell>Título</TableCell>
-                <TableCell>Artista</TableCell>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    size="small"
+                    checked={allShownSelected}
+                    indeterminate={selected.size > 0 && !allShownSelected}
+                    onChange={toggleAll}
+                    inputProps={{ "aria-label": "Marcar todas las que se ven" }}
+                  />
+                </TableCell>
+                <TableCell>Obra</TableCell>
                 <TableCell>Técnica</TableCell>
                 <TableCell>Pabellón</TableCell>
                 <TableCell align="right">Precio</TableCell>
@@ -431,7 +631,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
             <TableBody>
               {isError && (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">
+                  <TableCell colSpan={8} align="center">
                     <Typography color="error">
                       {(error as any)?.message ?? "Error desconocido"}
                     </Typography>
@@ -439,111 +639,96 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                 </TableRow>
               )}
 
+              {!isLoading && !isError && shown.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 6, color: "text.secondary" }}>
+                    {view === "visible"
+                      ? "No hay obras en el catálogo con estos filtros."
+                      : view === "hidden"
+                        ? "No hay obras ocultas con estos filtros."
+                        : "No hay obras que coincidan con los filtros."}
+                  </TableCell>
+                </TableRow>
+              )}
+
               {!isLoading &&
-                shown.map((art:any) => (
-                  <TableRow key={art.id} hover>
-                    <TableCell>
-                      <Avatar
-                        variant="rounded"
-                        src={art.image || art.images?.[0]}
-                        sx={{ width: 56, height: 56 }}
-                      >
-                        <GalleryIcon size={18} />
-                      </Avatar>
-                    </TableCell>
+                shown.map((art: any) => {
+                  const id = String(art.id);
+                  return (
+                    <TableRow key={id} hover selected={selected.has(id)}>
+                      <TableCell padding="checkbox">
+                        <Checkbox size="small" checked={selected.has(id)} onChange={() => toggleSel(id)} />
+                      </TableCell>
 
-                    <TableCell>
-                      <Link
-                        href={`/inventory/artworks/${art.id}`}
-                        style={{
-                          textDecoration: "none",
-                          color: "inherit",
-                        }}
-                      >
-                        <Typography
-                          fontWeight={500}
-                          sx={{ "&:hover": { color: "primary.main" } }}
-                        >
-                          {art.title}
-                        </Typography>
-                      </Link>
-                      <Typography variant="caption" color="text.secondary">
-                        {art.slug ?? "—"}
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      {art.artistInfo
-                        ? `${art.artistInfo.firstName ?? ""} ${
-                            art.artistInfo.lastName ?? ""
-                          }`
-                        : "—"}
-                    </TableCell>
-
-                    <TableCell>{art.techniqueInfo?.name ?? "—"}</TableCell>
-                    <TableCell>{art.pavilionInfo?.name ?? "—"}</TableCell>
-                    <TableCell align="right">
-                      {formatPrice(art.price)}
-                    </TableCell>
-                    <TableCell align="center">{art.stock ?? 0}</TableCell>
-                    <TableCell>
-                      {/* Cargada pero fuera del catálogo hasta que se publique:
-                          es el estado normal de lo que sube un artista. */}
-                      {art.hiddenUntilEvent ? (
-                        <Chip size="small" variant="outlined" color="warning" label="Sin publicar" />
-                      ) : (
-                        <Chip
-                          size="small"
-                          label={art.status === "published" ? "En el catálogo" : art.status ?? "—"}
-                          color={art.status === "published" ? "success" : "default"}
-                        />
-                      )}
-                      {art.editUnlocked && (
-                        <Chip size="small" color="warning" label="En edición" sx={{ ml: 0.5 }} />
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip
-                        title={
-                          art.editUnlocked
-                            ? `Devuelta al artista${art.editNote ? `: ${art.editNote}` : ""}. Clic para cancelar.`
-                            : "Devolver al artista para que la edite (aunque la carga esté cerrada)"
-                        }
-                      >
-                        <span>
-                          <IconButton
-                            size="small"
-                            color={art.editUnlocked ? "warning" : "default"}
-                            disabled={returningId === String(art.id)}
-                            onClick={() => toggleReturn(art)}
+                      <TableCell>
+                        <Stack direction="row" gap={1.5} alignItems="center">
+                          <Avatar
+                            variant="rounded"
+                            src={art.image || art.images?.[0]}
+                            sx={{ width: 52, height: 52, opacity: art.hiddenUntilEvent ? 0.55 : 1 }}
                           >
-                            <ReturnIcon size={18} />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title="Ver público">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            window.open(`/inventory/artworks/${art.id}`, "_blank")
-                          }
-                        >
-                          <EyeIcon size={18} />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                            <GalleryIcon size={18} />
+                          </Avatar>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Link href={`/inventory/artworks/${art.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                              <Typography fontWeight={500} sx={{ "&:hover": { color: "primary.main" } }}>
+                                {art.title || "Sin título"}
+                              </Typography>
+                            </Link>
+                            <Typography variant="body2" color="text.secondary">
+                              {artistName(art.artistInfo) || "—"}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+
+                      <TableCell>{art.techniqueInfo?.name ?? "—"}</TableCell>
+                      <TableCell>{art.pavilionInfo?.name ?? "—"}</TableCell>
+                      <TableCell align="right">{formatPrice(art.price)}</TableCell>
+                      <TableCell align="center">{art.stock ?? 0}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" gap={0.5} flexWrap="wrap">
+                          {statusPill(art)}
+                          {art.editUnlocked && <StatusPill tone="warn" label="En edición" />}
+                        </Stack>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" gap={0.5} justifyContent="flex-end" alignItems="center">
+                          {visibilityButton(art)}
+                          <Tooltip
+                            title={
+                              art.editUnlocked
+                                ? `Devuelta al artista${art.editNote ? `: ${art.editNote}` : ""}. Clic para cancelar.`
+                                : "Devolver al artista para que la edite (aunque la carga esté cerrada)"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                color={art.editUnlocked ? "warning" : "default"}
+                                disabled={returningId === id}
+                                onClick={() => toggleReturn(art)}
+                              >
+                                <ReturnIcon size={18} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title={art.hiddenUntilEvent ? "Oculta: en el sitio no aparece todavía" : "Ver en el sitio"}>
+                            <IconButton size="small" component="a" href={`${SHOP_URL}/obra/${art.id}`} target="_blank" rel="noopener">
+                              <ExternalLinkIcon size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
 
               {shown.length > 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">
+                  <TableCell colSpan={8} align="center">
                     {hasNextPage ? (
-                      <Button
-                        variant="contained"
-                        disabled={isFetchingNextPage}
-                        onClick={loadMore}
-                      >
+                      <Button variant="contained" disabled={isFetchingNextPage} onClick={loadMore}>
                         {isFetchingNextPage ? "Cargando…" : "Cargar más"}
                       </Button>
                     ) : (
@@ -565,8 +750,8 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
         onClose={() => setPublishOpen(false)}
         eventId={event}
         eventName={selectedEvent?.name}
-        initial={publishScope}
-        onDone={() => refetch()}
+        initial={{ ...publishScope, publish: view !== "visible" }}
+        onDone={refreshAll}
       />
     </Box>
   );

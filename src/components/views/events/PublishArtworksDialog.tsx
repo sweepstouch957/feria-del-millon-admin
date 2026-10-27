@@ -41,7 +41,7 @@ export default function PublishArtworksDialog({
   eventName?: string;
   onDone?: () => void;
   /** Alcance con el que abre: el mismo filtro que tiene la página de obras. */
-  initial?: { scope: Scope; pavilion?: string; artist?: string };
+  initial?: { scope: Scope; pavilion?: string; artist?: string; publish?: boolean };
 }) {
   const qc = useQueryClient();
   const [scope, setScope] = React.useState<Scope>("all");
@@ -55,7 +55,7 @@ export default function PublishArtworksDialog({
       setScope(initial?.scope ?? "all");
       setPavilion(initial?.pavilion ?? "");
       setArtist(initial?.artist ?? "");
-      setPublish(true);
+      setPublish(initial?.publish ?? true);
       setDone(null);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -117,7 +117,7 @@ export default function PublishArtworksDialog({
           Catálogo público
         </Typography>
         <Typography variant="h4" component="div" sx={{ mt: 0.5 }}>
-          Publicar obras
+          {publish ? "Publicar obras" : "Ocultar obras del catálogo"}
         </Typography>
         {eventName && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -140,7 +140,7 @@ export default function PublishArtworksDialog({
             <TextField
               select
               size="small"
-              label="Qué publicar"
+              label={publish ? "Qué publicar" : "Qué ocultar"}
               value={scope}
               onChange={(e) => setScope(e.target.value as Scope)}
               fullWidth

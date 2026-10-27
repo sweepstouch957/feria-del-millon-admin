@@ -82,6 +82,7 @@ export interface CursorListParams {
   maxPrice?: number;
   hasImage?: boolean;
   includeHidden?: boolean | number | string; // 1 = incluir obras hiddenUntilEvent (staff)
+  visibility?: "visible" | "hidden"; // solo en el catálogo / solo ocultas (con includeHidden)
 
   // Paginación & orden
   limit?: number; // default 24 (máx 60)
