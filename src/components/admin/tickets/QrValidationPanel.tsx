@@ -29,6 +29,8 @@ import { CameraOffIcon } from "lucide-react";
 
 import { validateQr, TICKET_TYPE_LABEL, type ValidateQrResponse } from "@services/ticket.service";
 import { BetterQrScanner } from "./BetterQrScanner";
+import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
+import { PRACTICE_QR_PREFIX } from "@features/taquilla/hooks/useBoxOfficeSale";
 
 type ValidationResult = {
   practice?: boolean;
@@ -47,7 +49,10 @@ export function QrValidationPanel() {
   const [lastResult, setLastResult] = useState<ValidationResult | null>(null);
   const [scannerOpen, setScannerOpen] = useState(true);
   // Práctica: para capacitar o probar antes de la feria sin gastar ingresos.
-  const [practice, setPractice] = useState(false);
+  // Una cuenta en capacitación queda fija en práctica (el servidor también lo exige).
+  const access = useCajaAccess();
+  const [practicePicked, setPractice] = useState(false);
+  const practice = access.practice || practicePicked;
 
   // Overlay de éxito
   const [showSuccess, setShowSuccess] = useState(false);
@@ -59,8 +64,15 @@ export function QrValidationPanel() {
   const mutation = useMutation({
     // Lo digitado a mano es el código corto impreso bajo el QR (8 caracteres);
     // lo leído por la cámara es el token completo.
-    mutationFn: ({ token }: { token: string }) =>
-      validateQr({ ...(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }), practice }),
+    mutationFn: async ({ token }: { token: string }): Promise<ValidateQrResponse> => {
+      // Boleta emitida en la taquilla de práctica: no existe en la base.
+      if (token.startsWith(PRACTICE_QR_PREFIX)) {
+        if (!practice) throw { response: { data: { error: "practice_ticket" } } };
+        const [code, name, type] = token.slice(PRACTICE_QR_PREFIX.length).split("|");
+        return { ok: true, practice: true, status: "checked_in", sameDay: true, ticket: { shortCode: code, name, type, admits: 1 } } as ValidateQrResponse;
+      }
+      return validateQr({ ...(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }), practice });
+    },
     onSuccess: (data) => {
       const result: ValidationResult = {
         practice: !!data.practice,
@@ -84,6 +96,8 @@ export function QrValidationPanel() {
       const message =
         code === "invalid_qr"
           ? "QR inválido o manipulado."
+          : code === "practice_ticket"
+            ? "Boleta de práctica: no vale para entrar."
           : code === "ticket_not_found"
             ? "No se encontró el boleto."
             : code === "wrong_day"
@@ -201,6 +215,7 @@ export function QrValidationPanel() {
             <ToggleButtonGroup
               exclusive
               fullWidth
+              disabled={access.practice}
               value={practice ? "practica" : "real"}
               onChange={(_, v) => { if (v) { setPractice(v === "practica"); setLastResult(null); } }}
             >

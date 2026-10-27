@@ -11,6 +11,7 @@ export interface Roles {
   staff?: boolean;
   curador?: boolean;
   cajero?: boolean;
+  jefeCaja?: boolean; // caja + apartados y abonos
   taquilla?: boolean;
   editor?: boolean;
   artista?: boolean;
@@ -26,6 +27,8 @@ export interface AuthUser {
   roles?: Roles;
   firstName?: string;
   lastName?: string;
+  /** Capacitación: lo prende un superuser; nada de lo que haga se guarda. */
+  practiceMode?: boolean;
 }
 
 export interface RegisterPayload {
@@ -116,6 +119,7 @@ export const me = async (): Promise<AuthUser> => {
     roles: u.roles,
     firstName: u.firstName,
     lastName: u.lastName,
+    practiceMode: !!u.practiceMode,
   };
 };
 

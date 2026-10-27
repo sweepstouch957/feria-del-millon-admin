@@ -9,12 +9,16 @@ import { formatCOP } from "@/utils/money";
 import { downloadCsv, stamp, toCsv } from "@/utils/csv";
 import { todayBogota, useMySales } from "../hooks/useMySales";
 import { CAJA_METHODS, METHOD_LABEL } from "../model/sale";
+import { clearPracticeSales } from "../model/practice";
+import { useCajaAccess } from "../hooks/useCajaAccess";
+import { PracticeBanner } from "./PracticeBanner";
 
 /** Cierre de caja: lo que cobró la cajera en sesión, para cuadrar al final del día. */
 export function MySalesPage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
   const [day, setDay] = useState(todayBogota);
   const sales = useMySales(eventId ?? undefined, day);
+  const { practice } = useCajaAccess();
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
 
   const lines = sales.data?.lines ?? [];
@@ -42,10 +46,14 @@ export function MySalesPage() {
         description="Ventas pagadas que registraste tú. Cuadra el efectivo y los vouchers con estas cifras."
         back="/caja"
         backLabel="Volver a la caja"
-        actions={[{ label: "Descargar Excel", kind: "sec", onClick: exportCsv, disabled: !lines.length }]}
+        actions={[
+          { label: "Descargar Excel", kind: "sec", onClick: exportCsv, disabled: !lines.length },
+          ...(practice ? [{ label: "Borrar ventas de práctica", kind: "sec" as const, onClick: () => { clearPracticeSales(); void sales.refetch(); } }] : []),
+        ]}
       >
         <TextField type="date" size="small" label="Día" value={day} onChange={(e) => setDay(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
       </PageHeader>
+      <PracticeBanner />
 
       <KpiStrip
         loading={sales.isLoading}

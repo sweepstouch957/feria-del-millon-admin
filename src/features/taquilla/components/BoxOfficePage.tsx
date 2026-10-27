@@ -15,6 +15,8 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getTicketDays, TICKET_TYPE_LABEL } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
 import { boxOfficeError, useBoxOfficeSale } from "../hooks/useBoxOfficeSale";
+import { PracticeBanner } from "@features/caja/components/PracticeBanner";
+import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
 import {
   BOX_OFFICE_DEFAULTS, BOX_OFFICE_METHODS, boxOfficeSchema, specOf, TICKET_TYPES, unitPrice, type BoxOfficeValues,
 } from "../model/boxOffice";
@@ -32,6 +34,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
   const { data: daysRes } = useQuery({ queryKey: ["ticketDays", eventId], queryFn: () => getTicketDays(eventId) });
   const days = useMemo(() => daysRes?.days ?? [], [daysRes]);
   const sale = useBoxOfficeSale(eventId);
+  const { practice } = useCajaAccess();
 
   const { control, register, handleSubmit, setValue, reset, getValues, formState: { errors } } = useForm<BoxOfficeValues>({
     resolver: zodResolver(boxOfficeSchema),
@@ -55,7 +58,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
 
   const submit = handleSubmit((v) =>
     sale.mutate(v, {
-      onSuccess: () => toast.success(`Venta registrada. QR enviado a ${v.email}`),
+      onSuccess: () => toast.success(practice ? "Venta de práctica lista" : `Venta registrada. QR enviado a ${v.email}`),
       onError: (e) => toast.error(boxOfficeError(e)),
     }),
   );
@@ -71,14 +74,22 @@ function BoxOffice({ eventId }: { eventId: string }) {
         title="Taquilla"
         description="Venta de entradas en sitio. El asistente recibe su QR por correo al instante."
       />
+      <PracticeBanner />
 
       <Card variant="outlined" sx={{ borderRadius: 0 }}>
         <CardContent>
           {sale.data ? (
             <Stack spacing={2}>
-              <Alert severity="success">
-                {sale.data.tickets.length} entrada(s) · {formatCOP(total, { code: true })} · enviadas a {email}
-              </Alert>
+              {practice ? (
+                <Alert severity="warning">
+                  Práctica: {sale.data.tickets.length} boleta(s) de prueba. No se cobró ni se envió correo. Escanéalas en
+                  &quot;Validar entradas&quot; para practicar la puerta.
+                </Alert>
+              ) : (
+                <Alert severity="success">
+                  {sale.data.tickets.length} entrada(s) · {formatCOP(total, { code: true })} · enviadas a {email}
+                </Alert>
+              )}
               <Stack direction="row" flexWrap="wrap" gap={2} justifyContent={{ xs: "center", sm: "flex-start" }}>
                 {sale.data.tickets.map((t) => (
                   <Box key={t.id} sx={{ textAlign: "center" }}>

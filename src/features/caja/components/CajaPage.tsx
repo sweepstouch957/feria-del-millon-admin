@@ -15,6 +15,8 @@ import { ArtworkFinderPanel } from "./ArtworkFinderPanel";
 import { SaleDone } from "./SaleDone";
 import { SaleForm } from "./SaleForm";
 import { SelectedArtwork } from "./SelectedArtwork";
+import { PracticeBanner } from "./PracticeBanner";
+import { useCajaAccess } from "../hooks/useCajaAccess";
 
 export function CajaPage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
@@ -31,6 +33,7 @@ function Caja({ eventId }: { eventId: string }) {
   const finder = useArtworkFinder(eventId);
   const { data: cities = [] } = useCities();
   const checkout = useCheckout(eventId, cities);
+  const access = useCajaAccess();
 
   const [selected, setSelected] = useState<CajaArtwork | null>(null);
   const [done, setDone] = useState<SaleResult | null>(null);
@@ -61,6 +64,7 @@ function Caja({ eventId }: { eventId: string }) {
         description="Escanea el QR o busca la obra, toma los datos del comprador y cobra."
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
+      <PracticeBanner />
 
       <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "7fr 5fr" }, alignItems: "start" }}>
         {showFinder && (
@@ -82,6 +86,7 @@ function Caja({ eventId }: { eventId: string }) {
                     artwork={selected}
                     cities={cities}
                     disabled={outsidePavilion}
+                    canLayaway={access.canLayaway}
                     isPending={checkout.isPending}
                     onSubmit={(values) =>
                       checkout.mutate(

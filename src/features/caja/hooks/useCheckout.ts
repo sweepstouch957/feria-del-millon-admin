@@ -11,8 +11,10 @@ import {
   type OrderDoc,
 } from "@services/orders.service";
 import type { CityDoc } from "@services/city.service";
-import { artworkId, type CajaArtwork } from "../model/artwork";
+import { artistName, artworkId, type CajaArtwork } from "../model/artwork";
 import type { SaleValues } from "../model/sale";
+import { addPracticeSale, practiceId, wait } from "../model/practice";
+import { todayBogota } from "./useMySales";
 
 export type SaleResult = {
   order: OrderDoc;
@@ -22,13 +24,39 @@ export type SaleResult = {
   kind: "paid" | "layaway";
   /** Cobrada pero el stock no bajó: avisar a coordinación. */
   fulfillmentError?: string;
+  /** Venta de capacitación: no se guardó nada. */
+  practice?: boolean;
 };
+
+/** Misma respuesta que una venta real, sin tocar el servidor. */
+async function simulateSale(artwork: CajaArtwork, values: SaleValues, cashier: string): Promise<SaleResult> {
+  await wait(500);
+  const total = Number(artwork.price ?? 0) * values.qty;
+  const order = {
+    id: practiceId(),
+    status: values.apartar ? "partial" : "paid",
+    event: "",
+    items: [],
+    subtotal: total,
+    total,
+    currency: artwork.currency ?? "COP",
+    layaway: values.apartar ? { balanceDue: Math.max(0, total - values.abono) } : undefined,
+  } as OrderDoc;
+  addPracticeSale({
+    day: todayBogota(), orderId: order.id, artwork: artwork.title || "Obra", artist: artistName(artwork),
+    technique: artwork.techniqueInfo?.name || "", pavilion: artwork.pavilionInfo?.name || "",
+    qty: values.qty, amount: values.apartar ? values.abono : total, channel: "Caja", method: values.method,
+    buyer: values.buyerName, buyerEmail: values.buyerEmail, buyerPhone: values.buyerPhone, cashier,
+  });
+  return { order, artwork, values, kind: values.apartar ? "layaway" : "paid", practice: true };
+}
 
 const ERRORS: Record<string, string> = {
   sin_stock: "Esta obra ya se vendió. Elige otra.",
   charge_in_progress: "Esta venta ya se está registrando en otra caja.",
   sales_paused: "La venta está pausada para esta obra.",
   pavilion_not_allowed: "Esta obra es de otro pabellón. Cóbrala en la caja de ese pabellón.",
+  practice_mode: "Tu cuenta está en modo práctica: pide a coordinación que la active para vender.",
 };
 
 /** Mensaje para la cajera a partir del error del backend. */
@@ -53,6 +81,7 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
   return useMutation({
     mutationFn: async ({ artwork, values }: { artwork: CajaArtwork; values: SaleValues }): Promise<SaleResult> => {
       if (!eventId) throw new Error("No hay feria activa");
+      if (user?.practiceMode) return simulateSale(artwork, values, cashierName);
       const city = cities.find((c) => String(c._id ?? c.id) === values.cityId);
 
       const buyer: BuyerInput = {

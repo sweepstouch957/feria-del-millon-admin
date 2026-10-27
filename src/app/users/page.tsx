@@ -6,7 +6,7 @@ import {
   Box, Stack, Typography, TextField, InputAdornment, IconButton,
   Select, MenuItem, FormControl, InputLabel, Chip, Button, Tooltip,
   Dialog, DialogContent, DialogActions, Snackbar, Alert, LinearProgress,
-  Avatar, Card, Paper, Skeleton, Tabs, Tab, Switch, Divider, CircularProgress, alpha,
+  Avatar, Card, Paper, Skeleton, Tabs, Tab, Switch, FormControlLabel, Divider, CircularProgress, alpha,
 } from "@mui/material";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -47,6 +47,7 @@ const ROLES: { key: keyof RolesMap; label: string; desc: string; color: string }
   { key: "staff",     label: "Staff",     desc: "Gestión operativa",           color: "#8C6A3F" },
   { key: "curador",   label: "Curador",   desc: "Curación y validación obras", color: "#6B8F7A" },
   { key: "cajero",    label: "Cajero",    desc: "Caja de obras (venta de arte)", color: "#C9902B" },
+  { key: "jefeCaja",  label: "Jefe de caja", desc: "Caja + apartados y abonos", color: "#A8742A" },
   { key: "taquilla",  label: "Taquilla",  desc: "Venta y validación de entradas", color: "#4A7FB5" },
   { key: "editor",    label: "Editor",    desc: "Contenidos del sitio",          color: "#8E6BB0" },
   { key: "artista",   label: "Artista",   desc: "Perfil de artista activo",    color: G         },
@@ -230,7 +231,7 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
         firstName: form.firstName, lastName: form.lastName,
         mobile: form.mobile, city: form.city, address: form.address,
         instagram: form.instagram, facebook: form.facebook, website: form.website,
-        roles: form.roles, active: form.active,
+        roles: form.roles, active: form.active, practiceMode: !!form.practiceMode,
       });
       setToast({ open: true, msg: "Usuario actualizado correctamente", sev: "success" });
       setMode("view"); onRefresh();
@@ -493,6 +494,39 @@ function UserDetailModal({ open, onClose, userId, initialMode = "view", onRefres
                       />
                     )}
                   </Box>
+
+                  {/* Capacitación: caja, taquilla y puerta funcionan pero no guardan nada. */}
+                  <Box
+                    onClick={() => mode === "edit" && setForm(f => ({ ...f, practiceMode: !f.practiceMode }))}
+                    sx={{
+                      p: 1.75, borderRadius: 0, display: "flex", alignItems: "center",
+                      justifyContent: "space-between", gap: 1.5,
+                      border: `1px solid ${form.practiceMode ? alpha("#C9902B", 0.45) : BR}`,
+                      bgcolor: form.practiceMode ? alpha("#C9902B", 0.08) : "transparent",
+                      cursor: mode === "edit" ? "pointer" : "default",
+                    }}
+                  >
+                    <Box>
+                      <Typography sx={{ fontWeight: 500, fontSize: 13, color: form.practiceMode ? "#C9902B" : "#EDEBE4", lineHeight: 1 }}>
+                        Modo práctica {form.practiceMode ? "· ACTIVO" : ""}
+                      </Typography>
+                      <Typography sx={{ fontSize: 11, color: TM, mt: 0.25 }}>
+                        {form.practiceMode
+                          ? "Vende, emite y valida con obras reales, pero nada se cobra ni se guarda. Apágalo al abrir la feria."
+                          : "Para capacitar antes de la feria: nada de lo que haga se guarda."}
+                      </Typography>
+                    </Box>
+                    {mode === "edit" && (
+                      <Switch
+                        checked={Boolean(form.practiceMode)}
+                        onChange={() => setForm(f => ({ ...f, practiceMode: !f.practiceMode }))}
+                        onClick={e => e.stopPropagation()}
+                        size="small"
+                        color="warning"
+                        sx={{ flexShrink: 0 }}
+                      />
+                    )}
+                  </Box>
                 </Stack>
               )}
 
@@ -577,6 +611,8 @@ function CreateUserDialog({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: () => void;
 }) {
   const [kind,    setKind]    = React.useState<NewUserKind>("cajera");
+  const [jefe,    setJefe]    = React.useState(false);
+  const [startPractice, setStartPractice] = React.useState(true);
   const [form,    setForm]    = React.useState<CreateUserPayload>(EMPTY_NEW_USER);
   const [saving,  setSaving]  = React.useState(false);
   const [created, setCreated] = React.useState<{ email: string; password: string } | null>(null);
@@ -584,7 +620,7 @@ function CreateUserDialog({ open, onClose, onCreated }: {
 
   // La contraseña sale generada: nadie tiene que inventarla.
   React.useEffect(() => {
-    if (open) { setForm({ ...EMPTY_NEW_USER, password: makePassword() }); setCreated(null); setKind("cajera"); }
+    if (open) { setForm({ ...EMPTY_NEW_USER, password: makePassword() }); setCreated(null); setKind("cajera"); setJefe(false); setStartPractice(true); }
   }, [open]);
 
   const genPassword = () => setForm(f => ({ ...f, password: makePassword() }));
@@ -614,8 +650,9 @@ function CreateUserDialog({ open, onClose, onCreated }: {
         });
       } else {
         // Cajera: caja de obras (vende, cierra el día y valida entradas en la puerta).
-        const roles = kind === "cajera" ? { ...form.roles, cajero: true } : form.roles;
-        await createUser({ ...form, email, roles });
+        const cajera = kind === "cajera";
+        const roles = cajera ? { ...form.roles, cajero: true, jefeCaja: jefe } : form.roles;
+        await createUser({ ...form, email, roles, practiceMode: cajera && startPractice });
         setToast({ open: true, msg: kind === "cajera" ? "Cajera creada" : "Cuenta creada", sev: "success" });
       }
       setCreated({ email, password: form.password });
@@ -716,6 +753,16 @@ function CreateUserDialog({ open, onClose, onCreated }: {
                     Entra directo a <strong style={{ color: "#EDEBE4" }}>Vender obra</strong>. Asígnala a su pabellón en
                     Ferias → pabellón → cajeros para que solo cobre las obras de ese pabellón.
                   </Typography>
+                  <FormControlLabel
+                    sx={{ mt: 1, display: "flex", "& .MuiFormControlLabel-label": { fontSize: 12.5, color: "#EDEBE4" } }}
+                    control={<Switch size="small" checked={jefe} onChange={e => setJefe(e.target.checked)} />}
+                    label="Jefe de caja: también aparta con abono y cobra cartera"
+                  />
+                  <FormControlLabel
+                    sx={{ display: "flex", "& .MuiFormControlLabel-label": { fontSize: 12.5, color: "#EDEBE4" } }}
+                    control={<Switch size="small" color="warning" checked={startPractice} onChange={e => setStartPractice(e.target.checked)} />}
+                    label="Empieza en modo práctica (no guarda nada hasta que lo apagues)"
+                  />
                 </Box>
               ) : kind === "team" ? (
                 <Box>

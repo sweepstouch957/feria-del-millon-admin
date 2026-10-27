@@ -30,6 +30,11 @@ export function SaleDone({ result, onNext }: { result: SaleResult; onNext: () =>
         </Typography>
       </Box>
 
+      {result.practice && (
+        <Alert severity="warning">
+          Venta de práctica: así se ve una venta registrada, pero no se cobró ni se guardó nada.
+        </Alert>
+      )}
       {fulfillmentError && (
         <Alert severity="error">
           El pago quedó registrado pero el inventario no se actualizó. Avisa a coordinación con el pedido{" "}
@@ -41,7 +46,7 @@ export function SaleDone({ result, onNext }: { result: SaleResult; onNext: () =>
           Queda un saldo de <strong>{formatCOP(balance ?? order.total - paidNow)}</strong>. Se cobra en Pedidos → Cartera.
         </Alert>
       )}
-      {kind === "paid" && !fulfillmentError && (
+      {kind === "paid" && !fulfillmentError && !result.practice && (
         <Typography variant="body2" color="text.secondary">
           El comprador recibe el correo de confirmación y el artista ve la venta en su panel.
         </Typography>

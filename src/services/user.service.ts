@@ -4,7 +4,7 @@ import apiClient from "@/axios";
 
 /* ========= Tipos ========= */
 export type RoleKey =
-  | "superuser" | "staff" | "curador" | "cajero" | "taquilla" | "editor" | "artista"
+  | "superuser" | "staff" | "curador" | "cajero" | "jefeCaja" | "taquilla" | "editor" | "artista"
   | "asistente" | "vip" | "mentor" | "comprador";
 
 export interface Roles {
@@ -12,6 +12,7 @@ export interface Roles {
   staff?: boolean;
   curador?: boolean;
   cajero?: boolean;
+  jefeCaja?: boolean;
   taquilla?: boolean;
   editor?: boolean;
   artista?: boolean;
@@ -22,6 +23,8 @@ export interface Roles {
 }
 
 export interface UserDTO {
+  /** Capacitación: caja/taquilla/puerta simulan, nada se guarda. */
+  practiceMode?: boolean;
   id: string;
   email: string;
   firstName?: string;
@@ -152,6 +155,7 @@ export interface UpdateUserPayload {
   website?: string;
   roles?: Roles;
   active?: boolean;
+  practiceMode?: boolean;
   documentType?: UserDTO["documentType"];
   documentNumber?: string;
   [k: string]: any;
@@ -183,6 +187,7 @@ export interface CreateUserPayload {
   mobile?: string;
   city?: string;
   roles?: Roles;
+  practiceMode?: boolean;
 }
 export async function createUser(payload: CreateUserPayload): Promise<UserDTO> {
   const { data } = await apiClient.post<{ user?: UserDTO } & UserDTO>(

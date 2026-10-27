@@ -41,12 +41,15 @@ export function SaleForm({
   artwork,
   cities,
   disabled,
+  canLayaway,
   isPending,
   onSubmit,
 }: {
   artwork: CajaArtwork;
   cities: CityDoc[];
   disabled?: boolean;
+  /** Apartar con abono: solo jefe de caja / admin. */
+  canLayaway?: boolean;
   isPending: boolean;
   onSubmit: (values: SaleValues) => void;
 }) {
@@ -167,7 +170,7 @@ export function SaleForm({
           </Collapse>
         </Section>
 
-        <Section title="Apartar">
+        {canLayaway && <Section title="Apartar">
           <Controller
             control={control}
             name="apartar"
@@ -194,7 +197,7 @@ export function SaleForm({
               <TextField label="Paga el resto antes de" type="date" slotProps={{ inputLabel: { shrink: true } }} {...register("dueDate")} />
             </Box>
           </Collapse>
-        </Section>
+        </Section>}
 
         {/* Total y botón quedan pegados abajo en el celular. */}
         <Box

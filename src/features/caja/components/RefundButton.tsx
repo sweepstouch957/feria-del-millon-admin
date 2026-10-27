@@ -6,11 +6,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { refundOrder, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
+import { useCajaAccess } from "../hooks/useCajaAccess";
 
 /** Reembolsar una venta pagada: la obra vuelve al inventario. Pide confirmación. */
 export function RefundButton({ order }: { order: OrderDoc }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const { practice } = useCajaAccess();
   const refund = useMutation({
     mutationFn: () => refundOrder(order.id),
     onSuccess: (r) => {
@@ -23,7 +25,8 @@ export function RefundButton({ order }: { order: OrderDoc }) {
     onError: (e: any) => toast.error(e?.response?.data?.error ?? "No se pudo reembolsar."),
   });
 
-  if (order.status !== "paid") return null;
+  // En práctica no se reembolsan ventas reales.
+  if (order.status !== "paid" || practice) return null;
 
   return (
     <>

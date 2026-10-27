@@ -31,6 +31,7 @@ import SectionTitle from "./SectionTitle";
 import NavItem from "./NavItem";
 import CollapsibleGroup from "./CollapsibleGroup";
 import { useAuth } from "@/provider/authProvider";
+import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
 
 /* Lateral del panel: tinta sobre papel, secciones en versalitas y el ítem
    activo marcado con un filete de acento. Se puede contraer a riel (solo
@@ -59,11 +60,11 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const roles = user?.roles || {};
   const isSuperUser = !!roles.superuser;
   const isArtist = !!roles.artista;
-  const isCashier = !!roles.cajero;
+  const isCashier = !!(roles.cajero || roles.jefeCaja);
+  const { canLayaway } = useCajaAccess();
   const isBoxOffice = !!(roles as { taquilla?: boolean }).taquilla;
   const isEditor = !!(roles as { editor?: boolean }).editor;
 
-  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/orders"));
   const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));
 
   const go = (href: string) => () => {
@@ -97,27 +98,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       active={pathname.startsWith("/tickets")}
     >
       {kid("/tickets", "Ver boletos")}
-      {kid("/tickets/validator", "Validador QR")}
       {kid("/tickets/taquilla", "Taquilla")}
       {kid("/tickets/asistentes", "Informe de asistentes")}
       {kid("/tickets/invitaciones", "Invitaciones")}
     </CollapsibleGroup>
   );
 
-  const ordersGroup = (
-    <CollapsibleGroup
-      open={ordersOpen}
-      setOpen={setOrdersOpen}
-      rail={rail}
-      onRailClick={go("/orders")}
-      icon={<ShoppingBag {...ICON} />}
-      text="Pedidos"
-      active={pathname.startsWith("/orders")}
-    >
-      {kid("/orders", "Listado de pedidos")}
-      {kid("/orders/cartera", "Cartera / Fiado")}
-    </CollapsibleGroup>
-  );
+  const ordersItem = item("/orders", "Pedidos", <FileText {...ICON} />);
 
   // Lo mismo que ve la cajera, para que el admin pueda cubrir una caja.
   const cajaSection = (
@@ -126,7 +113,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
       {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
       {item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
-      {item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+      {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
     </>
   );
 
@@ -270,7 +257,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             <SectionTitle label="Operación" rail={rail} />
             {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
             {ticketsGroup}
-            {ordersGroup}
+            {ordersItem}
 
             <SectionTitle label="Reportes" rail={rail} />
             {item("/reportes", "Reportes", <BarChart3 {...ICON} />)}
