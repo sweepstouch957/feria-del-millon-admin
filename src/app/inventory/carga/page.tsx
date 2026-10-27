@@ -14,6 +14,7 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getInventoryStatus, type InventoryState, type InventoryStatusRow } from "@services/applications.service";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
 import ArtistLoadDrawer from "@components/views/inventory/ArtistLoadDrawer";
+import UploadMoreDialog from "@components/views/inventory/UploadMoreDialog";
 
 /* Estado de la carga por artista. "Enviado" no es de la obra: es el botón
    "Enviar" del estudio, que queda en la postulación. Acá se cruza todo para
@@ -24,7 +25,7 @@ const STATE: Record<InventoryState, { label: string; tone: PillTone; hint: strin
   draft: { label: "Borrador", tone: "warn", hint: "Tiene obras pero le falta el proyecto, y no ha enviado" },
   ready: { label: "Listo sin enviar", tone: "warn", hint: "Tiene obras y proyecto; solo falta que le dé Enviar" },
   empty: { label: "Sin obras", tone: "mid", hint: "Está en un pabellón pero no ha cargado nada" },
-  sent: { label: "Enviado", tone: "ok", hint: "Ya le dio Enviar" },
+  sent: { label: "Enviado", tone: "ok", hint: "Ya le dio Enviar (puede agregar obras y volver a enviar)" },
 };
 const FILTERS: (InventoryState | "all" | "issues")[] = ["all", "draft", "ready", "empty", "sent", "issues"];
 
@@ -41,6 +42,7 @@ function InventoryStatus({ eventId }: { eventId: string }) {
   const [filter, setFilter] = React.useState<(typeof FILTERS)[number]>("all");
   const [q, setQ] = React.useState("");
   const [open, setOpen] = React.useState<InventoryStatusRow | null>(null);
+  const [remindOpen, setRemindOpen] = React.useState(false);
 
   const { data: rows = [], isFetching, isError } = useQuery({
     queryKey: ["inventory-status", eventId],
@@ -81,8 +83,12 @@ function InventoryStatus({ eventId }: { eventId: string }) {
         crumb="Inventario"
         title="Estado de carga"
         description="Por artista: obras cargadas, proyecto y si ya le dio Enviar. Para encontrar a quien se quedó en borrador."
-        actions={[{ label: "Exportar Excel", kind: "sec", disabled: !shown.length, onClick: exportCsv }]}
+        actions={[
+          { label: "Avisar: suban más obras", kind: "acc", onClick: () => setRemindOpen(true) },
+          { label: "Exportar Excel", kind: "sec", disabled: !shown.length, onClick: exportCsv },
+        ]}
       />
+      <UploadMoreDialog eventId={eventId} open={remindOpen} onClose={() => setRemindOpen(false)} />
 
       <KpiStrip
         items={[

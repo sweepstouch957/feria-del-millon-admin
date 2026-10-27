@@ -151,6 +151,19 @@ export const getInventoryStatus = async (eventId: string): Promise<InventoryStat
   return data.rows;
 };
 
+export type ReminderScope = "all" | "sent" | "pending";
+
+/** POST /applications/inventory-reminder — correo "puedes subir más obras". dryRun = solo contar. */
+export const sendInventoryReminder = async (payload: {
+  eventId: string;
+  scope: ReminderScope;
+  artistIds?: string[];
+  dryRun?: boolean;
+}): Promise<{ ok: boolean; count: number; dryRun: boolean; emails: string[] }> => {
+  const { data } = await apiClient.post("/applications/applications/inventory-reminder", payload, { headers: ADMIN_HEADERS });
+  return data;
+};
+
 export interface InventoryArtworkDetail {
   id: string;
   title: string;
