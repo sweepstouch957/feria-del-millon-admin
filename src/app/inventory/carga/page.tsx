@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  Box, Card, CardContent, Typography, Stack, TextField, InputAdornment, Chip,
+  Box, Card, CardContent, Typography, Stack, TextField, InputAdornment, Chip, Checkbox,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, Alert,
 } from "@mui/material";
 import { Search } from "lucide-react";
@@ -43,6 +43,9 @@ function InventoryStatus({ eventId }: { eventId: string }) {
   const [q, setQ] = React.useState("");
   const [open, setOpen] = React.useState<InventoryStatusRow | null>(null);
   const [remindOpen, setRemindOpen] = React.useState(false);
+  // Artistas marcados para invitarlos a editar o subir más (vacío = el diálogo elige por grupo).
+  const [picked, setPicked] = React.useState<string[]>([]);
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const { data: rows = [], isFetching, isError } = useQuery({
     queryKey: ["inventory-status", eventId],
@@ -84,11 +87,20 @@ function InventoryStatus({ eventId }: { eventId: string }) {
         title="Estado de carga"
         description="Por artista: obras cargadas, proyecto y si ya le dio Enviar. Para encontrar a quien se quedó en borrador."
         actions={[
-          { label: "Avisar: suban más obras", kind: "acc", onClick: () => setRemindOpen(true) },
+          {
+            label: picked.length ? `Invitar a ${picked.length} marcado(s)` : "Invitar a editar o subir obras",
+            kind: "acc",
+            onClick: () => setRemindOpen(true),
+          },
           { label: "Exportar Excel", kind: "sec", disabled: !shown.length, onClick: exportCsv },
         ]}
       />
-      <UploadMoreDialog eventId={eventId} open={remindOpen} onClose={() => setRemindOpen(false)} />
+      <UploadMoreDialog
+        eventId={eventId}
+        open={remindOpen}
+        artistIds={picked}
+        onClose={() => setRemindOpen(false)}
+      />
 
       <KpiStrip
         items={[
@@ -134,6 +146,17 @@ function InventoryStatus({ eventId }: { eventId: string }) {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={!!shown.length && shown.every((r) => picked.includes(r.artistId))}
+                      indeterminate={shown.some((r) => picked.includes(r.artistId)) && !shown.every((r) => picked.includes(r.artistId))}
+                      onChange={(e) =>
+                        setPicked(e.target.checked ? [...new Set([...picked, ...shown.map((r) => r.artistId)])] : picked.filter((id) => !shown.some((r) => r.artistId === id)))
+                      }
+                      inputProps={{ "aria-label": "Marcar todos los de la lista" }}
+                    />
+                  </TableCell>
                   <TableCell>Artista</TableCell>
                   <TableCell>Pabellón</TableCell>
                   <TableCell align="right">Obras</TableCell>
@@ -146,12 +169,20 @@ function InventoryStatus({ eventId }: { eventId: string }) {
               <TableBody>
                 {!shown.length ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>
+                    <TableCell colSpan={8} align="center" sx={{ color: "text.secondary", py: 3 }}>
                       {isFetching ? "Cargando…" : "Nadie en este filtro."}
                     </TableCell>
                   </TableRow>
                 ) : shown.map((r) => (
                   <TableRow key={r.artistId} hover onClick={() => setOpen(r)} sx={{ cursor: "pointer" }}>
+                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        size="small"
+                        checked={picked.includes(r.artistId)}
+                        onChange={() => toggle(r.artistId)}
+                        inputProps={{ "aria-label": `Marcar a ${r.name}` }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Typography fontSize={13} fontWeight={500}>{r.name}</Typography>
                       <Typography variant="caption" color="text.secondary" display="block">
