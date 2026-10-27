@@ -66,7 +66,7 @@ function Caja({ eventId }: { eventId: string }) {
       />
       <PracticeBanner />
 
-      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "7fr 5fr" }, alignItems: "start" }}>
+      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 7fr) minmax(0, 5fr)" }, alignItems: "start" }}>
         {showFinder && (
           <ArtworkFinderPanel finder={finder} selectedId={selected ? artworkId(selected) : undefined} onPick={pick} />
         )}

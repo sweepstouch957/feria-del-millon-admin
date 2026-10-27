@@ -55,7 +55,7 @@ export function SelectedArtwork({
         </ButtonBase>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ ...eyebrow, color: "text.secondary" }}>{artistName(artwork) || "Artista"}</Typography>
-          <Typography sx={{ fontSize: 18, lineHeight: 1.25, mt: 0.25 }}>{artwork.title || "Sin título"}</Typography>
+          <Typography sx={{ fontSize: 18, lineHeight: 1.25, mt: 0.25, overflowWrap: "anywhere" }}>{artwork.title || "Sin título"}</Typography>
           {facts.length > 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {facts.join(" · ")}

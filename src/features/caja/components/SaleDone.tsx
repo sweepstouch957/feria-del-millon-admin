@@ -18,6 +18,9 @@ export function SaleDone({ result, onNext }: { result: SaleResult; onNext: () =>
     ["Comprador", `${values.buyerName} · ${values.buyerEmail}`],
     ["Método", METHOD_LABEL[values.method] ?? values.method],
     [kind === "layaway" ? "Abono" : "Cobrado", formatCOP(paidNow)],
+    ...(values.price < Number(artwork.price ?? 0)
+      ? [["Descuento", `${formatCOP((Number(artwork.price) - values.price) * values.qty)} · ${values.discountNote}`] as [string, string]]
+      : []),
     ["Pedido", order.id.slice(-8).toUpperCase()],
   ];
 

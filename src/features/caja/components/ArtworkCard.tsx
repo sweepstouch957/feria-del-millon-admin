@@ -51,7 +51,13 @@ export const ArtworkCard = memo(function ArtworkCard({
         }}
       />
       <Box sx={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 0.25 }}>
-        <Typography noWrap sx={{ fontSize: 15 }}>{artwork.title || "Sin título"}</Typography>
+        {/* Títulos largos: dos líneas y puntos suspensivos, sin estirar la columna. */}
+        <Typography
+          title={artwork.title}
+          sx={{ fontSize: 15, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}
+        >
+          {artwork.title || "Sin título"}
+        </Typography>
         <Typography noWrap variant="body2" color="text.secondary">
           {artistName(artwork) || "—"}
           {artwork.techniqueInfo?.name ? ` · ${artwork.techniqueInfo.name}` : ""}

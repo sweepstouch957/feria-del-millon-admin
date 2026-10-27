@@ -131,7 +131,7 @@ export function ArtworkFinderPanel({
         </Button>
       )}
 
-      <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
+      <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
         {finder.rows.map((a) => (
           <ArtworkCard key={artworkId(a)} artwork={a} selected={artworkId(a) === selectedId} onPick={onPick} />
         ))}

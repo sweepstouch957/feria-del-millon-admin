@@ -95,6 +95,8 @@ export interface OrderDoc {
     items: OrderItemInput[];
     subtotal: number;
     total: number;
+    /** Descuento acordado en caja (subtotal - total). */
+    discount?: { amount?: number; note?: string; by?: string };
     currency: string;
     /** id de la reserva (hold) creada en inventory-svc */
     reservationId?: string | null;
@@ -121,6 +123,8 @@ export interface CreateOrderInput {
     reservationId?: string;
     /** buyer requerido por backend: name + email + address */
     buyer: BuyerInput;
+    /** Caja: quién autorizó el descuento (si items[].unitPrice < precio de la obra). */
+    discountNote?: string;
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,7 +25,7 @@ import type { CustomerDoc } from "@services/orders.service";
 import { CustomerPicker } from "./CustomerPicker";
 import { ReceiptInput } from "./ReceiptInput";
 import { stockOf, type CajaArtwork } from "../model/artwork";
-import { CAJA_METHODS, SALE_DEFAULTS, saleSchema, type SaleValues } from "../model/sale";
+import { CAJA_METHODS, SALE_DEFAULTS, saleSchemaFor, type SaleValues } from "../model/sale";
 
 const METHOD_ICON = { cash: Banknote, card_offline: CreditCard, whatsapp: Landmark } as const;
 
@@ -53,19 +53,33 @@ export function SaleForm({
   isPending: boolean;
   onSubmit: (values: SaleValues) => void;
 }) {
+  const listPrice = Number(artwork.price ?? 0);
+  const schema = useMemo(() => saleSchemaFor(listPrice), [listPrice]);
   const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<SaleValues>({
-    resolver: zodResolver(saleSchema),
-    defaultValues: SALE_DEFAULTS,
+    resolver: zodResolver(schema),
+    defaultValues: { ...SALE_DEFAULTS, price: listPrice },
     mode: "onTouched",
   });
-  const [method, delivery, apartar, qty, abono] = useWatch({
+  const [method, apartar, qty, abono, price] = useWatch({
     control,
-    name: ["method", "delivery", "apartar", "qty", "abono"],
+    name: ["method", "apartar", "qty", "abono", "price"],
   });
 
   const [uploading, setUploading] = useState(false);
+  const [discountOn, setDiscountOn] = useState(false);
   const stock = stockOf(artwork);
-  const total = Number(artwork.price ?? 0) * (Number(qty) || 0);
+  const unit = discountOn ? Number(price) || 0 : listPrice;
+  const total = unit * (Number(qty) || 0);
+  const pctOff = discountOn && listPrice > 0 && unit > 0 && unit < listPrice ? Math.round((1 - unit / listPrice) * 100) : 0;
+
+  const toggleDiscount = (on: boolean) => {
+    setDiscountOn(on);
+    // Sin descuento se cobra el precio de la obra, sin nota.
+    if (!on) {
+      setValue("price", listPrice, { shouldValidate: true });
+      setValue("discountNote", "");
+    }
+  };
   const err = (k: keyof SaleValues) => ({ error: !!errors[k], helperText: errors[k]?.message });
   const blocked = disabled || stock <= 0 || isPending || uploading;
 
@@ -93,6 +107,37 @@ export function SaleForm({
             {...err("qty")}
           />
         )}
+
+        <Section title="Precio">
+          <Typography variant="body2" color="text.secondary">
+            Precio de la obra: <strong>{formatCOP(listPrice)}</strong>
+          </Typography>
+          <FormControlLabel
+            control={<Switch checked={discountOn} onChange={(e) => toggleDiscount(e.target.checked)} />}
+            label="El artista dio descuento"
+          />
+          <Collapse in={discountOn} unmountOnExit>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
+              <TextField
+                label="Precio acordado (por obra)"
+                type="number"
+                slotProps={{
+                  htmlInput: { min: 1, max: listPrice, inputMode: "numeric" },
+                  input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
+                }}
+                {...register("price", { valueAsNumber: true })}
+                error={!!errors.price}
+                helperText={errors.price?.message ?? (pctOff ? `${formatCOP(unit)} · ${pctOff}% de descuento` : "Menor al precio de la obra, nunca mayor")}
+              />
+              <TextField
+                label="Autorizado por"
+                placeholder="Ej: el artista, por compra de 3 obras"
+                {...register("discountNote")}
+                {...err("discountNote")}
+              />
+            </Box>
+          </Collapse>
+        </Section>
 
         <Section title="Método de pago">
           <Controller
@@ -130,7 +175,7 @@ export function SaleForm({
 
         <Section title="Comprador">
           <CustomerPicker onPick={fillCustomer} />
-          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
+          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
             <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
             <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
             <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
@@ -138,36 +183,26 @@ export function SaleForm({
           </Box>
         </Section>
 
-        <Section title="Entrega">
-          <Controller
-            control={control}
-            name="delivery"
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
-                label={field.value ? "Enviar a domicilio" : "Se la lleva en la feria"}
-              />
-            )}
-          />
-          <Collapse in={delivery} unmountOnExit>
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1.3fr 1fr" } }}>
-              <TextField label="Dirección" {...register("addressLine1")} {...err("addressLine1")} />
-              <Controller
-                control={control}
-                name="cityId"
-                render={({ field }) => (
-                  <Autocomplete
-                    options={cities}
-                    getOptionLabel={(c) => c.name}
-                    value={cities.find((c) => String(c._id ?? c.id) === field.value) ?? null}
-                    onChange={(_, c) => field.onChange(c ? String(c._id ?? c.id) : "")}
-                    renderInput={(p) => <TextField {...p} label="Ciudad" {...err("cityId")} />}
-                  />
-                )}
-              />
-              <TextField label="Indicaciones de entrega" sx={{ gridColumn: "1 / -1" }} {...register("notes")} />
-            </Box>
-          </Collapse>
+        {/* Todas las obras se entregan a domicilio: la dirección siempre se pide. */}
+        <Section title="Entrega a domicilio">
+          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "minmax(0, 1.3fr) minmax(0, 1fr)" } }}>
+            <TextField label="Dirección" {...register("addressLine1")} {...err("addressLine1")} />
+            <Controller
+              control={control}
+              name="cityId"
+              render={({ field }) => (
+                <Autocomplete
+                  options={cities}
+                  getOptionLabel={(c) => c.name}
+                  value={cities.find((c) => String(c._id ?? c.id) === field.value) ?? null}
+                  onChange={(_, c) => field.onChange(c ? String(c._id ?? c.id) : "")}
+                  onBlur={field.onBlur}
+                  renderInput={(p) => <TextField {...p} label="Ciudad" {...err("cityId")} />}
+                />
+              )}
+            />
+            <TextField label="Indicaciones (apto, horario, quién recibe)" sx={{ gridColumn: "1 / -1" }} {...register("notes")} />
+          </Box>
         </Section>
 
         {canLayaway && <Section title="Apartar">
@@ -217,7 +252,7 @@ export function SaleForm({
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="caption" color="text.secondary">
-              {apartar ? `Total ${formatCOP(total)} · abona hoy` : "Total a cobrar"}
+              {apartar ? `Total ${formatCOP(total)} · abona hoy` : pctOff ? `Total con ${pctOff}% de descuento` : "Total a cobrar"}
             </Typography>
             <Typography sx={{ fontSize: 24, fontWeight: 300, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
               {formatCOP(apartar ? Number(abono) || 0 : total)}

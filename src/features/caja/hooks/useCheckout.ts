@@ -31,7 +31,7 @@ export type SaleResult = {
 /** Misma respuesta que una venta real, sin tocar el servidor. */
 async function simulateSale(artwork: CajaArtwork, values: SaleValues, cashier: string): Promise<SaleResult> {
   await wait(500);
-  const total = Number(artwork.price ?? 0) * values.qty;
+  const total = values.price * values.qty;
   const order = {
     id: practiceId(),
     status: values.apartar ? "partial" : "paid",
@@ -89,7 +89,8 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
         email: values.buyerEmail,
         phone: values.buyerPhone,
         document: values.buyerDocument || undefined,
-        address: values.delivery && city
+        // Todas las obras van a domicilio (el formulario exige dirección y ciudad).
+        address: city
           ? {
               line1: values.addressLine1,
               line2: values.notes || undefined,
@@ -105,9 +106,11 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
           artworkId: artworkId(artwork),
           artistId: String(artwork.artistInfo?._id ?? artwork.artist ?? ""),
           qty: values.qty,
-          unitPrice: Number(artwork.price ?? 0), // referencia; el servidor usa el de la obra
+          // Con descuento el servidor lo acepta solo si es menor al de la obra.
+          unitPrice: values.price,
           currency: artwork.currency ?? "COP",
         }],
+        discountNote: values.discountNote || undefined,
         buyer,
         userId: user?.id,
       });
