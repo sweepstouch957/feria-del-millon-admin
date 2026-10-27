@@ -15,6 +15,7 @@ import {
   type CreatePavilionDto,
   updatePavilion,
 } from "@services/pavilions.service";
+import { formatCOP } from "@/utils/money";
 
 export type PavilionFormState = {
   id: string;
@@ -172,23 +173,16 @@ export function usePavilionsManager(selectedEventId: string | null) {
       headerName: "Rango precio",
       flex: 1,
       minWidth: 140,
-      valueGetter: (params) => {
-        const row = (params as any)?.row as PavilionDoc | undefined;
-        if (!row) return "-";
-
-        const min = row.minArtworkPrice;
-        const max = row.maxArtworkPrice;
+      // DataGrid v8: valueGetter(value, row). Con la firma vieja (params.row)
+      // la fila llegaba vacía y todo salía en "-" y 0.
+      valueGetter: (_v, row: PavilionDoc) => {
+        const min = row?.minArtworkPrice;
+        const max = row?.maxArtworkPrice;
 
         if (min == null && max == null) return "-";
-        if (min != null && max != null) {
-          return `${min.toLocaleString("es-CO")} – ${max.toLocaleString(
-            "es-CO"
-          )}`;
-        }
-        if (min != null) {
-          return `Desde ${min.toLocaleString("es-CO")}`;
-        }
-        return `Hasta ${max?.toLocaleString("es-CO")}`;
+        if (min != null && max != null) return `${formatCOP(min)} – ${formatCOP(max)}`;
+        if (min != null) return `Desde ${formatCOP(min)}`;
+        return `Hasta ${formatCOP(max!)}`;
       },
     },
     {
@@ -197,10 +191,7 @@ export function usePavilionsManager(selectedEventId: string | null) {
       width: 100,
       align: "right",
       headerAlign: "right",
-      valueGetter: (params) => {
-        const row = (params as any)?.row as PavilionDoc | undefined;
-        return row?.artistInfo?.length ?? 0;
-      },
+      valueGetter: (_v, row: PavilionDoc) => row?.artistInfo?.length ?? 0,
     },
     {
       field: "cashiers",
@@ -208,10 +199,7 @@ export function usePavilionsManager(selectedEventId: string | null) {
       width: 100,
       align: "right",
       headerAlign: "right",
-      valueGetter: (params) => {
-        const row = (params as any)?.row as PavilionDoc | undefined;
-        return row?.cashierInfo?.length ?? 0;
-      },
+      valueGetter: (_v, row: PavilionDoc) => row?.cashierInfo?.length ?? 0,
     },
     {
       field: "active",

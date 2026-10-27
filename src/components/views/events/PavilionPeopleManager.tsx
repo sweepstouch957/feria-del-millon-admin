@@ -200,7 +200,7 @@ export default function PavilionPeopleManager({
     return base.filter((p) => `${p.name} ${p.email}`.toLowerCase().includes(n));
   }, [base, needle]);
 
-  /** En qué otro pabellón está esta persona (para no asignarla dos veces). */
+  /** En qué otro pabellón está esta persona. Solo informa: un artista puede estar en varios. */
   const elsewhere = React.useMemo(() => {
     const map: Record<string, string> = {};
     for (const p of pavilions) {
@@ -334,9 +334,7 @@ export default function PavilionPeopleManager({
                     {p.email}
                   </Typography>
                 </Box>
-                {other && !on ? (
-                  <Chip size="small" variant="outlined" label={`Ya en ${other}`} />
-                ) : null}
+                {other ? <Chip size="small" variant="outlined" label={`También en ${other}`} /> : null}
               </Stack>
             );
           })
