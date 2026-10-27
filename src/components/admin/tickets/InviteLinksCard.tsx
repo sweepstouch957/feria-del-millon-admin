@@ -151,6 +151,7 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
   const [admits, setAdmits] = React.useState(2);
   const [maxUses, setMaxUses] = React.useState(100);
   const codeBad = !!code && !/^[a-z0-9-]{3,24}$/.test(code);
+  const [creating, setCreating] = React.useState<"" | "one" | "companies">("");
 
   const create = useMutation({
     mutationFn: () => createInviteLink({ eventId, code: code || undefined, label, admits, maxUses, anyDay: true, category: "VIP" }),
@@ -158,6 +159,7 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
       qc.invalidateQueries({ queryKey: ["invite-links", eventId] });
       setCode("");
       setLabel("");
+      setCreating("");
       toast.success(`Enlace listo: ${prettyUrl(l.code)}`);
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "No se pudo crear el enlace"),
@@ -187,16 +189,29 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
   return (
     <Card sx={{ mb: 3 }}>
       <CardContent>
-        <Stack direction="row" alignItems="center" gap={1} mb={0.5}>
-          <Link2 size={18} />
-          <Typography fontWeight={600}>Enlaces de registro</Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} gap={1} mb={2}>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <Link2 size={18} />
+            <Typography fontWeight={600}>Enlaces creados {links.length ? `(${links.length})` : ""}</Typography>
+          </Stack>
+          {/* Crear va escondido: lo que más se mira es cómo van los enlaces. */}
+          <Stack direction="row" gap={1} sx={{ ml: { sm: "auto" } }}>
+            <Tooltip arrow title="Un enlace para un grupo (artistas, una pieza impresa…): tú eliges el código y el cupo.">
+              <Button size="small" variant={creating === "one" ? "contained" : "outlined"} onClick={() => setCreating((c) => (c === "one" ? "" : "one"))} sx={{ textTransform: "none" }}>
+                + Crear un enlace
+              </Button>
+            </Tooltip>
+            <Tooltip arrow title="Pega la lista de empresas (nombre, correo, cupo): cada una recibe su propio enlace por correo para repartir entre sus empleados.">
+              <Button size="small" variant={creating === "companies" ? "contained" : "outlined"} onClick={() => setCreating((c) => (c === "companies" ? "" : "companies"))} sx={{ textTransform: "none" }}>
+                + Enlaces para empresas
+              </Button>
+            </Tooltip>
+          </Stack>
         </Stack>
-        <Typography variant="body2" color="text.secondary" mb={2} maxWidth={760}>
-          Para invitados que no tienen correo en la base. Pon el enlace corto (o su QR) en una pieza; la persona deja sus datos y
-          recibe su pase con QR al instante. Un registro por correo; cuando se llena el cupo o lo apagas, deja de recibir.
-        </Typography>
 
-        <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ md: "flex-start" }} mb={2.5}>
+        {creating === "one" && (
+        <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ md: "flex-start" }} mb={2.5} sx={{ p: 1.5, border: "1px dashed", borderColor: "divider" }}>
+          <Tooltip arrow placement="top" title="Lo que va al final de la dirección: feria-millon.immsai.com/i/CÓDIGO. Corto y fácil de escribir.">
           <TextField
             size="small" label="Código (lo que va en el enlace)" value={code}
             onChange={(e) => setCode(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
@@ -204,22 +219,32 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
             helperText={codeBad ? "3 a 24 letras minúsculas, números o guiones" : code ? prettyUrl(code) : "Vacío = uno al azar"}
             sx={{ minWidth: 230 }}
           />
+          </Tooltip>
+          <Tooltip arrow placement="top" title="Nombre interno para reconocerlo en la tabla. El público no lo ve.">
           <TextField size="small" label="Para quién (solo lo ves tú)" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Artistas Salón Colombia" sx={{ flex: 1, minWidth: 200 }} helperText=" " />
+          </Tooltip>
+          <Tooltip arrow placement="top" title="Cuántas personas entran por cada registro. 2 = el que se registra y su acompañante, cada uno con su QR.">
           <TextField select size="small" label="Pase" value={admits} onChange={(e) => setAdmits(Number(e.target.value))} sx={{ minWidth: 150 }} helperText="1 día a elección">
             <MenuItem value={1}>1 persona</MenuItem>
             <MenuItem value={2}>2 personas (2 QR)</MenuItem>
           </TextField>
+          </Tooltip>
+          <Tooltip arrow placement="top" title="Cuántos registros acepta el enlace. Al llenarse deja de recibir; lo puedes ampliar después.">
           <TextField size="small" type="number" label="Cupo" value={maxUses} onChange={(e) => setMaxUses(Math.max(1, Number(e.target.value) || 1))} sx={{ width: 110 }} helperText="registros" />
+          </Tooltip>
           <Button variant="contained" onClick={() => create.mutate()} disabled={create.isPending || codeBad} sx={{ mt: { md: 0.25 } }}>
             {create.isPending ? "Creando…" : "Crear enlace"}
           </Button>
         </Stack>
+        )}
 
+        {creating === "companies" && (
         <CompanyLinksBulk
           eventId={eventId}
           existingCodes={new Set(links.map((l: InviteLink) => l.code))}
           onDone={() => qc.invalidateQueries({ queryKey: ["invite-links", eventId] })}
         />
+        )}
 
         {isLoading ? (
           <Typography variant="body2" color="text.secondary">Cargando enlaces…</Typography>
@@ -232,9 +257,9 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
                 <TableRow>
                   <TableCell>Enlace</TableCell>
                   <TableCell>Para quién</TableCell>
-                  <TableCell align="center">Registros</TableCell>
-                  <TableCell align="center">Activo</TableCell>
-                  <TableCell align="right" />
+                  <TableCell align="center"><Tooltip arrow title="Personas registradas / cupo del enlace. Toca la cifra para ampliar el cupo."><span>Registros ⓘ</span></Tooltip></TableCell>
+                  <TableCell align="center"><Tooltip arrow title="Apagado, el enlace deja de recibir registros (los ya registrados conservan su pase)."><span>Activo ⓘ</span></Tooltip></TableCell>
+                  <TableCell align="right"><Tooltip arrow title="Correo: envía el enlace a una o varias personas. Copiar: copia la dirección. Descargar: QR del enlace para una pieza impresa."><span>Acciones ⓘ</span></Tooltip></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

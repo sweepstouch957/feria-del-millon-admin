@@ -4,7 +4,7 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, Chip, ToggleButton, ToggleButtonGroup,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, LinearProgress, IconButton, Tooltip,
-  Checkbox, FormControlLabel, TablePagination, InputAdornment,
+  Checkbox, FormControlLabel, TablePagination, InputAdornment, Dialog, DialogTitle, DialogContent, Tabs, Tab,
 } from "@mui/material";
 import { useDebouncedValue } from "@/hooks/useAuth";
 import { FileUp, ImagePlus, Search, Send, UserPlus, X } from "lucide-react";
@@ -357,6 +357,7 @@ function Invitations({ eventId }: { eventId: string }) {
           (r.skipped.length ? ` · ${r.skipped.length} omitidas (inválidas)` : ""),
       );
       setText("");
+      setNewOpen(false);
       qc.invalidateQueries({ queryKey: ["invitations", eventId] });
     },
     onError: () => toast.error("No se pudieron crear las invitaciones."),
@@ -387,7 +388,8 @@ function Invitations({ eventId }: { eventId: string }) {
   };
 
   const [exporting, setExporting] = React.useState(false);
-  // Exporta TODAS las invitaciones del filtro actual, no solo la página.
+  const [newOpen, setNewOpen] = React.useState(false);
+  const [tab, setTab] = React.useState(0);
   // Reporte completo del evento (no solo lo filtrado): resumen con KPIs y gráficos + una hoja por estado.
   const exportCsv = async () => {
     setExporting(true);
@@ -408,8 +410,9 @@ function Invitations({ eventId }: { eventId: string }) {
       <PageHeader
         crumb="Boletos"
         title="Invitaciones"
-        description="El invitado recibe un correo con botón de confirmación; al confirmar recibe su QR."
+        description="Quién está invitado a la feria, quién confirmó y quién falta. Cada invitado recibe un correo para confirmar; al confirmar le llega su pase con QR."
         actions={[
+          { label: "Nueva invitación", kind: "pri", icon: <UserPlus size={14} />, onClick: () => setNewOpen(true) },
           {
             label: exporting ? "Exportando…" : "Exportar Excel",
             kind: "sec",
@@ -419,30 +422,37 @@ function Invitations({ eventId }: { eventId: string }) {
         ]}
       />
 
+      {/* Cada cifra explica qué cuenta y, al tocarla, filtra la tabla. */}
       <KpiStrip
         items={[
-          { label: "Enviadas", value: stats?.sent ?? "…" },
-          { label: "Pendientes", value: stats?.pending ?? "…" },
-          { label: "Confirmadas", value: stats?.confirmed ?? "…" },
-          { label: "Declinaron", value: stats?.declined ?? "…" },
-          { label: "Acompañantes", value: stats?.companions ?? "…" },
-          { label: "Asistieron", value: stats?.attended ?? "…", accent: true },
-          { label: "En este envío", value: invitees.length },
+          { label: "Invitados", value: stats?.sent ?? "…", hint: "Personas a las que se les envió invitación (sin contar acompañantes). Toca para ver todas.", onClick: () => { setTab(0); setListStatus(""); }, selected: tab === 0 && listStatus === "" },
+          { label: "Pendientes", value: stats?.pending ?? "…", hint: "Recibieron el correo pero aún no confirman ni declinan. Toca para verlos; con “Recordar a pendientes” les reenvías el correo.", onClick: () => { setTab(0); setListStatus("pending"); }, selected: tab === 0 && listStatus === "pending" },
+          { label: "Confirmadas", value: stats?.confirmed ?? "…", hint: "Llenaron sus datos y ya tienen su pase con QR.", onClick: () => { setTab(0); setListStatus("confirmed"); }, selected: tab === 0 && listStatus === "confirmed" },
+          { label: "Declinaron", value: stats?.declined ?? "…", hint: "Avisaron que no pueden ir.", onClick: () => { setTab(0); setListStatus("declined"); }, selected: tab === 0 && listStatus === "declined" },
+          { label: "Acompañantes", value: stats?.companions ?? "…", hint: "Acompañantes que ya tienen su propio QR (los nombró el invitado al confirmar)." },
+          { label: "Asistieron", value: stats?.attended ?? "…", accent: true, hint: "Pases escaneados en la entrada de la feria.", onClick: () => { setTab(0); setListStatus("attended"); }, selected: tab === 0 && listStatus === "attended" },
         ]}
       />
 
-      {/* Nueva invitación: tres pasos a la izquierda, "así le llega" a la derecha. */}
+      {/* Nueva invitación: en un modal, para que la página abra con la lista. */}
+      <Dialog open={newOpen} onClose={() => !send.isPending && setNewOpen(false)} fullWidth maxWidth="xl" scroll="body">
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1 }}>
+          Nueva invitación
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: { xs: "none", md: "block" } }}>
+            1 · a quién · 2 · qué pase · 3 · el correo — y a la derecha, cómo le llega
+          </Typography>
+          <IconButton onClick={() => setNewOpen(false)} sx={{ ml: "auto" }} aria-label="Cerrar"><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent>
       <Box
         sx={{
           display: "grid",
           gap: 3,
-          mb: 3,
           alignItems: "start",
           gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1.15fr) minmax(0,1fr)" },
         }}
       >
         <Card><CardContent>
-          <Typography sx={{ fontSize: 19, mb: 0.5 }}>Nueva invitación</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             Cada invitado recibe un correo con <b>Confirmar</b> o <b>Declinar</b>. Al confirmar llena sus datos y le llega su
             pase con QR por correo y WhatsApp.
@@ -600,7 +610,7 @@ function Invitations({ eventId }: { eventId: string }) {
         </CardContent></Card>
 
         {/* Así le llega + resumen y envío */}
-        <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+        <Box sx={{ position: { lg: "sticky" }, top: { lg: 0 } }}>
           <Card><CardContent>
             <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: "0.14em", textTransform: "uppercase" }}>
               Así le llega el correo
@@ -674,15 +684,33 @@ function Invitations({ eventId }: { eventId: string }) {
           </CardContent></Card>
         </Box>
       </Box>
+        </DialogContent>
+      </Dialog>
 
-      <InviteLinksCard eventId={eventId} defaultMessage={DEFAULT_MESSAGE} />
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Tab label={`Invitados${stats ? ` (${stats.sent})` : ""}`} sx={{ textTransform: "none" }} />
+        <Tab label="Enlaces y empresas" sx={{ textTransform: "none" }} />
+      </Tabs>
 
+      {tab === 1 && (
+        <>
+          <Typography variant="body2" color="text.secondary" mb={2} maxWidth={820}>
+            Un <b>enlace de registro</b> es una dirección corta (ej. feria-millon.immsai.com/i/itau) que puedes repartir:
+            cada persona que entra se inscribe sola y recibe su pase. Úsalo para empresas aliadas, artistas o una pieza impresa.
+            Cada enlace tiene un cupo y lo puedes apagar cuando quieras.
+          </Typography>
+          <InviteLinksCard eventId={eventId} defaultMessage={DEFAULT_MESSAGE} />
+        </>
+      )}
+
+      {tab === 0 && (
       <Card>
         {isFetching && <LinearProgress />}
         <CardContent>
           <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "center" }} gap={1.5} sx={{ pb: 1.5, mb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
             <Typography sx={{ fontSize: 17, letterSpacing: "0.01em" }}>
-              Invitaciones enviadas {listData ? <Typography component="span" color="text.secondary">({listData.total})</Typography> : null}
+              {({ "": "Todas las invitaciones", pending: "Pendientes de confirmar", confirmed: "Confirmadas", declined: "Declinaron", attended: "Asistieron", canceled: "Anuladas" } as Record<string, string>)[listStatus] || "Invitaciones"}{" "}
+              {listData ? <Typography component="span" color="text.secondary">({listData.total})</Typography> : null}
             </Typography>
             <TextField
               size="small" placeholder="Buscar nombre, correo o documento" value={listQ} onChange={(e) => setListQ(e.target.value)}
@@ -698,6 +726,8 @@ function Invitations({ eventId }: { eventId: string }) {
               <MenuItem value="canceled">Anuladas</MenuItem>
             </TextField>
             {/* Recordatorio masivo: solo a quienes no han confirmado ni declinado. */}
+            <Tooltip arrow title="Reenvía el correo de invitación, con “Recordatorio” en el asunto, a todos los que aún no confirman. No les llega a quienes confirmaron o declinaron.">
+            <span>
             <Button
               size="small" variant="outlined" startIcon={<Send size={14} />} sx={{ textTransform: "none", whiteSpace: "nowrap" }}
               disabled={!stats?.pending || remind.isPending}
@@ -707,13 +737,19 @@ function Invitations({ eventId }: { eventId: string }) {
             >
               {remind.isPending ? "Enviando…" : `Recordar a pendientes${stats?.pending ? ` (${stats.pending})` : ""}`}
             </Button>
+            </span>
+            </Tooltip>
           </Stack>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
               <TableHead><TableRow>
-                <TableCell>Invitado</TableCell><TableCell>Categoría</TableCell>
-                <TableCell>Inscripción</TableCell><TableCell>Acompañante</TableCell>
-                <TableCell align="right">Personas</TableCell><TableCell>Estado</TableCell><TableCell />
+                <TableCell>Invitado</TableCell>
+                <TableCell><Tooltip arrow title="Grupo con el que se invitó (VIP, Empresa, Artista…). El invitado no la ve."><span>Categoría ⓘ</span></Tooltip></TableCell>
+                <TableCell><Tooltip arrow title="Datos que dejó el invitado al confirmar (documento, celular, ciudad). “Sin inscribir” = todavía no confirma."><span>Inscripción ⓘ</span></Tooltip></TableCell>
+                <TableCell><Tooltip arrow title="Acompañante que nombró al confirmar; recibe su propio QR."><span>Acompañante ⓘ</span></Tooltip></TableCell>
+                <TableCell align="right"><Tooltip arrow title="Cuántas personas entran con el QR de este invitado. Si nombra a su acompañante, ese cupo pasa al QR del acompañante."><span>Personas ⓘ</span></Tooltip></TableCell>
+                <TableCell>Estado</TableCell>
+                <TableCell align="right"><Tooltip arrow title="Acciones: reenviar la invitación (pendientes) o pedir que agregue a su acompañante (confirmados sin acompañante)."><span>Acciones ⓘ</span></Tooltip></TableCell>
               </TableRow></TableHead>
               <TableBody>
                 {list.length === 0 ? (
@@ -791,6 +827,7 @@ function Invitations({ eventId }: { eventId: string }) {
           />
         </CardContent>
       </Card>
+      )}
     </Box>
   );
 }

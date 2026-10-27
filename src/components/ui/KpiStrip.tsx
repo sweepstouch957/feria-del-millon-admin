@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Box, Skeleton, Typography } from "@mui/material";
+import { Box, Skeleton, Tooltip, Typography } from "@mui/material";
 import { eyebrow } from "@/app/theme";
 
 /* Franja de cifras del diseño: una rejilla con filetes de 1px hechos con el
@@ -18,6 +18,8 @@ export type Kpi = {
   onClick?: () => void;
   /** Marca la celda como el filtro vigente. */
   selected?: boolean;
+  /** Qué significa la cifra: sale al pasar el mouse. */
+  hint?: string;
 };
 
 export default function KpiStrip({
@@ -47,8 +49,8 @@ export default function KpiStrip({
       {items.map((k) => {
         const text = typeof k.value === "string" || typeof k.value === "number" ? String(k.value) : "";
         return (
+          <Tooltip key={k.label} title={k.hint || ""} arrow placement="top" disableInteractive>
           <Box
-            key={k.label}
             component={k.onClick ? "button" : "div"}
             type={k.onClick ? "button" : undefined}
             onClick={k.onClick}
@@ -76,6 +78,7 @@ export default function KpiStrip({
           >
             <Typography sx={{ ...eyebrow, fontSize: 9.5, letterSpacing: "0.22em", color: "text.secondary" }}>
               {k.label}
+              {k.hint && <Box component="span" sx={{ ml: 0.75, opacity: 0.6, letterSpacing: 0 }}>ⓘ</Box>}
             </Typography>
 
             {loading ? (
@@ -103,6 +106,7 @@ export default function KpiStrip({
               </Typography>
             )}
           </Box>
+          </Tooltip>
         );
       })}
     </Box>
