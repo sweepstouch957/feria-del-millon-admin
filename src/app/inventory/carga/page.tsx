@@ -180,6 +180,10 @@ function InventoryStatus({ eventId }: { eventId: string }) {
                       <Stack direction="row" flexWrap="wrap" gap={0.5}>
                         {r.issues.map((i) => <Chip key={i} size="small" color="warning" variant="outlined" label={i} />)}
                         {r.returned > 0 && <Chip size="small" color="warning" label={`${r.returned} devuelta(s) a edición`} />}
+                        {/* Ya envió pero siguió cargando: falta que le dé "Enviar de nuevo" */}
+                        {r.sentAt && r.lastArtworkAt && r.lastArtworkAt > r.sentAt && (
+                          <Chip size="small" color="info" label="Cambió obras después de enviar" />
+                        )}
                       </Stack>
                     </TableCell>
                     <TableCell>{fmt(r.lastArtworkAt)}</TableCell>
