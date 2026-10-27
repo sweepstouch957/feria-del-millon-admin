@@ -1011,6 +1011,7 @@ export default function UsersPage() {
             icon: <UserPlus size={14} />,
             onClick: () => setCreateOpen(true),
           },
+          { label: "Cuentas de caja en lote", kind: "sec", href: "/users/equipo" },
           {
             label: exporting ? "Exportando…" : "Exportar Excel",
             kind: "sec",

@@ -31,6 +31,8 @@ export type SaleResult = {
 /** Misma respuesta que una venta real, sin tocar el servidor. */
 async function simulateSale(artwork: CajaArtwork, values: SaleValues, cashier: string): Promise<SaleResult> {
   await wait(500);
+  // Mismo error que daría el servidor: así se practica también la obra agotada.
+  if (Number(artwork.stock ?? 0) < values.qty) throw { response: { data: { error: "sin_stock" } } };
   const total = values.price * values.qty;
   const order = {
     id: practiceId(),

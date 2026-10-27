@@ -68,8 +68,15 @@ export function QrValidationPanel() {
       // Boleta emitida en la taquilla de práctica: no existe en la base.
       if (token.startsWith(PRACTICE_QR_PREFIX)) {
         if (!practice) throw { response: { data: { error: "practice_ticket" } } };
-        const [code, name, type] = token.slice(PRACTICE_QR_PREFIX.length).split("|");
-        return { ok: true, practice: true, status: "checked_in", sameDay: true, ticket: { shortCode: code, name, type, admits: 1 } } as ValidateQrResponse;
+        // 4.º campo = caso de la guía de práctica (QR de error para entrenar).
+        const [code, name, type, demo] = token.slice(PRACTICE_QR_PREFIX.length).split("|");
+        if (demo === "wrong_day") throw { response: { data: { error: "wrong_day" } } };
+        if (demo === "annulled") throw { response: { data: { error: "ticket_not_valid", status: "refunded" } } };
+        if (demo === "invited") throw { response: { data: { error: "ticket_not_valid", status: "invited" } } };
+        return {
+          ok: demo !== "used", practice: true, status: demo === "used" ? "already_checked_in" : "checked_in", sameDay: true,
+          ticket: { shortCode: code, name, type, admits: 1 },
+        } as ValidateQrResponse;
       }
       return validateQr({ ...(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }), practice });
     },

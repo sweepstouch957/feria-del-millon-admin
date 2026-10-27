@@ -24,6 +24,7 @@ import {
   ClipboardCheck,
   Wallet,
   ScanLine,
+  GraduationCap,
 } from "lucide-react";
 
 import { LAYOUT_COLORS as C } from "../layoutConfig";
@@ -114,6 +115,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
       {item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
       {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+      {item("/caja/guia", "Guía y práctica", <GraduationCap {...ICON} />)}
     </>
   );
 
@@ -280,6 +282,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             {!isCashier && item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
             {item("/tickets/taquilla", "Taquilla", <Ticket {...ICON} />)}
             {item("/tickets/asistentes", "Informe de asistentes", <BarChart3 {...ICON} />)}
+            {!isCashier && item("/caja/guia", "Guía y práctica", <GraduationCap {...ICON} />)}
           </>
         )}
 
