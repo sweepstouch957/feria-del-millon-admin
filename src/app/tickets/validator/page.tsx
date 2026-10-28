@@ -2,6 +2,7 @@
 
 import { Box } from "@mui/material";
 import { QrValidationPanel } from "@/components/admin/tickets/QrValidationPanel";
+import { CheckinsPanel } from "@/components/admin/tickets/CheckinsPanel";
 import PageHeader from "@/components/ui/PageHeader";
 
 export default function QrValidatorPage() {
@@ -13,6 +14,7 @@ export default function QrValidatorPage() {
         description="Escanea la boleta en la entrada del pabellón para permitir o rechazar el acceso."
       />
       <QrValidationPanel />
+      <CheckinsPanel />
     </Box>
   );
 }

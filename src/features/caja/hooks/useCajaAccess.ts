@@ -13,5 +13,7 @@ export function useCajaAccess() {
   return {
     practice: !!user?.practiceMode,
     canLayaway: !!(r.superuser || r.staff || r.jefeCaja),
+    // Volver a habilitar un QR usado: mismos roles que exige tickets-svc (la cajera no).
+    canReactivateQr: !!(r.superuser || r.staff || r.curador || r.taquilla),
   };
 }

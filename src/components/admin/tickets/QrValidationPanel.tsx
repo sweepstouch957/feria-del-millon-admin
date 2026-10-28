@@ -24,10 +24,10 @@ import {
   HighlightOff as HighlightOffIcon,
   CameraAlt as CameraIcon,
 } from "@mui/icons-material";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CameraOffIcon } from "lucide-react";
 
-import { validateQr, TICKET_TYPE_LABEL, type ValidateQrResponse } from "@services/ticket.service";
+import { validateQr, reactivateTicket, TICKET_TYPE_LABEL, type ValidateQrResponse } from "@services/ticket.service";
 import { BetterQrScanner } from "./BetterQrScanner";
 import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
 import { PRACTICE_QR_PREFIX } from "@features/taquilla/hooks/useBoxOfficeSale";
@@ -53,6 +53,25 @@ export function QrValidationPanel() {
   const access = useCajaAccess();
   const [practicePicked, setPractice] = useState(false);
   const practice = access.practice || practicePicked;
+  const queryClient = useQueryClient();
+  const [reactivated, setReactivated] = useState<string | null>(null);
+
+  const reactivate = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => reactivateTicket(id, reason),
+    onSuccess: () => {
+      setReactivated(lastResult?.shortCode || "");
+      setLastResult(null);
+      setToken("");
+      setScannerOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["checkins"] });
+    },
+  });
+
+  const askReactivate = (id: string) => {
+    const reason = window.prompt("¿Por qué se vuelve a habilitar este QR? (queda registrado)");
+    if (reason === null) return;
+    reactivate.mutate({ id, reason });
+  };
 
   // Overlay de éxito
   const [showSuccess, setShowSuccess] = useState(false);
@@ -128,6 +147,7 @@ export function QrValidationPanel() {
   const handleValidate = () => {
     const trimmed = token.trim();
     if (!trimmed) return;
+    setReactivated(null);
     mutation.mutate({ token: trimmed });
   };
 
@@ -140,6 +160,7 @@ export function QrValidationPanel() {
     lastScannedTokenRef.current = trimmed;
 
     setScannerOpen(false); // cerramos un momento para que no re-dispare
+    setReactivated(null);
     setToken(trimmed);
     mutation.mutate({ token: trimmed });
   };
@@ -166,8 +187,11 @@ export function QrValidationPanel() {
     };
   }, [showSuccess]);
 
+  // Un QR ya usado se rechaza: rojo, aunque el servidor responda ok.
   const severity: "success" | "warning" | "error" =
-    lastResult?.ok && lastResult.sameDay
+    lastResult?.status === "already_checked_in" && !lastResult.practice
+      ? "error"
+      : lastResult?.ok && lastResult.sameDay
       ? "success"
       : lastResult?.ok && !lastResult.sameDay
         ? "warning"
@@ -183,10 +207,11 @@ export function QrValidationPanel() {
     }
 
     if (lastResult.status === "already_checked_in") {
-      if (lastResult.sameDay) {
-        return "El boleto ya fue escaneado hoy.";
-      }
-      return "El boleto ya fue escaneado y no corresponde al día actual.";
+      const when = lastResult.scannedAt
+        ? new Date(lastResult.scannedAt).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })
+        : "";
+      const by = lastResult.info?.scannedBy ? ` · validó ${lastResult.info.scannedBy}` : "";
+      return `YA USADO · NO PERMITIR EL INGRESO. Entró ${when}${by}.`;
     }
 
     if (lastResult.status === "checked_in") {
@@ -347,10 +372,40 @@ export function QrValidationPanel() {
                             ? "Ya escaneado"
                             : "Desconocido"}
                       </Typography>
+                      {lastResult.info?.scannedBy && (
+                        <Typography variant="body2">
+                          <strong>Validó:</strong> {lastResult.info.scannedBy}
+                        </Typography>
+                      )}
                     </Stack>
+                    {lastResult.status === "already_checked_in" && !lastResult.practice && lastResult.info?.id && (
+                      access.canReactivateQr ? (
+                        <Button
+                          sx={{ mt: 1.5 }}
+                          variant="outlined"
+                          color="warning"
+                          disabled={reactivate.isPending}
+                          onClick={() => askReactivate(lastResult.info!.id)}
+                        >
+                          Volver a habilitar este QR
+                        </Button>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary" display="block" mt={1}>
+                          Si es un error, pide a taquilla o a staff que lo vuelva a habilitar.
+                        </Typography>
+                      )
+                    )}
+                    {reactivate.isError && (
+                      <Alert severity="error" sx={{ mt: 1 }}>No se pudo habilitar: solo taquilla o staff pueden hacerlo.</Alert>
+                    )}
                   </Box>
                 )}
               </>
+            )}
+            {reactivated !== null && !lastResult && (
+              <Alert severity="info">
+                QR {reactivated} habilitado de nuevo: ya puede volver a escanearse. Quedó registrado quién y por qué.
+              </Alert>
             )}
           </Stack>
         </CardContent>

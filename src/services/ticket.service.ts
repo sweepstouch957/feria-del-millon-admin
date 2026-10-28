@@ -95,6 +95,8 @@ export interface ValidateQrResponse {
     shortCode?: string;
     eventDay?: string;
     scannedAt?: string;
+    /** Quién lo validó en puerta. */
+    scannedBy?: string;
     type?: TicketType;
     name?: string;
     companionName?: string;
@@ -103,6 +105,21 @@ export interface ValidateQrResponse {
     usedToday?: number;
     validHours?: { from: string; to: string };
   };
+}
+
+export interface CheckinRow {
+  id: string;
+  shortCode?: string;
+  type: TicketType;
+  name?: string;
+  companionName?: string;
+  admits: number;
+  /** Ingresos registrados ese día con el QR (all pass / invitación doble). */
+  entries: number;
+  scannedAt: string;
+  scannedBy?: string;
+  /** Veces que se volvió a habilitar. */
+  reactivations: number;
 }
 
 /** Filtros de listado */
@@ -179,6 +196,27 @@ export const validateQr = async (payload: ValidateQrDto) => {
     payload,
     { withCredentials: true },
   );
+  return data;
+};
+
+/**
+ * Ingresos del día: quién entró, a qué hora y quién validó.
+ * GET /ticket/tickets/checkins
+ */
+export const getCheckins = async (params: { eventId: string; date?: string; q?: string }) => {
+  const { data } = await apiClient.get<{ date: string; total: number; rows: CheckinRow[] }>(
+    `/ticket/tickets/checkins?${buildQuery(params)}`,
+    { withCredentials: true },
+  );
+  return data;
+};
+
+/**
+ * Vuelve a habilitar un QR ya usado (deshace el último ingreso). Solo taquilla/staff.
+ * POST /ticket/tickets/:id/reactivate
+ */
+export const reactivateTicket = async (id: string, reason: string) => {
+  const { data } = await apiClient.post(`/ticket/tickets/${id}/reactivate`, { reason }, { withCredentials: true });
   return data;
 };
 
