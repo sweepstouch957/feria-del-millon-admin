@@ -1043,7 +1043,7 @@ export default function PersonalizacionPage() {
             control={<Switch checked={!!landing.catalogSales.fairMode} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, fairMode: e.target.checked } }))} color="success" />}
             label={
               <span>
-                <b>Modo feria</b> — la tienda esconde el catálogo, el carrito y "Agregar al carrito". Solo se compra con "Comprar" desde el QR de cada obra (Mercado Pago, una obra por pago). Apágalo al terminar la feria. Con este switch encendido las fechas de abajo no aplican.
+                <b>Modo feria</b> — la tienda esconde el catálogo, el carrito y “Agregar al carrito”. Solo se compra con “Comprar” desde el QR de cada obra (Mercado Pago, una obra por pago). Apágalo al terminar la feria. Con este switch encendido las fechas de abajo no aplican.
               </span>
             }
           />
