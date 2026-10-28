@@ -36,6 +36,12 @@ export interface OrderItemInput {
     qty: number;
     unitPrice: number;
     currency?: string; // default "COP" en backend
+    // Solo en lecturas (GET /orders).
+    title?: string;
+    image?: string;
+    artistName?: string;
+    listPrice?: number;
+    deliveryStatus?: "pending" | "delivered" | "returned";
 }
 
 export interface PaymentDetails {
@@ -109,10 +115,16 @@ export interface OrderDoc {
         balanceDue?: number;
         dueDate?: string;
         stockClaimed?: boolean;
-        installments?: { amount: number; method?: string; at?: string; note?: string; by?: string; receiptUrl?: string }[];
+        installments?: { amount: number; method?: string; at?: string; note?: string; by?: string; byName?: string; receiptUrl?: string }[];
     };
     createdAt?: string;
     updatedAt?: string;
+    paidAt?: string;
+    refundedAt?: string;
+    // Agregados por GET /orders para el panel.
+    cityName?: string;
+    cashierName?: string;
+    account?: { name?: string; email?: string; phone?: string };
 }
 
 export interface CreateOrderInput {

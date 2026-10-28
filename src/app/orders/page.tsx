@@ -4,9 +4,9 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, TextField, MenuItem,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
-  CircularProgress, LinearProgress,
+  CircularProgress, LinearProgress, IconButton, Tooltip, Button,
 } from "@mui/material";
-import { RefreshCw, FileSpreadsheet, Plus } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, Plus, Eye } from "lucide-react";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
 import { useQuery } from "@tanstack/react-query";
 import { listOrders, listCustomers, type OrderDoc } from "@services/orders.service";
@@ -15,8 +15,9 @@ import { formatDate } from "@/utils/date";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
-import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
+import StatusPill from "@/components/ui/StatusPill";
 import { RefundButton } from "@features/caja/components/RefundButton";
+import { OrderDetailDialog, STATUS } from "./OrderDetailDialog";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 // Foto de la transferencia: en el pago (venta completa) o en el último abono que la trajo.
@@ -24,19 +25,10 @@ const receiptOf = (o: OrderDoc): string | undefined =>
   o.payment?.details?.receiptUrl ||
   [...(o.layaway?.installments ?? [])].reverse().find((i) => i.receiptUrl)?.receiptUrl;
 
-const STATUS: Record<OrderDoc["status"], { label: string; tone: PillTone }> = {
-  created: { label: "Creado", tone: "mid" },
-  payment_processing: { label: "Procesando pago", tone: "mid" },
-  partial: { label: "Abono / fiado", tone: "warn" },
-  paid: { label: "Pagado", tone: "ok" },
-  failed: { label: "Fallido", tone: "bad" },
-  canceled: { label: "Cancelado", tone: "mid" },
-  refunded: { label: "Reembolsado", tone: "mid" },
-};
-
 export default function OrdersPage() {
   const [status, setStatus] = React.useState<OrderDoc["status"] | "">("");
   const [q, setQ] = React.useState("");
+  const [detail, setDetail] = React.useState<OrderDoc | null>(null);
 
   const { data: orders = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: ["orders", "list", status],
@@ -51,7 +43,7 @@ export default function OrdersPage() {
   const needle = q.trim().toLowerCase();
   const rows = needle
     ? orders.filter((o) =>
-        [o.buyer?.name, o.buyer?.email, o.buyer?.phone, ...(o.items || []).map((it: any) => it.title)]
+        [o.buyer?.name, o.buyer?.email, o.buyer?.phone, o.buyer?.document, ...(o.items || []).flatMap((it) => [it.title, it.artistName])]
           .some((v) => String(v || "").toLowerCase().includes(needle)))
     : orders;
 
@@ -80,7 +72,14 @@ export default function OrdersPage() {
   const pendingTotal = rows
     .filter((o) => o.status === "partial")
     .reduce((a, o) => a + Number(o.total || 0), 0);
-  const items = (o: OrderDoc) => (o.items || []).map((it: any) => it.title || it.artworkId).join(", ");
+  const items = (o: OrderDoc) =>
+    (o.items || []).map((it) => (it.title ? `${it.title}${it.artistName ? ` — ${it.artistName}` : ""}` : it.artworkId)).join(", ");
+  const place = (o: OrderDoc) => [o.cityName, o.buyer?.address?.line1].filter(Boolean).join(" · ");
+  const eye = (o: OrderDoc) => (
+    <Tooltip title="Ver todo el detalle">
+      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setDetail(o); }}><Eye size={16} /></IconButton>
+    </Tooltip>
+  );
   const chip = (s: OrderDoc["status"]) => (
     <StatusPill label={STATUS[s]?.label || s} tone={STATUS[s]?.tone || "mid"} />
   );
@@ -143,6 +142,9 @@ export default function OrdersPage() {
                 subtitle: o.buyer?.email || o.buyer?.phone || "",
                 badge: chip(o.status),
                 fields: [
+                  ...(o.buyer?.phone && o.buyer?.email ? [{ label: "Teléfono", value: o.buyer.phone }] : []),
+                  ...(o.buyer?.document ? [{ label: "Documento", value: o.buyer.document }] : []),
+                  ...(place(o) ? [{ label: "Dirección", value: place(o) }] : []),
                   { label: "Obras", value: items(o) },
                   { label: "Total", value: money(o.total) },
                   { label: "Método", value: o.payment?.method || "—" },
@@ -150,7 +152,7 @@ export default function OrdersPage() {
                   ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
                   ...(receiptOf(o) ? [{ label: "Comprobante", value: <a href={receiptOf(o)} target="_blank" rel="noreferrer">Ver foto</a> }] : []),
                 ],
-                actions: <RefundButton order={o} />,
+                actions: <><Button size="small" startIcon={<Eye size={14} />} onClick={() => setDetail(o)}>Ver detalle</Button><RefundButton order={o} /></>,
               }))}
             >
               <TableContainer component={Paper} elevation={0}>
@@ -170,17 +172,19 @@ export default function OrdersPage() {
                     {rows.length === 0 ? (
                       <TableRow><TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>No hay pedidos con estos filtros.</TableCell></TableRow>
                     ) : rows.map((o) => (
-                      <TableRow key={o.id} hover>
+                      <TableRow key={o.id} hover onClick={() => setDetail(o)} sx={{ cursor: "pointer" }}>
                         <TableCell>{formatDate(o.createdAt)}</TableCell>
                         <TableCell>
                           <Typography fontWeight={500} fontSize={13}>{o.buyer?.name || "—"}</Typography>
-                          <Typography variant="caption" color="text.secondary">{o.buyer?.email || o.buyer?.phone || ""}</Typography>
+                          {[o.buyer?.email, o.buyer?.phone, o.buyer?.document && `Doc. ${o.buyer.document}`, place(o)]
+                            .filter(Boolean)
+                            .map((v) => <Typography key={v} variant="caption" color="text.secondary" display="block">{v}</Typography>)}
                         </TableCell>
                         <TableCell><Typography variant="caption">{items(o)}</Typography></TableCell>
                         <TableCell>
                           {o.payment?.method || "—"}
                           {receiptOf(o) && (
-                            <Typography component="a" href={receiptOf(o)} target="_blank" rel="noreferrer" variant="caption" display="block">
+                            <Typography component="a" href={receiptOf(o)} target="_blank" rel="noreferrer" variant="caption" display="block" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               Comprobante
                             </Typography>
                           )}
@@ -192,7 +196,10 @@ export default function OrdersPage() {
                             <Typography variant="caption" color="error" display="block">Pagada sin descontar stock: {o.fulfillmentError}</Typography>
                           )}
                         </TableCell>
-                        <TableCell align="right"><RefundButton order={o} /></TableCell>
+                        <TableCell align="right" onClick={(e) => e.stopPropagation()} sx={{ whiteSpace: "nowrap" }}>
+                          {eye(o)}
+                          <RefundButton order={o} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -202,6 +209,7 @@ export default function OrdersPage() {
           )}
         </CardContent>
       </Card>
+      <OrderDetailDialog order={detail} all={orders} onClose={() => setDetail(null)} />
     </Box>
   );
 }

@@ -1039,6 +1039,14 @@ export default function PersonalizacionPage() {
           hint="Entre estas fechas (inclusive) el catálogo se ve pero no se compra en línea: prioridad a quien está en la feria. La caja sigue vendiendo. Vacío = nunca se pausa."
           paths={["landing.catalogSales"]}
         >
+          <FormControlLabel
+            control={<Switch checked={!!landing.catalogSales.fairMode} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, fairMode: e.target.checked } }))} color="success" />}
+            label={
+              <span>
+                <b>Modo feria</b> — la tienda esconde el catálogo, el carrito y "Agregar al carrito". Solo se compra con "Comprar" desde el QR de cada obra (Mercado Pago, una obra por pago). Apágalo al terminar la feria. Con este switch encendido las fechas de abajo no aplican.
+              </span>
+            }
+          />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" type="date" label="Pausar desde" InputLabelProps={{ shrink: true }} value={landing.catalogSales.pausedFrom} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, pausedFrom: e.target.value } }))} />
             <TextField size="small" type="date" label="Hasta" InputLabelProps={{ shrink: true }} value={landing.catalogSales.pausedTo} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, pausedTo: e.target.value } }))} />
