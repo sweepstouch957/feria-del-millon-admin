@@ -39,8 +39,11 @@ import {
   PencilLine as ReturnIcon,
   X as ClearIcon,
   ChevronDown as ChevronDownIcon,
+  Trash2 as TrashIcon,
+  RotateCcw as RestoreIcon,
+  Archive as ArchiveIcon,
 } from "lucide-react";
-import { patchArtwork, publishArtworks } from "@services/artworks.service";
+import { deleteArtwork, patchArtwork, publishArtworks } from "@services/artworks.service";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -90,6 +93,8 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
   const [artist, setArtist] = useState<string>("");
   const [technique, setTechnique] = useState<string>("");
   const [view, setView] = useState<View>("");
+  // Eliminadas con ventas quedan archivadas: fuera de la tienda y de esta lista.
+  const [archived, setArchived] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -133,15 +138,16 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     technique,
     limit: 24,
     includeHidden: 1,
-    visibility: view || undefined,
+    visibility: (!archived && view) || undefined,
+    status: archived ? "archived" : undefined,
     // ponytail: el backend ya lo proyecta; se pide igual por si inventory-svc no se ha redesplegado.
     project: "hiddenUntilEvent",
   });
 
   // Respaldo en cliente por si el backend aún no entiende `visibility`.
   const shown = useMemo(
-    () => (view === "" ? rows : rows.filter((a: any) => (view === "hidden" ? !!a.hiddenUntilEvent : !a.hiddenUntilEvent))),
-    [rows, view]
+    () => (view === "" || archived ? rows : rows.filter((a: any) => (view === "hidden" ? !!a.hiddenUntilEvent : !a.hiddenUntilEvent))),
+    [rows, view, archived]
   );
 
   // Lo que se publica/oculta en bloque es lo mismo que se está viendo.
@@ -210,6 +216,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
 
   const changeView = (v: View) => {
     setView(v);
+    setArchived(false);
     setSelected(new Set());
   };
 
@@ -312,6 +319,64 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     }
   };
 
+  // Eliminar: sin ventas se borra de verdad; con ventas (409) se archiva, porque
+  // borrarla dejaría órdenes y liquidaciones sin obra.
+  const removeArtwork = async (art: any) => {
+    const id = String(art.id);
+    const ok = await dialogs.confirm({
+      eyebrow: "Eliminar obra",
+      title: `¿Eliminar “${art.title || "Sin título"}”?`,
+      message:
+        "Si nunca se vendió, se borra para siempre. Si tiene ventas, se archiva: sale de la tienda y de esta lista, y se recupera en «Ver archivadas».",
+      confirmText: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
+    setBusyIds(new Set([id]));
+    try {
+      await deleteArtwork(id);
+      toast.success("Obra eliminada");
+    } catch (e: any) {
+      if (e?.response?.status !== 409) {
+        toast.error(e?.response?.data?.error || "No se pudo eliminar. Intenta de nuevo.");
+        return;
+      }
+      try {
+        if (art.status !== "archived") await patchArtwork(id, { status: "archived" });
+        toast.success("Tenía ventas: quedó archivada. Se recupera en «Ver archivadas».");
+      } catch (e2: any) {
+        toast.error(e2?.response?.data?.error || "No se pudo archivar. Intenta de nuevo.");
+      }
+    } finally {
+      setBusyIds(new Set());
+      refreshAll();
+    }
+  };
+
+  const restoreArtwork = async (art: any) => {
+    const id = String(art.id);
+    setBusyIds(new Set([id]));
+    try {
+      await patchArtwork(id, { status: "published" });
+      toast.success("Obra restaurada");
+      refreshAll();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "No se pudo restaurar. Intenta de nuevo.");
+    } finally {
+      setBusyIds(new Set());
+    }
+  };
+
+  const deleteButton = (art: any) => (
+    <Tooltip title={art.status === "archived" ? "Borrar para siempre (solo si nunca se vendió)" : "Eliminar obra"}>
+      <span>
+        <IconButton size="small" color="error" disabled={busyIds.has(String(art.id))} onClick={() => removeArtwork(art)} aria-label="Eliminar obra">
+          <TrashIcon size={18} />
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
+
   const hasFilter = !!(q || pavilion || artist || technique);
   const clearFilters = () => { setQ(""); setPavilion(""); setArtist(""); setTechnique(""); };
 
@@ -320,11 +385,25 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
   const closed = !!closeAt && new Date(closeAt).getTime() < now;
 
   const statusPill = (art: any) =>
-    art.hiddenUntilEvent ? <StatusPill tone="warn" label="Oculta" /> : <StatusPill tone="ok" dot label="En el catálogo" />;
+    art.status === "archived" ? <StatusPill tone="bad" label="Archivada" /> : art.hiddenUntilEvent ?<StatusPill tone="warn" label="Oculta" /> : <StatusPill tone="ok" dot label="En el catálogo" />;
 
   const visibilityButton = (art: any) => {
     const id = String(art.id);
     const hidden = !!art.hiddenUntilEvent;
+    if (archived)
+      return (
+        <Button
+          size="small"
+          variant="outlined"
+          color="success"
+          disabled={busyIds.has(id)}
+          startIcon={<RestoreIcon size={14} />}
+          onClick={() => restoreArtwork(art)}
+          sx={{ whiteSpace: "nowrap", minWidth: 104 }}
+        >
+          Restaurar
+        </Button>
+      );
     return (
       <Button
         size="small"
@@ -364,7 +443,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
             value: (counts.data?.visible ?? 0) + (counts.data?.hidden ?? 0),
             sub: hasFilter ? "con este pabellón/artista" : "cargadas en la feria",
             onClick: () => changeView(""),
-            selected: view === "",
+            selected: view === "" && !archived,
           },
           {
             label: "En el catálogo",
@@ -372,14 +451,14 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
             sub: "visibles al público",
             accent: true,
             onClick: () => changeView("visible"),
-            selected: view === "visible",
+            selected: view === "visible" && !archived,
           },
           {
             label: "Ocultas",
             value: counts.data?.hidden ?? 0,
             sub: revealed ? "se ven: el catálogo está revelado" : "cargadas, sin publicar",
             onClick: () => changeView("hidden"),
-            selected: view === "hidden",
+            selected: view === "hidden" && !archived,
           },
         ]}
       />
@@ -541,6 +620,16 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                 <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
               ))}
             </TextField>
+            <Button
+              size="small"
+              variant={archived ? "contained" : "outlined"}
+              color={archived ? "error" : "inherit"}
+              startIcon={<ArchiveIcon size={14} />}
+              onClick={() => { setArchived((a) => !a); setSelected(new Set()); }}
+              sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+            >
+              {archived ? "Volver a las obras" : "Ver archivadas"}
+            </Button>
             {hasFilter && (
               <Button size="small" color="inherit" startIcon={<ClearIcon size={14} />} onClick={clearFilters} sx={{ textTransform: "none", whiteSpace: "nowrap" }}>
                 Limpiar
@@ -560,12 +649,12 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
               <Typography variant="body2" fontWeight={500} sx={{ mr: 1 }}>
                 {selected.size} {selected.size === 1 ? "marcada" : "marcadas"}
               </Typography>
-              {selVisible.length > 0 && (
+              {!archived && selVisible.length > 0 && (
                 <Button size="small" variant="contained" color="secondary" startIcon={<EyeOffIcon size={14} />} disabled={busyIds.size > 0} onClick={() => setVisible(selVisible, false)}>
                   Ocultar {selVisible.length}
                 </Button>
               )}
-              {selHidden.length > 0 && (
+              {!archived && selHidden.length > 0 && (
                 <Button size="small" variant="contained" color="success" startIcon={<EyeIcon size={14} />} disabled={busyIds.size > 0} onClick={() => setVisible(selHidden, true)}>
                   Publicar {selHidden.length}
                 </Button>
@@ -577,7 +666,9 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
           ) : (
             <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 1.5 }}>
               Mostrando {shown.length} de {totalLabel}
-              {view === "visible" ? " en el catálogo" : view === "hidden" ? " ocultas" : ""} · marca varias para publicarlas u ocultarlas juntas.
+              {archived
+                ? " archivadas · no salen en la tienda ni se pueden vender. Restaurar las devuelve como estaban."
+                : `${view === "visible" ? " en el catálogo" : view === "hidden" ? " ocultas" : ""} · marca varias para publicarlas u ocultarlas juntas.`}
             </Typography>
           )}
         </CardContent>
@@ -586,7 +677,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
 
         <ResponsiveRows
           loading={isLoading}
-          emptyText={view === "visible" ? "No hay obras en el catálogo con estos filtros." : view === "hidden" ? "No hay obras ocultas con estos filtros." : "No hay obras que coincidan con los filtros."}
+          emptyText={archived ? "No hay obras archivadas." : view === "visible" ? "No hay obras en el catálogo con estos filtros." : view === "hidden" ? "No hay obras ocultas con estos filtros." : "No hay obras que coincidan con los filtros."}
           cards={shown.map((art: any) => ({
             id: String(art.id),
             title: (
@@ -602,7 +693,12 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
               { label: "Técnica", value: art.techniqueInfo?.name },
               { label: "Pabellón", value: art.pavilionInfo?.name },
             ],
-            actions: visibilityButton(art),
+            actions: (
+              <Stack direction="row" gap={0.5} alignItems="center">
+                {visibilityButton(art)}
+                {deleteButton(art)}
+              </Stack>
+            ),
           }))}
         >
         <TableContainer component={Paper}>
@@ -642,7 +738,9 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
               {!isLoading && !isError && shown.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 6, color: "text.secondary" }}>
-                    {view === "visible"
+                    {archived
+                      ? "No hay obras archivadas."
+                      : view === "visible"
                       ? "No hay obras en el catálogo con estos filtros."
                       : view === "hidden"
                         ? "No hay obras ocultas con estos filtros."
@@ -718,6 +816,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                               <ExternalLinkIcon size={18} />
                             </IconButton>
                           </Tooltip>
+                          {deleteButton(art)}
                         </Stack>
                       </TableCell>
                     </TableRow>

@@ -83,6 +83,7 @@ export interface CursorListParams {
   hasImage?: boolean;
   includeHidden?: boolean | number | string; // 1 = incluir obras hiddenUntilEvent (staff)
   visibility?: "visible" | "hidden"; // solo en el catálogo / solo ocultas (con includeHidden)
+  status?: "archived"; // pestaña de eliminadas (archivadas); sin esto, solo publicadas
 
   // Paginación & orden
   limit?: number; // default 24 (máx 60)
@@ -245,10 +246,11 @@ export const createArtwork = async (
  * Retorna { doc, copies, relatedArtworks }
  */
 export const getArtworkById = async (
-  id: string
+  id: string,
+  includeArchived = false
 ): Promise<ArtworkDetailResponse> => {
   const { data } = await apiClient.get<ArtworkDetailResponse>(
-    `/catalogs/artworks/${encodeURIComponent(id)}`,
+    `/catalogs/artworks/${encodeURIComponent(id)}${includeArchived ? "?includeArchived=1" : ""}`,
     { withCredentials: true }
   );
 
@@ -278,6 +280,18 @@ export const patchArtwork = async (
     { withCredentials: true }
   );
   return { ok: data.ok, doc: normalizeId(data.doc) as ArtworkDoc };
+};
+
+/**
+ * DELETE /catalogs/artworks/:id — borra la obra solo si no tiene ventas.
+ * Con ventas responde 409 { error: "has_sales" } y hay que archivarla.
+ */
+export const deleteArtwork = async (id: string) => {
+  const { data } = await apiClient.delete<{ ok: boolean }>(
+    `/catalogs/artworks/${encodeURIComponent(id)}`,
+    { withCredentials: true }
+  );
+  return data;
 };
 
 /* ── Publicar en el catálogo ────────────────────────────────────────────────
