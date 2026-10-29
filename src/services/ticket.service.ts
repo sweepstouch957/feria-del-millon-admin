@@ -485,6 +485,8 @@ export interface InviteLink {
   emailMessage?: string;
   emailDeadline?: string;
   emailsSent?: number;
+  /** Logo del aliado: arriba del correo y de la página /i/:code (que también muestra emailMessage). */
+  logo?: string;
 }
 
 export const listInviteLinks = async (eventId: string) => {
@@ -502,14 +504,14 @@ export const createInviteLink = async (input: {
 
 export const updateInviteLink = async (
   id: string,
-  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string },
+  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string; logo?: string },
 ) => {
   const { data } = await apiClient.patch<InviteLink>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}`, body, { withCredentials: true });
   return data;
 };
 
 /** HTML del correo del enlace con el borrador (sin guardar). */
-export const previewInviteLinkEmail = async (id: string, draft: { emailImage?: string; emailMessage?: string; emailDeadline?: string }) => {
+export const previewInviteLinkEmail = async (id: string, draft: { emailImage?: string; emailMessage?: string; emailDeadline?: string; logo?: string }) => {
   const { data } = await apiClient.post<{ html: string }>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}/preview`, draft, { withCredentials: true });
   return data.html;
 };

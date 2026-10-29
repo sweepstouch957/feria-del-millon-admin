@@ -28,6 +28,7 @@ export default function InviteLinkEmailDialog({
   const qc = useQueryClient();
   const { user } = useAuth() as any;
   const [image, setImage] = React.useState("");
+  const [logo, setLogo] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [deadline, setDeadline] = React.useState("");
   const [to, setTo] = React.useState("");
@@ -36,12 +37,13 @@ export default function InviteLinkEmailDialog({
   React.useEffect(() => {
     if (!open || !link) return;
     setImage(link.emailImage || DEFAULT_LINK_IMAGE);
+    setLogo(link.logo || "");
     setMessage(link.emailMessage || defaultMessage);
     setDeadline(link.emailDeadline || "2026-11-01");
     setTo("");
   }, [open, link?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const draft = { emailImage: image === DEFAULT_LINK_IMAGE ? "" : image, emailMessage: message.trim() === defaultMessage.trim() ? "" : message, emailDeadline: deadline };
+  const draft = { emailImage: image === DEFAULT_LINK_IMAGE ? "" : image, emailMessage: message.trim() === defaultMessage.trim() ? "" : message, emailDeadline: deadline, logo };
   const draftKey = useDebouncedValue(JSON.stringify(draft), 500);
   const preview = useQuery({
     queryKey: ["invite-link-preview", link?.id, draftKey],
@@ -71,12 +73,12 @@ export default function InviteLinkEmailDialog({
     onError: (e: any) => toast.error(e?.response?.data?.error || "No se pudo enviar"),
   });
 
-  const onPickImage = async (file?: File) => {
+  const onPickImage = async (file?: File, set: (url: string) => void = setImage) => {
     if (!file) return;
     setUploading(true);
     try {
       const { url } = await uploadCampaignImage(file, "invitaciones");
-      setImage(url);
+      set(url);
     } catch {
       toast.error("No se pudo subir la imagen");
     } finally {
@@ -111,9 +113,20 @@ export default function InviteLinkEmailDialog({
                 </Stack>
               </Stack>
             </Box>
+            <Box>
+              <Typography fontSize={13} fontWeight={600} mb={1}>Logo del aliado (opcional, arriba del correo y de la página)</Typography>
+              <Stack direction="row" gap={1.5} alignItems="center">
+                {logo && <Box component="img" src={logo} alt="" sx={{ width: 64, height: 64, objectFit: "contain", border: "1px solid", borderColor: "divider" }} />}
+                <Button component="label" size="small" variant="outlined" startIcon={<ImagePlus size={15} />} disabled={uploading}>
+                  {logo ? "Cambiar logo" : "Subir logo"}
+                  <input hidden type="file" accept="image/*" onChange={(e) => { onPickImage(e.target.files?.[0], setLogo); e.target.value = ""; }} />
+                </Button>
+                {logo && <Button size="small" color="inherit" onClick={() => setLogo("")}>Quitar</Button>}
+              </Stack>
+            </Box>
             <TextField
               label="Texto del correo" value={message} onChange={(e) => setMessage(e.target.value)} multiline minRows={10} fullWidth size="small"
-              helperText="Un párrafo por línea en blanco. Las líneas que empiezan con “* ” salen como viñetas. El enlace no hace falta: va en el botón."
+              helperText="Un párrafo por línea en blanco. Las líneas que empiezan con “* ” salen como viñetas. El enlace no hace falta: va en el botón. Si lo cambias, también sale en la página del enlace, arriba del formulario."
             />
             <TextField
               type="date" size="small" label="Confirmar antes de" value={deadline} onChange={(e) => setDeadline(e.target.value)}
