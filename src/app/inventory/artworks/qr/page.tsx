@@ -59,7 +59,7 @@ function LazyQr({ text, alt, size = 150, width = 320, eager = false }: { text: s
   );
 }
 
-type TabKey = "artists" | "artworks";
+type TabKey = "artists" | "artworks" | "labels";
 
 type ArtistOpt = { id: string; name: string; pavilion: string };
 
@@ -122,16 +122,17 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     event: eventId,
     pavilion: pavilion || undefined,
     artist: artist || undefined,
-    limit: 30,
+    limit: tab === "labels" ? 60 : 30,
     includeHidden: 1,
-    enabled: tab === "artworks",
+    project: "tagId,dimensionsText",
+    enabled: tab === "artworks" || tab === "labels",
   });
 
   // Centinela al final de la grilla: al verse, carga la siguiente página.
   const sentinel = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const el = sentinel.current;
-    if (!el || tab !== "artworks" || !hasNextPage) return;
+    if (!el || tab === "artists" || !hasNextPage) return;
     const io = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting) && !isFetchingNextPage) loadMore();
     }, { rootMargin: "400px" });
@@ -147,7 +148,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   // Imprimir: carga todas las páginas, genera todos los QR y recién entonces imprime.
   React.useEffect(() => {
     if (!printing) return;
-    if (tab === "artworks" && hasNextPage) { if (!isFetchingNextPage) loadMore(); return; }
+    if (tab !== "artists" && hasNextPage) { if (!isFetchingNextPage) loadMore(); return; }
     let on = true;
     const jobs = tab === "artists"
       ? artistOptions.map((a) => ensureQr(artistUrl(a.id), 480))
@@ -162,6 +163,19 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
 
   const artistName = (a: any) =>
     a.artistInfo ? `${a.artistInfo.firstName ?? ""} ${a.artistInfo.lastName ?? ""}`.trim() : "";
+
+  // Etiquetas de inventario: una por unidad (n / total), agrupadas por artista y
+  // sin precio. ponytail: el total es el stock actual; si ya se vendieron copias, sale el restante.
+  const labels = React.useMemo(() => {
+    const sorted = [...(rows as any[])].sort(
+      (a, b) => artistName(a).localeCompare(artistName(b), "es") || String(a.title ?? "").localeCompare(String(b.title ?? ""), "es")
+    );
+    return sorted.flatMap((a) => {
+      const total = Math.max(1, Number(a.stock) || 0);
+      return Array.from({ length: total }, (_, i) => ({ a, n: total - i, total }));
+    });
+  }, [rows]);
+  const missingCode = (rows as any[]).filter((a) => !a.tagId).length;
 
   const openArtist = (id: string) => { setArtist(id); setTab("artworks"); };
 
@@ -211,6 +225,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: "divider" }}>
           <Tab value="artists" label={`Artistas (${artistOptions.length})`} />
           <Tab value="artworks" label="Obras" />
+          <Tab value="labels" label="Etiquetas (PDF)" />
         </Tabs>
       </Box>
 
@@ -288,6 +303,57 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
         </>
       )}
 
+      {/* ── Etiquetas de inventario para imprimir/PDF ── */}
+      {tab === "labels" && (
+        <>
+          <Card sx={{ mb: 2 }} className="no-print"><CardContent sx={{ py: 1.5 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+              {PavilionSelect}
+              <TextField select size="small" label="Artista" value={artist} onChange={(e) => setArtist(e.target.value)} sx={{ minWidth: 260 }}>
+                <MenuItem value=""><em>Todos los artistas</em></MenuItem>
+                {artistOptions.map((a) => <MenuItem key={a.id} value={a.id}>{a.name}</MenuItem>)}
+              </TextField>
+              <Typography variant="caption" color="text.secondary">
+                {isLoading ? "Cargando obras…" : `${rows.length} obras · ${labels.length} etiquetas${hasNextPage ? " (cargando el resto al imprimir)" : ""}`}
+                {missingCode > 0 && ` · ${missingCode} sin código: corrígelas en Ajustes → Corregir QR`}
+                <br />Imprimir → Destino «Guardar como PDF», orientación horizontal, márgenes predeterminados.
+              </Typography>
+            </Stack>
+          </CardContent></Card>
+          {isLoading ? (
+            <Box sx={{ p: 6, textAlign: "center" }}><CircularProgress /></Box>
+          ) : (
+            <>
+              <div className="inv-grid">
+                {labels.map(({ a, n, total }) => {
+                  const id = rowId(a);
+                  return (
+                    <div key={`${id}-${n}`} className="inv-label">
+                      <div className="inv-name">{artistName(a) || "—"}</div>
+                      <div className="inv-title">{a.title || "Sin título"}</div>
+                      {a.techniqueInfo?.name && <div>Técnica: {a.techniqueInfo.name}</div>}
+                      {a.dimensionsText && <div>Dimensiones: {a.dimensionsText}</div>}
+                      <div>Serie: {n} / {total}</div>
+                      <div className="inv-code">{a.tagId || "SIN CÓDIGO"}</div>
+                      <div className="inv-bottom">
+                        <LazyQr text={urlFor(id)} alt={`QR ${a.title}`} size={86} width={260} eager={printing} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div ref={sentinel} className="no-print" style={{ padding: 16, textAlign: "center" }}>
+                {isFetchingNextPage ? <CircularProgress size={20} /> : hasNextPage ? (
+                  <Button size="small" onClick={() => loadMore()} sx={{ textTransform: "none" }}>Cargar más</Button>
+                ) : null}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* Horizontal solo para las etiquetas: 6 x 3 por hoja, como el inventario impreso. */}
+      {tab === "labels" && <style>{`@page { size: letter landscape; margin: 6mm; }`}</style>}
       <style>{`
         .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
         .qr-label { border: 1px solid #E2DFD6; border-radius: 10px; padding: 14px; text-align: center; background: #fff; break-inside: avoid; color: #111; font: inherit; }
@@ -299,7 +365,15 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
         .qr-artist { font-size: 11px; color: #666; margin-top: 2px; }
         .qr-price { font-size: 12px; font-weight: 700; color: #3FA46E; margin-top: 4px; }
         .qr-id { font-size: 9px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
+        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0; border-left: 1px solid #333; border-top: 1px solid #333; }
+        .inv-label { height: 60mm; padding: 3mm; border-right: 1px solid #333; border-bottom: 1px solid #333; background: #fff; color: #111; font-size: 8.5px; line-height: 1.3; display: flex; flex-direction: column; overflow: hidden; break-inside: avoid; }
+        .inv-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+        .inv-title { font-weight: 600; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .inv-bottom { margin-top: auto; display: flex; }
+        .inv-bottom > div:first-child { margin: 0 !important; }
+        .inv-code { font-size: 14px; font-weight: 700; margin-top: 3px; letter-spacing: .02em; white-space: nowrap; }
         @media print {
+          .inv-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
           .no-print { display: none !important; }
           body { background: #fff; }
           .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
