@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, CircularProgress, Tabs, Tab, Collapse,
+  Switch, FormControlLabel,
 } from "@mui/material";
 import { Printer, Settings2, Wand2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
@@ -13,6 +14,7 @@ import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { regenerateArtworkQrs } from "@services/artworks.service";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { formatCOP } from "@/utils/money";
+import { buildLabelsHtml } from "./labelsHtml";
 
 /* QR para imprimir, en dos pestañas:
    - Artistas: un QR por artista (lleva a su página con todas sus obras).
@@ -177,6 +179,51 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   }, [rows]);
   const missingCode = (rows as any[]).filter((a) => !a.tagId).length;
 
+  const [lab, setLab] = React.useState({ cols: 4, rows: 3, landscape: true, showQr: true, priceBox: false });
+  // Las etiquetas necesitan todas las obras: se cargan solas, página por página.
+  React.useEffect(() => {
+    if (tab === "labels" && hasNextPage && !isFetchingNextPage) loadMore();
+  }, [tab, hasNextPage, isFetchingNextPage, loadMore]);
+  const [qrs, setQrs] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    if (tab !== "labels" || !lab.showQr) return;
+    let on = true;
+    const ids = (rows as any[]).map(rowId);
+    Promise.all(ids.map((id) => ensureQr(urlFor(id), 260).catch(() => ""))).then((urls) => {
+      if (on) setQrs(Object.fromEntries(ids.map((id, i) => [id, urls[i]])));
+    });
+    return () => { on = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, rows, lab.showQr, base]);
+  const labelsHtml = React.useMemo(
+    () =>
+      tab !== "labels"
+        ? ""
+        : buildLabelsHtml(
+            labels.map(({ a, n, total }) => ({
+              artist: artistName(a) || "—",
+              title: a.title || "Sin título",
+              technique: a.techniqueInfo?.name,
+              dimensions: a.dimensionsText,
+              n,
+              total,
+              code: a.tagId,
+              qr: qrs[rowId(a)],
+            })),
+            { ...lab, logoUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/logo.png` }
+          ),
+     
+    [tab, labels, lab, qrs]
+  );
+  const labelsFrame = React.useRef<HTMLIFrameElement>(null);
+  const printLabels = async () => {
+    const w = labelsFrame.current?.contentWindow;
+    if (!w) return;
+    await w.document.fonts?.ready;
+    w.focus();
+    w.print();
+  };
+
   const openArtist = (id: string) => { setArtist(id); setTab("artworks"); };
 
   const PavilionSelect = (
@@ -194,7 +241,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           title="QR de artistas y obras"
           description={`${eventName}. Cada QR del artista lleva a su página con todas sus obras; cada QR de obra, a la ficha con el botón de compra.`}
           actions={[
-            { label: printing ? "Preparando…" : "Imprimir", kind: "pri", icon: printing ? <CircularProgress size={14} /> : <Printer size={14} />, onClick: () => { if (!printing) setPrinting(true); } },
+            { label: printing ? "Preparando…" : "Imprimir", kind: "pri", icon: printing ? <CircularProgress size={14} /> : <Printer size={14} />, onClick: () => { if (tab === "labels") printLabels(); else if (!printing) setPrinting(true); }, disabled: tab === "labels" && (hasNextPage || isFetchingNextPage) },
             { label: "Ajustes", kind: "sec", icon: <Settings2 size={14} />, onClick: () => setShowSettings((v) => !v) },
           ]}
         />
@@ -316,44 +363,38 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               <Typography variant="caption" color="text.secondary">
                 {isLoading ? "Cargando obras…" : `${rows.length} obras · ${labels.length} etiquetas${hasNextPage ? " (cargando el resto al imprimir)" : ""}`}
                 {missingCode > 0 && ` · ${missingCode} sin código: corrígelas en Ajustes → Corregir QR`}
-                <br />Imprimir → Destino «Guardar como PDF», orientación horizontal, márgenes predeterminados.
+                <br />Imprimir → Destino «Guardar como PDF», márgenes predeterminados.
               </Typography>
+            </Stack>
+            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+              <TextField select size="small" label="Por fila" value={lab.cols} onChange={(e) => setLab({ ...lab, cols: Number(e.target.value) })} sx={{ width: 100 }}>
+                {[2, 3, 4, 5, 6].map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+              </TextField>
+              <TextField select size="small" label="Filas" value={lab.rows} onChange={(e) => setLab({ ...lab, rows: Number(e.target.value) })} sx={{ width: 100 }}>
+                {[1, 2, 3, 4].map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+              </TextField>
+              <TextField select size="small" label="Hoja" value={lab.landscape ? "h" : "v"} onChange={(e) => setLab({ ...lab, landscape: e.target.value === "h" })} sx={{ width: 140 }}>
+                <MenuItem value="h">Horizontal</MenuItem>
+                <MenuItem value="v">Vertical</MenuItem>
+              </TextField>
+              <FormControlLabel control={<Switch checked={lab.showQr} onChange={(e) => setLab({ ...lab, showQr: e.target.checked })} />} label="QR de la obra" />
+              <FormControlLabel control={<Switch checked={lab.priceBox} onChange={(e) => setLab({ ...lab, priceBox: e.target.checked })} />} label="Casilla de precio (a mano)" />
+              <Typography variant="caption" color="text.secondary">{lab.cols * lab.rows} por hoja · {Math.ceil(labels.length / (lab.cols * lab.rows))} hojas</Typography>
             </Stack>
           </CardContent></Card>
           {isLoading ? (
             <Box sx={{ p: 6, textAlign: "center" }}><CircularProgress /></Box>
           ) : (
-            <>
-              <div className="inv-grid">
-                {labels.map(({ a, n, total }) => {
-                  const id = rowId(a);
-                  return (
-                    <div key={`${id}-${n}`} className="inv-label">
-                      <div className="inv-name">{artistName(a) || "—"}</div>
-                      <div className="inv-title">{a.title || "Sin título"}</div>
-                      {a.techniqueInfo?.name && <div>Técnica: {a.techniqueInfo.name}</div>}
-                      {a.dimensionsText && <div>Dimensiones: {a.dimensionsText}</div>}
-                      <div>Serie: {n} / {total}</div>
-                      <div className="inv-code">{a.tagId || "SIN CÓDIGO"}</div>
-                      <div className="inv-bottom">
-                        <LazyQr text={urlFor(id)} alt={`QR ${a.title}`} size={86} width={260} eager={printing} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div ref={sentinel} className="no-print" style={{ padding: 16, textAlign: "center" }}>
-                {isFetchingNextPage ? <CircularProgress size={20} /> : hasNextPage ? (
-                  <Button size="small" onClick={() => loadMore()} sx={{ textTransform: "none" }}>Cargar más</Button>
-                ) : null}
-              </div>
-            </>
+            <iframe
+              ref={labelsFrame}
+              title="Vista previa de etiquetas"
+              srcDoc={labelsHtml}
+              style={{ width: "100%", height: "75vh", border: 0, borderRadius: 8, background: "#8d8a86" }}
+            />
           )}
         </>
       )}
 
-      {/* Horizontal solo para las etiquetas: 6 x 3 por hoja, como el inventario impreso. */}
-      {tab === "labels" && <style>{`@page { size: letter landscape; margin: 6mm; }`}</style>}
       <style>{`
         .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
         .qr-label { border: 1px solid #E2DFD6; border-radius: 10px; padding: 14px; text-align: center; background: #fff; break-inside: avoid; color: #111; font: inherit; }
@@ -365,15 +406,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
         .qr-artist { font-size: 11px; color: #666; margin-top: 2px; }
         .qr-price { font-size: 12px; font-weight: 700; color: #3FA46E; margin-top: 4px; }
         .qr-id { font-size: 9px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
-        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0; border-left: 1px solid #333; border-top: 1px solid #333; }
-        .inv-label { height: 60mm; padding: 3mm; border-right: 1px solid #333; border-bottom: 1px solid #333; background: #fff; color: #111; font-size: 8.5px; line-height: 1.3; display: flex; flex-direction: column; overflow: hidden; break-inside: avoid; }
-        .inv-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
-        .inv-title { font-weight: 600; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .inv-bottom { margin-top: auto; display: flex; }
-        .inv-bottom > div:first-child { margin: 0 !important; }
-        .inv-code { font-size: 14px; font-weight: 700; margin-top: 3px; letter-spacing: .02em; white-space: nowrap; }
         @media print {
-          .inv-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
           .no-print { display: none !important; }
           body { background: #fff; }
           .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
