@@ -56,6 +56,7 @@ export const ROUTES: Record<string, { crumb: string; title: string }> = {
   "/my/artworks": { crumb: "Artista", title: "Mis obras" },
   "/my/orders": { crumb: "Artista", title: "Mis pedidos" },
   "/account": { crumb: "Cuenta", title: "Mi cuenta" },
+  "/auditoria": { crumb: "Seguridad", title: "Auditoría" },
 };
 
 /** Coincidencia por prefijo más largo: /events/<id> hereda "Operación / Ferias". */

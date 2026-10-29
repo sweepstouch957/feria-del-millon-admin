@@ -25,6 +25,7 @@ import {
   Wallet,
   ScanLine,
   GraduationCap,
+  ShieldCheck,
 } from "lucide-react";
 
 import { LAYOUT_COLORS as C } from "../layoutConfig";
@@ -264,6 +265,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             <SectionTitle label="Reportes" rail={rail} />
             {item("/reportes", "Reportes", <BarChart3 {...ICON} />)}
             {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
+            {item("/auditoria", "Auditoría", <ShieldCheck {...ICON} />)}
           </>
         )}
 
