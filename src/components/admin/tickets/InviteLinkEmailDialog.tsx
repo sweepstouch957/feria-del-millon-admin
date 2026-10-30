@@ -126,7 +126,7 @@ export default function InviteLinkEmailDialog({
             </Box>
             <TextField
               label="Texto del correo" value={message} onChange={(e) => setMessage(e.target.value)} multiline minRows={10} fullWidth size="small"
-              helperText="Un párrafo por línea en blanco. Las líneas que empiezan con “* ” salen como viñetas. El enlace no hace falta: va en el botón. Si lo cambias, también sale en la página del enlace, arriba del formulario."
+              helperText="Un párrafo por línea en blanco. Las líneas que empiezan con “* ” salen como viñetas. Para negrilla, entre dobles asteriscos: **así**. El enlace no hace falta: va en el botón. Si lo cambias, también sale en la página del enlace, arriba del formulario."
             />
             <TextField
               type="date" size="small" label="Confirmar antes de" value={deadline} onChange={(e) => setDeadline(e.target.value)}
