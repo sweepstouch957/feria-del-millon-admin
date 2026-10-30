@@ -12,7 +12,9 @@ export type CsvCol<T> = {
 };
 
 const field = (v: unknown) => {
-  const s = v == null ? "" : String(v);
+  // Datos de formularios públicos: un "=..." no debe correr como fórmula en Excel.
+  const raw = v == null ? "" : String(v);
+  const s = /^[=+@]/.test(raw) ? `'${raw}` : raw;
   return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 const asText = (v: unknown) => {

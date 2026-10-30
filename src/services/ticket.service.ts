@@ -494,6 +494,27 @@ export const listInviteLinks = async (eventId: string) => {
   return data;
 };
 
+export interface InviteLinkPerson {
+  id: string;
+  buyer: TicketBuyer;
+  status: TicketStatus;
+  shortCode?: string;
+  admits?: number;
+  checkIns?: { day: string; at: string }[];
+  createdAt?: string;
+  whatsappSentAt?: string;
+}
+export type InviteLinkRegistration = InviteLinkPerson & { companionName?: string; companions: InviteLinkPerson[] };
+
+/** Quiénes se registraron por este enlace, con todos sus datos y acompañantes. */
+export const listInviteLinkRegistrations = async (id: string) => {
+  const { data } = await apiClient.get<InviteLinkRegistration[]>(
+    `/ticket/tickets/invite-links/${encodeURIComponent(id)}/registrations`,
+    { withCredentials: true },
+  );
+  return data;
+};
+
 export const createInviteLink = async (input: {
   eventId: string; code?: string; label?: string; category?: string; admits?: number;
   allDays?: boolean; anyDay?: boolean; date?: string; maxUses?: number;

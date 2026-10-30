@@ -5,8 +5,9 @@ import {
   Box, Button, Card, CardContent, Chip, IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from "@mui/material";
-import { Copy, Download, Link2, Mail } from "lucide-react";
+import { Copy, Download, Link2, Mail, Users } from "lucide-react";
 import InviteLinkEmailDialog from "./InviteLinkEmailDialog";
+import InviteLinkRegistrationsDialog from "./InviteLinkRegistrationsDialog";
 import { useDialogs } from "@/components/ui/DialogsProvider";
 import QRCode from "qrcode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -149,6 +150,7 @@ function CompanyLinksBulk({ eventId, existingCodes, onDone }: { eventId: string;
 
 export default function InviteLinksCard({ eventId, defaultMessage = "" }: { eventId: string; defaultMessage?: string }) {
   const [emailFor, setEmailFor] = React.useState<InviteLink | null>(null);
+  const [registeredFor, setRegisteredFor] = React.useState<InviteLink | null>(null);
   const qc = useQueryClient();
   const { data: links = [], isLoading } = useQuery({
     queryKey: ["invite-links", eventId],
@@ -270,7 +272,7 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
                   <TableCell sx={{ whiteSpace: "nowrap" }}>Para quién</TableCell>
                   <TableCell align="center" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Personas registradas / cupo del enlace. Toca la cifra para ampliar el cupo."><span>Registros ⓘ</span></Tooltip></TableCell>
                   <TableCell align="center" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Apagado, el enlace deja de recibir registros (los ya registrados conservan su pase)."><span>Activo ⓘ</span></Tooltip></TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Correo: envía el enlace a una o varias personas. Copiar: copia la dirección. Descargar: QR del enlace para una pieza impresa."><span>Acciones ⓘ</span></Tooltip></TableCell>
+                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}><Tooltip arrow title="Registrados: quién se inscribió, con todos sus datos y Excel. Correo: envía el enlace a una o varias personas. Copiar: copia la dirección. Descargar: QR del enlace para una pieza impresa."><span>Acciones ⓘ</span></Tooltip></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -304,7 +306,10 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
                     <TableCell align="center">
                       <Switch size="small" checked={l.active} onChange={(e) => update.mutate({ id: l.id, active: e.target.checked })} />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                      <Button size="small" variant="outlined" startIcon={<Users size={14} />} onClick={() => setRegisteredFor(l)} sx={{ mr: 1, textTransform: "none" }}>
+                        Registrados
+                      </Button>
                       <Button size="small" variant="outlined" startIcon={<Mail size={14} />} onClick={() => setEmailFor(l)} sx={{ mr: 1, textTransform: "none" }}>
                         Correo{l.emailsSent ? ` (${l.emailsSent})` : ""}
                       </Button>
@@ -323,6 +328,7 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
           </Typography>
         </Box>
       </CardContent>
+      <InviteLinkRegistrationsDialog link={registeredFor} onClose={() => setRegisteredFor(null)} />
       <InviteLinkEmailDialog
         link={emailFor ? links.find((x: InviteLink) => x.id === emailFor.id) || emailFor : null}
         open={!!emailFor}
