@@ -1,6 +1,6 @@
 // node --experimental-strip-types src/features/equipo/model/roster.check.ts
 import assert from "node:assert/strict";
-import { parseRoster, splitName } from "./roster.ts";
+import { parseCredentials, parseRoster, splitName } from "./roster.ts";
 
 const { rows, skipped } = parseRoster(
   [
@@ -18,4 +18,22 @@ assert.deepEqual(rows[1], { firstName: "ana Marcela", lastName: "González Sánc
 assert.equal(rows[2].email, "aydaos1967@gmail.com");
 assert.deepEqual(skipped, ["Sin correo"]);
 assert.deepEqual(splitName("Ayda"), { firstName: "Ayda", lastName: "" });
+
+const creds = parseCredentials(
+  [
+    "Comparto las credenciales de acceso:",
+    "| Nombre | Correo | Contraseña |",
+    "|---|---|---|",
+    "| Ana Prueba | ANA@t.co | `claveFalsa1` |",
+    "| Ana Prueba | ana@t.co | `otra` |", // repetida
+    "Beto Prueba\tbeto@t.co\tclaveFalsa2",
+    "Sin clave\tsinclave@t.co",
+    "Saludos cordiales.",
+  ].join("\n"),
+);
+assert.deepEqual(creds.rows, [
+  { email: "ana@t.co", password: "claveFalsa1" },
+  { email: "beto@t.co", password: "claveFalsa2" },
+]);
+assert.deepEqual(creds.skipped, ["sinclave@t.co"]);
 console.log("roster ok");

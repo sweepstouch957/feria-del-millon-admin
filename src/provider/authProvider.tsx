@@ -14,6 +14,7 @@ import { useRouter, usePathname } from "next/navigation";
 
 import {
   login as loginApi,
+  loginWithLink as loginWithLinkApi,
   register as registerApi,
   me as meApi,
   logout as logoutApi,
@@ -28,6 +29,7 @@ type AuthContextType = {
   isAuthLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithLink: (token: string) => Promise<void>;
   register: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -120,14 +122,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 
   // -------- Mutations --------
   const loginMutation = useMutation({
-    mutationFn: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
-      await loginApi(email, password); // setea cookie/token
+    mutationFn: async (
+      creds: { email: string; password: string } | { link: string }
+    ) => {
+      // setea cookie/token
+      if ("link" in creds) await loginWithLinkApi(creds.link);
+      else await loginApi(creds.email, creds.password);
       const me = await meApi(); // valida y trae usuario
       setUser(me);
       try {
@@ -166,6 +166,9 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
       isAuthenticated: !!user?.email, // ya no dependemos de leer la cookie en el cliente
       login: async (email: string, password: string) => {
         await loginMutation.mutateAsync({ email, password });
+      },
+      loginWithLink: async (link: string) => {
+        await loginMutation.mutateAsync({ link });
       },
       register: async (payload: any) => {
         await registerMutation.mutateAsync(payload);

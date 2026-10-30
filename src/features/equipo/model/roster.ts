@@ -29,6 +29,30 @@ export function splitName(full: string): { firstName: string; lastName: string }
   return { firstName: w.slice(0, cut).join(" "), lastName: w.slice(cut).join(" ") };
 }
 
+export type Credential = { email: string; password: string };
+
+/**
+ * Lista de credenciales ya creadas (tabla pegada, Excel): en cada línea, la clave
+ * es lo que sigue al correo. Líneas sin correo (saludo, encabezado) se ignoran;
+ * con correo pero sin clave van a `skipped`.
+ */
+export function parseCredentials(text: string): { rows: Credential[]; skipped: string[] } {
+  const rows: Credential[] = [];
+  const skipped: string[] = [];
+  const seen = new Set<string>();
+  for (const line of text.split(/\r?\n/)) {
+    const parts = line.split(/[\s|`,;]+/).filter(Boolean);
+    const i = parts.findIndex((p) => EMAIL.test(p));
+    if (i < 0) continue;
+    const email = parts[i].toLowerCase();
+    if (seen.has(email)) continue;
+    seen.add(email);
+    if (parts[i + 1]) rows.push({ email, password: parts[i + 1] });
+    else skipped.push(email);
+  }
+  return { rows, skipped };
+}
+
 /** Una persona por línea con correo; repetidos y líneas sin correo se descartan. */
 export function parseRoster(text: string): { rows: RosterRow[]; skipped: string[] } {
   const rows: RosterRow[] = [];

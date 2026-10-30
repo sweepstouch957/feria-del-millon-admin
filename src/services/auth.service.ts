@@ -104,6 +104,22 @@ export const login = async (email: string, password: string) => {
   return data;
 };
 
+/** Canjea el enlace de un solo uso del correo de acceso. */
+export const loginWithLink = async (token: string) => {
+  const { data } = await apiClient.post<LoginResponse>(
+    "/auth/login/link",
+    { token },
+    { withCredentials: true }
+  );
+  setAuthToken(data.token);
+  return data;
+};
+
+/** Superuser: manda el correo con botón de ingreso y credenciales. El servidor verifica la clave. */
+export const sendAccessEmail = async (email: string, password: string, loginUrl: string) => {
+  await apiClient.post("/auth/users/access-email", { email, password, loginUrl }, { withCredentials: true });
+};
+
 // ─────────────────────────────────────────────────────────────
 // /me y /logout
 // ─────────────────────────────────────────────────────────────

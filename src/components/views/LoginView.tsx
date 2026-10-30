@@ -43,7 +43,7 @@ const PUNTOS = [
 
 const LoginClient: React.FC = () => {
   const router = useRouter();
-  const { login: loginCtx, isAuthenticated, isAuthLoading } = useAuth();
+  const { login: loginCtx, loginWithLink, isAuthenticated, isAuthLoading } = useAuth();
 
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -53,13 +53,31 @@ const LoginClient: React.FC = () => {
   const [capsOn, setCapsOn] = useState(false);
 
   const firstRef = useRef<HTMLInputElement | null>(null);
+  const linkRef = useRef(false);
+
+  // Botón "Ingresar" del correo de acceso: /login#acceso=<token>. Reemplaza
+  // cualquier sesión abierta en este navegador. Se quita el # antes de canjear.
+  useEffect(() => {
+    const { hash, pathname } = window.location;
+    if (!hash.startsWith("#acceso=")) return;
+    window.history.replaceState(null, "", pathname);
+    linkRef.current = true;
+    setSubmitting(true);
+    loginWithLink(hash.slice("#acceso=".length))
+      .catch((err: any) => {
+        linkRef.current = false;
+        setErrorMsg(err?.response?.data?.error || err?.message || "No se pudo ingresar con el enlace.");
+      })
+      .finally(() => setSubmitting(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Redirige si ya está autenticado
   useEffect(() => {
-    if (!isAuthLoading && isAuthenticated) {
+    if (!linkRef.current && !isAuthLoading && isAuthenticated) {
       router.replace("/");
     }
-  }, [isAuthenticated, isAuthLoading, router]);
+  }, [isAuthenticated, isAuthLoading, router, submitting]);
 
   useEffect(() => {
     const t = window.setTimeout(() => firstRef.current?.focus(), 60);

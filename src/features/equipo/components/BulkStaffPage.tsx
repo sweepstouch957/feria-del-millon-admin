@@ -146,6 +146,9 @@ export function BulkStaffPage() {
             >
               {bulk.running ? "Creando…" : `Crear ${drafts.length} cuenta(s)`}
             </Button>
+            <Button size="large" href="/users/equipo/accesos" sx={{ ml: 1 }}>
+              Ya están creadas: enviar accesos por correo
+            </Button>
           </Box>
         </Stack>
       ) : (
