@@ -340,9 +340,6 @@ export function QrValidationPanel() {
                           <strong>Ingresos hoy:</strong> {lastResult.info?.usedToday} de {lastResult.info?.admits}
                         </Typography>
                       )}
-                      {lastResult.info?.type === "estudiante" && (
-                        <Alert severity="warning" sx={{ py: 0 }}>Verificar carné estudiantil vigente.</Alert>
-                      )}
                       {lastResult.info?.validHours && (
                         <Alert severity="info" sx={{ py: 0 }}>
                           Válida solo de {lastResult.info.validHours.from} a {lastResult.info.validHours.to}.

@@ -8,19 +8,13 @@ type TypeSpec = {
   key: SellType;
   price?: number;
   pickDay?: boolean;
-  quantities?: number[];
-  packPrices?: Record<number, number>;
-  maxQty?: number;
 };
 
 // Espejo de TICKET_TYPES (tickets-svc/utils/pricing.js). El backend es quien cobra.
+// El 2x1 y los paquetes de empresa son solo en línea.
 export const TICKET_TYPES: TypeSpec[] = [
   { key: "general", pickDay: true },
   { key: "allpass", price: 80000 },
-  { key: "2x1", pickDay: true },
-  { key: "estudiante", price: 0, pickDay: true, maxQty: 1 },
-  // Empresas: un día, paquetes; 20% de descuento desde 50.
-  { key: "empresa", price: 55000, pickDay: true, quantities: [20, 50, 100], packPrices: { 20: 55000, 50: 44000, 100: 44000 } },
 ];
 
 export const specOf = (t: SellType) => TICKET_TYPES.find((s) => s.key === t)!;
@@ -33,7 +27,7 @@ export const BOX_OFFICE_METHODS: { value: BoxOfficeMethod; label: string }[] = [
 
 export const boxOfficeSchema = z
   .object({
-    type: z.enum(["general", "allpass", "2x1", "estudiante", "empresa"]),
+    type: z.enum(["general", "allpass"]),
     date: z.string(),
     quantity: z.number({ error: "Cantidad" }).int().min(1, "Mínimo 1").max(100),
     method: z.enum(["cash", "card_offline", "transfer"]),
@@ -64,5 +58,5 @@ export const BOX_OFFICE_DEFAULTS: BoxOfficeValues = {
 /** Precio unitario de referencia (el cobro real lo calcula tickets-svc). */
 export function unitPrice(v: Pick<BoxOfficeValues, "type" | "quantity" | "date">, dayPrice?: number) {
   const spec = specOf(v.type);
-  return spec.packPrices?.[v.quantity] ?? spec.price ?? dayPrice ?? 0;
+  return spec.price ?? dayPrice ?? 0;
 }

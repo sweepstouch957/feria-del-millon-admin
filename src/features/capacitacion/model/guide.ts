@@ -75,7 +75,6 @@ export const ERRORS: Record<"caja" | "taquilla" | "puerta", ErrorCase[]> = {
   ],
   taquilla: [
     { message: "No hay cupo disponible ese día.", what: "Se agotaron las entradas de ese día.", todo: "Ofrece otro día." },
-    { message: "Este correo ya tiene entrada de estudiante.", what: "Solo una entrada de estudiante por correo.", todo: "Vende entrada general." },
     { message: "Tu cuenta está en modo práctica.", what: "Tu cuenta sigue en capacitación.", todo: "Pide a coordinación que te la active." },
   ],
   puerta: [

@@ -10,7 +10,6 @@ import { specOf, type BoxOfficeValues } from "../model/boxOffice";
 
 const ERRORS: Record<string, string> = {
   capacity_reached: "No hay cupo disponible ese día.",
-  student_ticket_already_issued: "Este correo ya tiene entrada de estudiante.",
   invalid_quantity: "Cantidad no válida para este tipo.",
   practice_mode: "Tu cuenta está en modo práctica: pide a coordinación que la active para vender.",
 };
@@ -23,9 +22,8 @@ export const PRACTICE_QR_PREFIX = "FDM-PRACTICA:";
 /** Boletas de práctica: QR de verdad (se pueden escanear en el validador), sin guardar nada. */
 async function simulateBoxOffice(v: BoxOfficeValues) {
   await wait(500);
-  const n = v.type === "2x1" ? v.quantity * 2 : v.quantity;
   const tickets = await Promise.all(
-    Array.from({ length: Math.min(n, 20) }, async (_, i) => {
+    Array.from({ length: Math.min(v.quantity, 20) }, async (_, i) => {
       const shortCode = `P${Date.now().toString(36).slice(-5).toUpperCase()}${i}`;
       return {
         id: shortCode,
@@ -51,7 +49,6 @@ export function useBoxOfficeSale(eventId: string) {
   const mutation = useMutation({
     mutationFn: (v: BoxOfficeValues) => {
       if (practice) return simulateBoxOffice(v);
-      const empresa = v.type === "empresa";
       return sellAtBoxOffice({
         eventId,
         type: v.type,
@@ -63,8 +60,6 @@ export function useBoxOfficeSale(eventId: string) {
           name: v.name,
           email: v.email,
           phone: v.phone || undefined,
-          company: empresa ? v.company || undefined : undefined,
-          nit: empresa ? v.nit || undefined : undefined,
         },
       });
     },

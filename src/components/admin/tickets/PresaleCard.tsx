@@ -316,11 +316,6 @@ export default function PresaleCard({ eventId }: { eventId: string }) {
                     {t.desc && (
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{t.desc}</Typography>
                     )}
-                    {t.requiresStudentId && (
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        Pide foto del carné al comprar en línea.
-                      </Typography>
-                    )}
                   </Box>
                   <Stack alignItems="flex-end" gap={0.5} sx={{ flexShrink: 0 }}>
                     <Chip

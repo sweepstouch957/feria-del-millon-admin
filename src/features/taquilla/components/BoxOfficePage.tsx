@@ -53,9 +53,9 @@ function BoxOffice({ eventId }: { eventId: string }) {
   useEffect(() => {
     if (!getValues("date") && days.length) setValue("date", days.find((d) => d.isToday)?.date || days[0].date);
   }, [days, getValues, setValue]);
-  // Al cambiar de tipo, la cantidad vuelve a la mínima de ese tipo.
+  // Al cambiar de tipo, la cantidad vuelve a 1.
   useEffect(() => {
-    setValue("quantity", specOf(type).quantities?.[0] ?? 1);
+    setValue("quantity", 1);
   }, [type, setValue]);
 
   const total = unitPrice({ type, quantity, date }, days.find((d) => d.date === date)?.price) * quantity;
@@ -74,7 +74,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
         setLast({ tickets: res.tickets, email: v.email, total, practice });
         setShowQr(practice); // en práctica los QR se escanean en "Validar entradas"
         sale.next();
-        reset({ ...BOX_OFFICE_DEFAULTS, type: v.type, date: v.date, method: v.method, quantity: specOf(v.type).quantities?.[0] ?? 1 });
+        reset({ ...BOX_OFFICE_DEFAULTS, type: v.type, date: v.date, method: v.method, quantity: 1 });
         setTimeout(() => setFocus("name"), 0);
         toast.success(practice ? "Venta de práctica lista" : `Venta registrada. QR enviado a ${v.email}`);
       },
@@ -156,40 +156,23 @@ function BoxOffice({ eventId }: { eventId: string }) {
                   ) : (
                     <TextField label="Día" value="Los 4 días" disabled />
                   )}
-                  {spec.quantities ? (
-                    <Controller
-                      control={control}
-                      name="quantity"
-                      render={({ field }) => (
-                        <TextField select label="Paquete" {...field} onChange={(e) => field.onChange(Number(e.target.value))}>
-                          {spec.quantities!.map((q) => (
-                            <MenuItem key={q} value={q}>{q} · {formatCOP(unitPrice({ type, quantity: q, date }) * q)}</MenuItem>
-                          ))}
-                        </TextField>
-                      )}
+                  {/* −/+ grandes: una familia de 5 son 4 toques, sin teclado. */}
+                  <Stack direction="row" alignItems="flex-start" spacing={0.5}>
+                    <Button variant="outlined" tabIndex={-1} aria-label="Una menos" disabled={quantity <= 1} onClick={() => step(-1)} sx={{ minWidth: 48, height: 56 }}>
+                      <Minus size={18} />
+                    </Button>
+                    <TextField
+                      label="Cantidad"
+                      type="number"
+                      slotProps={{ htmlInput: { min: 1, max: 20, inputMode: "numeric", style: { textAlign: "center" } } }}
+                      {...register("quantity", { valueAsNumber: true })}
+                      {...err("quantity")}
                     />
-                  ) : (
-                    // −/+ grandes: una familia de 5 son 4 toques, sin teclado.
-                    <Stack direction="row" alignItems="flex-start" spacing={0.5}>
-                      <Button variant="outlined" tabIndex={-1} aria-label="Una menos" disabled={spec.maxQty === 1 || quantity <= 1} onClick={() => step(-1)} sx={{ minWidth: 48, height: 56 }}>
-                        <Minus size={18} />
-                      </Button>
-                      <TextField
-                        label="Cantidad"
-                        type="number"
-                        disabled={spec.maxQty === 1}
-                        slotProps={{ htmlInput: { min: 1, max: 20, inputMode: "numeric", style: { textAlign: "center" } } }}
-                        {...register("quantity", { valueAsNumber: true })}
-                        {...err("quantity")}
-                      />
-                      <Button variant="outlined" tabIndex={-1} aria-label="Una más" disabled={spec.maxQty === 1 || quantity >= 20} onClick={() => step(1)} sx={{ minWidth: 48, height: 56 }}>
-                        <Plus size={18} />
-                      </Button>
-                    </Stack>
-                  )}
+                    <Button variant="outlined" tabIndex={-1} aria-label="Una más" disabled={quantity >= 20} onClick={() => step(1)} sx={{ minWidth: 48, height: 56 }}>
+                      <Plus size={18} />
+                    </Button>
+                  </Stack>
                 </Box>
-                {type === "2x1" && <Alert severity="info">Por cada entrada se emite otra gratis para el viernes de 12:00 a 6:00 p.m.</Alert>}
-                {type === "estudiante" && <Alert severity="warning">Verifica el carné 2026 de arte, diseño o arquitectura antes de emitir.</Alert>}
 
                 <Stack spacing={1.25}>
                   <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Asistente</Typography>
@@ -206,8 +189,6 @@ function BoxOffice({ eventId }: { eventId: string }) {
                       </Stack>
                     </Box>
                     <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("phone")} />
-                    {type === "empresa" && <TextField label="Empresa" {...register("company")} />}
-                    {type === "empresa" && <TextField label="NIT" {...register("nit")} />}
                   </Box>
                 </Stack>
 
