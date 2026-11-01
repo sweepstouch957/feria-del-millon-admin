@@ -30,6 +30,8 @@ export type ArtworksCursorFilters = {
   technique?: string;
   limit?: number;
   artist?: string;
+  minPrice?: number;
+  maxPrice?: number;
   includeHidden?: boolean | number | string;
   visibility?: "visible" | "hidden";
   status?: "archived";
@@ -50,6 +52,8 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       technique: filters.technique || undefined,
       limit: filters.limit ?? 24,
       artist: filters.artist || undefined,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
       includeHidden: filters.includeHidden || undefined,
       visibility: filters.visibility || undefined,
       status: filters.status || undefined,
@@ -62,6 +66,8 @@ export function useArtworksCursor(filters: ArtworksCursorFilters = {}) {
       filters.technique,
       filters.limit,
       filters.artist,
+      filters.minPrice,
+      filters.maxPrice,
       filters.includeHidden,
       filters.visibility,
       filters.status,

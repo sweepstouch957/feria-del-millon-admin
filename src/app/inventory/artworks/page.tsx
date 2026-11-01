@@ -48,6 +48,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
+import { useDebouncedValue } from "@/hooks/useAuth";
 import { useTechniques } from "@/hooks/useTechniques";
 import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { setCatalogReveal, setInventoryClose, setInventoryExtension, type InventoryExtension } from "@services/events.service";
@@ -80,6 +81,10 @@ type View = "" | "visible" | "hidden";
 
 const artistName = (a: any) => [a?.firstName, a?.lastName].filter(Boolean).join(" ");
 
+// Precio escrito: solo dígitos por dentro, con puntos de miles a la vista.
+const onlyDigits = (s: string) => s.replace(/\D/g, "").slice(0, 12);
+const withThousands = (digits: string) => (digits ? Number(digits).toLocaleString("es-CO") : "");
+
 export default function ArtworksPage() {
   const { event: activeEvent, eventId, isLoading, isError, refetch } = useActiveEvent();
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
@@ -92,6 +97,13 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
   const [pavilion, setPavilion] = useState<string>("");
   const [artist, setArtist] = useState<string>("");
   const [technique, setTechnique] = useState<string>("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const priceRange = useDebouncedValue(`${minPrice}-${maxPrice}`);
+  const [debouncedMin, debouncedMax] = priceRange.split("-");
+  // Rango al revés: se marca en rojo y no se aplica (vaciaría la lista sin explicar por qué).
+  const priceBad = !!minPrice && !!maxPrice && Number(minPrice) > Number(maxPrice);
+  const debouncedBad = !!debouncedMin && !!debouncedMax && Number(debouncedMin) > Number(debouncedMax);
   const [view, setView] = useState<View>("");
   // Eliminadas con ventas quedan archivadas: fuera de la tienda y de esta lista.
   const [archived, setArchived] = useState(false);
@@ -136,6 +148,8 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     pavilion,
     artist,
     technique,
+    minPrice: debouncedMin && !debouncedBad ? Number(debouncedMin) : undefined,
+    maxPrice: debouncedMax && !debouncedBad ? Number(debouncedMax) : undefined,
     limit: 24,
     includeHidden: 1,
     visibility: (!archived && view) || undefined,
@@ -377,8 +391,8 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     </Tooltip>
   );
 
-  const hasFilter = !!(q || pavilion || artist || technique);
-  const clearFilters = () => { setQ(""); setPavilion(""); setArtist(""); setTechnique(""); };
+  const hasFilter = !!(q || pavilion || artist || technique || minPrice || maxPrice);
+  const clearFilters = () => { setQ(""); setPavilion(""); setArtist(""); setTechnique(""); setMinPrice(""); setMaxPrice(""); };
 
   const revealed = !!selectedEvent?.catalogRevealed;
   const closeAt = selectedEvent?.inventoryCloseAt as string | undefined;
@@ -620,6 +634,21 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                 <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
               ))}
             </TextField>
+            <TextField
+              size="small" label="Precio desde" value={withThousands(minPrice)} error={priceBad}
+              onChange={(e) => setMinPrice(onlyDigits(e.target.value))}
+              inputProps={{ inputMode: "numeric" }}
+              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              sx={{ width: 170 }}
+            />
+            <TextField
+              size="small" label="Precio hasta" value={withThousands(maxPrice)} error={priceBad}
+              helperText={priceBad ? "Debe ser mayor que “desde”" : undefined}
+              onChange={(e) => setMaxPrice(onlyDigits(e.target.value))}
+              inputProps={{ inputMode: "numeric" }}
+              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              sx={{ width: 170 }}
+            />
             <Button
               size="small"
               variant={archived ? "contained" : "outlined"}
