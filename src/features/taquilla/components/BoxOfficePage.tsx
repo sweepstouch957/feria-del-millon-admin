@@ -9,7 +9,9 @@ import {
 import { Banknote, CreditCard, Landmark, Minus, Plus } from "lucide-react";
 import type { Ticket } from "@services/ticket.service";
 import { useQuery } from "@tanstack/react-query";
+import QRCode from "qrcode";
 import { toast } from "sonner";
+import { SHOP_URL } from "@core/constants";
 import PageHeader from "@/components/ui/PageHeader";
 import { eyebrow } from "@/app/theme";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -27,6 +29,14 @@ const METHOD_ICON = { cash: Banknote, card_offline: CreditCard, transfer: Landma
 const EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "icloud.com"];
 
 type LastSale = { tickets: Ticket[]; email: string; total: number; practice: boolean };
+
+/** QR para imprimir en la fila: abre la entrada del día en el celular de cada persona. */
+const downloadQuickQr = async () => {
+  const a = document.createElement("a");
+  a.href = await QRCode.toDataURL(`${SHOP_URL.replace(/\/+$/, "")}/entrada`, { width: 1500, margin: 2, errorCorrectionLevel: "M" });
+  a.download = "qr-entrada-del-dia.png";
+  a.click();
+};
 
 export function BoxOfficePage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
@@ -95,6 +105,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
         crumb="Boletos"
         title="Taquilla"
         description="Venta de entradas en sitio. Varias personas = un solo correo con un QR por persona. Enter cobra y deja lista la siguiente venta."
+        actions={[{ label: "Descargar QR para imprimir", kind: "sec", onClick: downloadQuickQr }]}
       />
       <PracticeBanner />
 
