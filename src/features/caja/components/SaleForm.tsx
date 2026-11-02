@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
@@ -17,8 +18,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { Banknote, CreditCard, Landmark } from "lucide-react";
-import { eyebrow } from "@/app/theme";
+import { Banknote, ChevronDown, CreditCard, Landmark } from "lucide-react";
+import { toast } from "sonner";
 import { formatCOP } from "@/utils/money";
 import type { CityDoc } from "@services/city.service";
 import type { CustomerDoc } from "@services/orders.service";
@@ -29,9 +30,18 @@ import { CAJA_METHODS, SALE_DEFAULTS, saleSchemaFor, type SaleValues } from "../
 
 const METHOD_ICON = { cash: Banknote, card_offline: CreditCard, whatsapp: Landmark } as const;
 
-const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <Stack spacing={1.25}>
-    <Typography sx={{ ...eyebrow, color: "text.secondary" }}>{title}</Typography>
+const norm = (s?: string | null) =>
+  String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** Un paso con número grande: se lee de arriba abajo, sin pensar qué sigue. */
+const Step = ({ n, title, children }: { n: number; title: string; children: ReactNode }) => (
+  <Stack spacing={1.5}>
+    <Stack direction="row" alignItems="center" spacing={1.25}>
+      <Box sx={{ flex: "none", width: 34, height: 34, borderRadius: "50%", bgcolor: "text.primary", color: "background.default", display: "grid", placeItems: "center", fontSize: 18, fontWeight: 600 }}>
+        {n}
+      </Box>
+      <Typography sx={{ fontSize: 22, fontWeight: 500 }}>{title}</Typography>
+    </Stack>
     {children}
   </Stack>
 );
@@ -67,6 +77,8 @@ export function SaleForm({
 
   const [uploading, setUploading] = useState(false);
   const [discountOn, setDiscountOn] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
   const stock = stockOf(artwork);
   const unit = discountOn ? Number(price) || 0 : listPrice;
   const total = unit * (Number(qty) || 0);
@@ -83,7 +95,7 @@ export function SaleForm({
   const err = (k: keyof SaleValues) => ({ error: !!errors[k], helperText: errors[k]?.message });
   const blocked = disabled || stock <= 0 || isPending || uploading;
 
-  // Cliente que ya compró: se llenan sus datos (y se pueden corregir).
+  // Persona ya conocida: se llenan sus datos y la cajera los confirma con ella.
   const fillCustomer = (c: CustomerDoc) => {
     const opts = { shouldValidate: true, shouldDirty: true } as const;
     setValue("buyerName", c.name ?? "", opts);
@@ -91,70 +103,95 @@ export function SaleForm({
     setValue("buyerPhone", c.phone ?? "", opts);
     setValue("buyerDocument", c.document ?? "", opts);
     setValue("addressLine1", c.address?.line1 ?? "");
-    setValue("cityId", c.address?.city ? String(c.address.city) : "");
+    // De entradas la ciudad llega en texto: se busca en el catálogo por nombre.
+    const city = c.address?.city || (c.cityName ? cities.find((x) => norm(x.name) === norm(c.cityName))?._id : "");
+    setValue("cityId", city ? String(city) : "");
+    setPicked(c.name || c.email);
+  };
+
+  // Lo que falta se dice en palabras; el cursor ya salta solo al primer campo.
+  const onInvalid = (e: FieldErrors<SaleValues>) => {
+    if (e.price || e.discountNote || e.abono) setMoreOpen(true);
+    const first = Object.values(e)[0]?.message;
+    toast.error(first ? `Falta: ${first}` : "Revisa los datos marcados en rojo");
   };
 
   return (
-    <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={2.5}>
+    <Box
+      component="form"
+      noValidate
+      onSubmit={handleSubmit(onSubmit, onInvalid)}
+      sx={{
+        "& .MuiInputBase-input": { fontSize: 18, py: 1.75 },
+        "& .MuiInputLabel-root": { fontSize: 17 },
+        "& .MuiFormHelperText-root": { fontSize: 15 },
+      }}
+    >
+      <Stack spacing={3.5}>
         {stock > 1 && (
           <TextField
-            label="Cantidad"
+            label="¿Cuántas lleva?"
             type="number"
-            sx={{ maxWidth: 140 }}
+            sx={{ maxWidth: 180 }}
             slotProps={{ htmlInput: { min: 1, max: stock, inputMode: "numeric" } }}
             {...register("qty", { valueAsNumber: true })}
             {...err("qty")}
           />
         )}
 
-        <Section title="Precio">
-          <Typography variant="body2" color="text.secondary">
-            Precio de la obra: <strong>{formatCOP(listPrice)}</strong>
-          </Typography>
-          <FormControlLabel
-            control={<Switch checked={discountOn} onChange={(e) => toggleDiscount(e.target.checked)} />}
-            label="El artista dio descuento"
-          />
-          <Collapse in={discountOn} unmountOnExit>
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
-              <TextField
-                label="Precio acordado (por obra)"
-                type="number"
-                slotProps={{
-                  htmlInput: { min: 1, max: listPrice, inputMode: "numeric" },
-                  input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
-                }}
-                {...register("price", { valueAsNumber: true })}
-                error={!!errors.price}
-                helperText={errors.price?.message ?? (pctOff ? `${formatCOP(unit)} · ${pctOff}% de descuento` : "Menor al precio de la obra, nunca mayor")}
-              />
-              <TextField
-                label="Autorizado por"
-                placeholder="Ej: el artista, por compra de 3 obras"
-                {...register("discountNote")}
-                {...err("discountNote")}
-              />
-            </Box>
-          </Collapse>
-        </Section>
+        <Step n={1} title="¿Quién compra?">
+          <CustomerPicker onPick={fillCustomer} />
+          {picked && (
+            <Alert severity="info" sx={{ fontSize: 17 }}>
+              Pregúntale a <strong>{picked}</strong> si estos datos están bien. Si algo cambió, corrígelo aquí.
+            </Alert>
+          )}
+          <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
+          <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
+          <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
+          <TextField label="Cédula o NIT (si la tiene a mano)" {...register("buyerDocument")} />
+        </Step>
 
-        <Section title="Método de pago">
+        {/* Todas las obras se entregan a domicilio: la dirección siempre se pide. */}
+        <Step n={2} title="¿A dónde se la llevamos?">
+          <TextField label="Dirección" {...register("addressLine1")} {...err("addressLine1")} />
+          <Controller
+            control={control}
+            name="cityId"
+            render={({ field }) => (
+              <Autocomplete
+                options={cities}
+                getOptionLabel={(c) => c.name}
+                value={cities.find((c) => String(c._id ?? c.id) === field.value) ?? null}
+                onChange={(_, c) => field.onChange(c ? String(c._id ?? c.id) : "")}
+                onBlur={field.onBlur}
+                renderInput={(p) => <TextField {...p} label="Ciudad" {...err("cityId")} />}
+              />
+            )}
+          />
+        </Step>
+
+        <Step n={3} title="¿Cómo paga?">
           <Controller
             control={control}
             name="method"
             render={({ field }) => (
-              <ToggleButtonGroup
-                exclusive
-                fullWidth
-                value={field.value}
-                onChange={(_, v) => v && field.onChange(v)}
-              >
+              <ToggleButtonGroup exclusive orientation="vertical" fullWidth value={field.value} onChange={(_, v) => v && field.onChange(v)}>
                 {CAJA_METHODS.map((m) => {
                   const Icon = METHOD_ICON[m.value];
                   return (
-                    <ToggleButton key={m.value} value={m.value} sx={{ py: 1.5, gap: 1, textTransform: "none", flexDirection: { xs: "column", sm: "row" } }}>
-                      <Icon size={20} /> {m.label}
+                    <ToggleButton
+                      key={m.value}
+                      value={m.value}
+                      sx={{
+                        py: 2,
+                        gap: 1.5,
+                        fontSize: 19,
+                        textTransform: "none",
+                        "&.Mui-selected, &.Mui-selected:hover": { bgcolor: "text.primary", color: "background.default" },
+                      }}
+                    >
+                      <Icon size={24} /> {m.label}
                     </ToggleButton>
                   );
                 })}
@@ -162,7 +199,7 @@ export function SaleForm({
             )}
           />
           {method === "card_offline" && (
-            <TextField label="N.º de aprobación del voucher (opcional)" slotProps={{ htmlInput: { inputMode: "numeric" } }} {...register("authCode")} />
+            <TextField label="Número de aprobación del voucher (opcional)" slotProps={{ htmlInput: { inputMode: "numeric" } }} {...register("authCode")} />
           )}
           {method === "whatsapp" && (
             <Controller
@@ -171,70 +208,75 @@ export function SaleForm({
               render={({ field }) => <ReceiptInput value={field.value} onChange={field.onChange} onUploading={setUploading} />}
             />
           )}
-        </Section>
+        </Step>
 
-        <Section title="Comprador">
-          <CustomerPicker onPick={fillCustomer} />
-          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
-            <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
-            <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
-            <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
-            <TextField label="Cédula / NIT (opcional)" {...register("buyerDocument")} />
-          </Box>
-        </Section>
-
-        {/* Todas las obras se entregan a domicilio: la dirección siempre se pide. */}
-        <Section title="Entrega a domicilio">
-          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "minmax(0, 1.3fr) minmax(0, 1fr)" } }}>
-            <TextField label="Dirección" {...register("addressLine1")} {...err("addressLine1")} />
-            <Controller
-              control={control}
-              name="cityId"
-              render={({ field }) => (
-                <Autocomplete
-                  options={cities}
-                  getOptionLabel={(c) => c.name}
-                  value={cities.find((c) => String(c._id ?? c.id) === field.value) ?? null}
-                  onChange={(_, c) => field.onChange(c ? String(c._id ?? c.id) : "")}
-                  onBlur={field.onBlur}
-                  renderInput={(p) => <TextField {...p} label="Ciudad" {...err("cityId")} />}
+        {/* Lo que casi nunca se usa queda guardado: no estorba en la venta normal. */}
+        <Box>
+          <Button
+            type="button"
+            color="inherit"
+            onClick={() => setMoreOpen((o) => !o)}
+            endIcon={<ChevronDown size={18} style={{ transform: moreOpen ? "rotate(180deg)" : undefined }} />}
+            sx={{ textTransform: "none", fontSize: 16 }}
+          >
+            Descuento, apartar o indicaciones
+          </Button>
+          <Collapse in={moreOpen}>
+            <Stack spacing={2} sx={{ mt: 1.5 }}>
+              <FormControlLabel
+                control={<Switch checked={discountOn} onChange={(e) => toggleDiscount(e.target.checked)} />}
+                label="El artista dio descuento"
+              />
+              <Collapse in={discountOn} unmountOnExit>
+                <Stack spacing={2}>
+                  <TextField
+                    label="Precio acordado (por obra)"
+                    type="number"
+                    slotProps={{
+                      htmlInput: { min: 1, max: listPrice, inputMode: "numeric" },
+                      input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
+                    }}
+                    {...register("price", { valueAsNumber: true })}
+                    error={!!errors.price}
+                    helperText={errors.price?.message ?? (pctOff ? `${formatCOP(unit)} · ${pctOff}% de descuento` : "Menor al precio de la obra, nunca mayor")}
+                  />
+                  <TextField label="¿Quién lo autorizó?" placeholder="Ej: el artista, por compra de 3 obras" {...register("discountNote")} {...err("discountNote")} />
+                </Stack>
+              </Collapse>
+              {canLayaway && (
+                <Controller
+                  control={control}
+                  name="apartar"
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                      label="Apartar con abono (paga el resto después)"
+                    />
+                  )}
                 />
               )}
-            />
-            <TextField label="Indicaciones (apto, horario, quién recibe)" sx={{ gridColumn: "1 / -1" }} {...register("notes")} />
-          </Box>
-        </Section>
-
-        {canLayaway && <Section title="Apartar">
-          <Controller
-            control={control}
-            name="apartar"
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
-                label="Apartar con abono (paga el resto después)"
-              />
-            )}
-          />
-          <Collapse in={apartar} unmountOnExit>
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
-              <TextField
-                label="Abono hoy"
-                type="number"
-                slotProps={{
-                  htmlInput: { min: 0, inputMode: "numeric" },
-                  input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
-                }}
-                {...register("abono", { valueAsNumber: true })}
-                error={!!errors.abono}
-                helperText={errors.abono?.message ?? (Number(abono) > 0 ? `${formatCOP(abono)} · queda ${formatCOP(Math.max(0, total - Number(abono)))}` : undefined)}
-              />
-              <TextField label="Paga el resto antes de" type="date" slotProps={{ inputLabel: { shrink: true } }} {...register("dueDate")} />
-            </Box>
+              <Collapse in={!!canLayaway && apartar} unmountOnExit>
+                <Stack spacing={2}>
+                  <TextField
+                    label="Abono de hoy"
+                    type="number"
+                    slotProps={{
+                      htmlInput: { min: 0, inputMode: "numeric" },
+                      input: { startAdornment: <InputAdornment position="start">COP</InputAdornment> },
+                    }}
+                    {...register("abono", { valueAsNumber: true })}
+                    error={!!errors.abono}
+                    helperText={errors.abono?.message ?? (Number(abono) > 0 ? `${formatCOP(abono)} · queda ${formatCOP(Math.max(0, total - Number(abono)))}` : undefined)}
+                  />
+                  <TextField label="Paga el resto antes de" type="date" slotProps={{ inputLabel: { shrink: true } }} {...register("dueDate")} />
+                </Stack>
+              </Collapse>
+              <TextField label="Indicaciones de entrega (apto, horario, quién recibe)" {...register("notes")} />
+            </Stack>
           </Collapse>
-        </Section>}
+        </Box>
 
-        {/* Total y botón quedan pegados abajo en el celular. */}
+        {/* Total y botón quedan pegados abajo: siempre a la vista. */}
         <Box
           sx={{
             position: "sticky",
@@ -245,20 +287,15 @@ export function SaleForm({
             bgcolor: "background.paper",
             borderTop: "1px solid",
             borderColor: "divider",
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
           }}
         >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="caption" color="text.secondary">
-              {apartar ? `Total ${formatCOP(total)} · abona hoy` : pctOff ? `Total con ${pctOff}% de descuento` : "Total a cobrar"}
-            </Typography>
-            <Typography sx={{ fontSize: 24, fontWeight: 300, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
-              {formatCOP(apartar ? Number(abono) || 0 : total)}
-            </Typography>
-          </Box>
-          <Button type="submit" variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: 52, px: 3 }}>
+          <Typography sx={{ fontSize: 16 }} color="text.secondary">
+            {apartar ? `Total ${formatCOP(total)} · abona hoy` : pctOff ? `Total con ${pctOff}% de descuento` : "Total a cobrar"}
+          </Typography>
+          <Typography sx={{ fontSize: 34, fontWeight: 400, fontVariantNumeric: "tabular-nums", lineHeight: 1.2, mb: 1 }}>
+            {formatCOP(apartar ? Number(abono) || 0 : total)}
+          </Typography>
+          <Button type="submit" fullWidth variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: 64, fontSize: 20 }}>
             {isPending ? "Registrando…" : uploading ? "Subiendo foto…" : apartar ? "Apartar" : "Cobrar"}
           </Button>
         </Box>

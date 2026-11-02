@@ -263,6 +263,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             {ordersItem}
 
             <SectionTitle label="Reportes" rail={rail} />
+            {item("/reportes/ingresos", "Ingresos y clientes", <BarChart3 {...ICON} />)}
             {item("/reportes", "Reportes", <BarChart3 {...ICON} />)}
             {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
             {item("/auditoria", "Auditoría", <ShieldCheck {...ICON} />)}

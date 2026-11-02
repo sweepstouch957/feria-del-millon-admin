@@ -63,7 +63,10 @@ export function useBoxOfficeSale(eventId: string) {
         },
       });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["ticketDays", eventId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticketDays", eventId] });
+      qc.invalidateQueries({ queryKey: ["ticketSales", eventId] });
+    },
   });
 
   const next = () => {

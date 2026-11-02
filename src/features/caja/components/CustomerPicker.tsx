@@ -7,9 +7,9 @@ import type { CustomerDoc } from "@services/orders.service";
 import { useCustomerSearch } from "../hooks/useCustomerSearch";
 
 /**
- * Buscar un comprador que ya compró (nombre, correo, teléfono o cédula) y
- * llenar sus datos de un toque. Si no aparece, es cliente nuevo: se llenan los
- * campos de abajo y queda guardado al cobrar.
+ * Buscar a quien ya dejó sus datos (compró una obra o una entrada, o está
+ * invitado) y llenarlos de un toque. Si no aparece, es cliente nuevo: se llenan
+ * los campos de abajo y queda guardado al cobrar.
  */
 export function CustomerPicker({ onPick }: { onPick: (c: CustomerDoc) => void }) {
   const [text, setText] = useState("");
@@ -31,20 +31,21 @@ export function CustomerPicker({ onPick }: { onPick: (c: CustomerDoc) => void })
       getOptionLabel={(c) => c.name || c.email}
       isOptionEqualToValue={(a, b) => a.email === b.email}
       loading={isLoading}
-      noOptionsText={searching ? "No está registrado: es cliente nuevo, llena los datos abajo." : "Escribe nombre, correo, teléfono o cédula"}
+      noOptionsText={searching ? "No aparece. Escribe sus datos abajo." : "Escribe el nombre, el correo o la cédula"}
       blurOnSelect
       renderOption={({ key, ...props }, c) => (
         <Box component="li" key={key} {...props} sx={{ display: "block !important", py: 1 }}>
-          <Typography sx={{ fontSize: 15 }}>{c.name || "Sin nombre"}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {[c.email, c.phone, c.document && `CC ${c.document}`].filter(Boolean).join(" · ")}
+          <Typography sx={{ fontSize: 18 }}>{c.name || "Sin nombre"}</Typography>
+          <Typography sx={{ fontSize: 15 }} color="text.secondary">
+            {[c.source, c.email, c.phone, c.document && `CC ${c.document}`].filter(Boolean).join(" · ")}
           </Typography>
         </Box>
       )}
       renderInput={(params) => (
         <TextField
           {...params}
-          placeholder="Buscar cliente: nombre, correo, teléfono o cédula"
+          label="Buscar al comprador"
+          placeholder="Nombre, correo o cédula"
           slotProps={{
             input: {
               ...params.InputProps,

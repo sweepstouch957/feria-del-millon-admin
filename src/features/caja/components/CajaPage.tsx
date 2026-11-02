@@ -61,7 +61,7 @@ function Caja({ eventId }: { eventId: string }) {
       <PageHeader
         crumb="Caja"
         title="Vender obra"
-        description="Escanea el QR o busca la obra, toma los datos del comprador y cobra."
+        description="Primero escanea el QR de la obra o búscala por su nombre. Después sigue los pasos 1, 2 y 3."
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
       <PracticeBanner />

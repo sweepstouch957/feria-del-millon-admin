@@ -781,7 +781,10 @@ function Invitations({ eventId }: { eventId: string }) {
                         <Chip size="small" variant="outlined" label={`Acompañante de ${t.inviteHostName}`} sx={{ mt: 0.5 }} />
                       )}
                     </TableCell>
-                    <TableCell>{t.inviteCategory || "—"}</TableCell>
+                    <TableCell>
+                      {t.linkLabel ? <Typography fontSize={13} fontWeight={600}>{t.linkLabel}</Typography> : null}
+                      {t.inviteCategory || (t.linkLabel ? null : "—")}
+                    </TableCell>
                     {/* Lo que llenó al confirmar: sin eso, todavía no se inscribió. */}
                     <TableCell>
                       {t.buyer?.documentNumber || t.buyer?.address || t.inviteParent ? (

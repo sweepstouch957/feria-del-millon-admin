@@ -56,6 +56,8 @@ export interface Ticket {
   allDays?: boolean;
   admits?: number;
   inviteCategory?: string;
+  /** "Para quién" del enlace por el que se registró: la empresa o el grupo. */
+  linkLabel?: string;
   companionName?: string;
   inviteImage?: string;
   inviteDeadline?: string;
@@ -393,6 +395,53 @@ export const getAttendanceReport = async (eventId: string, date: string) => {
     `/ticket/tickets/reports/attendance?${buildQuery({ eventId, date })}`,
     { withCredentials: true },
   );
+  return data;
+};
+
+/** ────────── Ventas de entradas ────────── */
+export interface TicketSale {
+  id: string;
+  buyer: TicketBuyer;
+  type: TicketType;
+  price: number;
+  paymentMethod?: string;
+  saleChannel?: TicketChannel;
+  eventDay: string;
+  allDays?: boolean;
+  anyDay?: boolean;
+  shortCode?: string;
+  status: TicketStatus;
+  createdAt: string;
+  inviteLink?: string;
+  /** "Para quién" del enlace: la empresa o el grupo. */
+  linkLabel?: string;
+}
+
+/** Entradas vendidas (sin invitaciones), con método de pago y comprador. */
+export const getTicketSales = async (eventId: string) => {
+  const { data } = await apiClient.get<{ rows: TicketSale[] }>("/ticket/tickets/reports/sales", {
+    params: { eventId },
+    withCredentials: true,
+  });
+  return data.rows;
+};
+
+export interface TicketPerson {
+  email: string;
+  name: string;
+  phone: string;
+  document: string;
+  addressLine: string;
+  cityName: string;
+  source: string;
+}
+
+/** Invitados y compradores de entradas, para que la caja no les pida los datos otra vez. */
+export const getTicketPeople = async (eventId: string) => {
+  const { data } = await apiClient.get<TicketPerson[]>("/ticket/tickets/people", {
+    params: { eventId },
+    withCredentials: true,
+  });
   return data;
 };
 

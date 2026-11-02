@@ -236,6 +236,9 @@ export interface CustomerDoc {
     totalSpent?: number;
     firstOrderAt?: string;
     lastOrderAt?: string;
+    /** Solo personas que vienen de entradas: su ciudad en texto y de dónde salieron. */
+    cityName?: string;
+    source?: string;
 }
 
 /** GET /order/customers — compradores únicos (staff). */

@@ -18,6 +18,7 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getTicketDays, TICKET_TYPE_LABEL } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
 import { boxOfficeError, useBoxOfficeSale } from "../hooks/useBoxOfficeSale";
+import { TicketSalesSummary } from "./TicketSalesSummary";
 import { PracticeBanner } from "@features/caja/components/PracticeBanner";
 import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
 import {
@@ -235,6 +236,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
             </Box>
         </CardContent>
       </Card>
+      <TicketSalesSummary eventId={eventId} />
     </Box>
   );
 }
