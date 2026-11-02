@@ -168,7 +168,7 @@ export function DaysGrid({ eventId }: { eventId: string }) {
                       </Stack>
                       <LinearProgress variant="determinate" value={Math.min(100, pct)} color={loadColor(pct)} sx={{ height: 6, mt: 0.5 }} />
                       <Typography variant="caption" color="text.secondary">
-                        {day.sold} vendidos · {day.checked_in} ingresaron
+                        {day.sold} entradas e invitaciones · {day.checked_in} ingresaron
                       </Typography>
                     </Box>
 

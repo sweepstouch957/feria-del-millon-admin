@@ -26,10 +26,11 @@ import { useQuery } from "@tanstack/react-query";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import { formatCOP } from "@/utils/money";
 import { eyebrow } from "@/app/theme";
-import { getTickets, type Ticket } from "@services/ticket.service";
+import { getTicketSales, getTickets, type Ticket } from "@services/ticket.service";
 
 const STATUS: Record<string, { label: string; color: "primary" | "success" | "warning" | "default" }> = {
   sold: { label: "Vendido", color: "primary" },
+  invited: { label: "Sin confirmar", color: "default" },
   checked_in: { label: "Ingresó", color: "success" },
   refunded: { label: "Reembolsado", color: "warning" },
   cancelled: { label: "Cancelado", color: "default" },
@@ -43,15 +44,22 @@ const fmtDay = (iso: string) =>
 const code = (t: Ticket) => t.shortCode ?? String(t.id).slice(-6);
 
 export function TicketsTable({ eventId }: { eventId: string }) {
+  // Una invitación confirmada también queda "sold" (a $0): se ven aparte para
+  // que nadie la confunda con una venta.
+  const [kind, setKind] = useState<"sales" | "invites">("sales");
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["tickets", eventId],
-    queryFn: () => getTickets({ eventId, limit: 200 }),
+    queryKey: ["tickets", eventId, kind],
+    queryFn: async () =>
+      kind === "sales"
+        ? ((await getTicketSales(eventId)) as unknown as Ticket[])
+        : (await getTickets({ eventId, type: "invitacion", limit: 200 } as any)).data,
   });
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const dq = useDeferredValue(q.trim().toLowerCase());
+  const invites = kind === "invites";
 
-  const tickets: Ticket[] = data?.data ?? [];
+  const tickets: Ticket[] = useMemo(() => data ?? [], [data]);
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const t of tickets) c[t.status] = (c[t.status] || 0) + 1;
@@ -69,7 +77,8 @@ export function TicketsTable({ eventId }: { eventId: string }) {
 
   const chip = (t: Ticket) => {
     const s = statusOf(t.status);
-    return <Chip size="small" label={s.label} color={s.color} variant={s.color === "default" ? "outlined" : "filled"} />;
+    const label = invites && t.status === "sold" ? "Confirmada" : s.label;
+    return <Chip size="small" label={label} color={s.color} variant={s.color === "default" ? "outlined" : "filled"} />;
   };
 
   return (
@@ -82,11 +91,17 @@ export function TicketsTable({ eventId }: { eventId: string }) {
         sx={{ p: { xs: 2, md: 3 }, pb: 2 }}
       >
         <Box>
-          <Typography sx={{ ...eyebrow, color: "primary.main" }}>Ventas</Typography>
-          <Typography variant="h5" sx={{ mt: 0.5 }}>Boletos emitidos</Typography>
+          <Typography sx={{ ...eyebrow, color: "primary.main" }}>{invites ? "Sin costo" : "Ventas"}</Typography>
+          <Typography variant="h5" sx={{ mt: 0.5 }}>{invites ? "Invitaciones" : "Entradas vendidas"}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Los últimos {tickets.length ? tickets.length.toLocaleString("es-CO") : ""} boletos de esta feria.
+            {invites
+              ? "Hasta 200 invitaciones. La lista completa está en Boletos → Invitaciones."
+              : "Solo entradas pagadas: no incluye invitaciones."}
           </Typography>
+          <Stack direction="row" gap={1} sx={{ mt: 1.5 }}>
+            <Chip label="Entradas vendidas" color={invites ? "default" : "primary"} variant={invites ? "outlined" : "filled"} onClick={() => { setKind("sales"); setStatus("all"); }} />
+            <Chip label="Invitaciones" color={invites ? "primary" : "default"} variant={invites ? "filled" : "outlined"} onClick={() => { setKind("invites"); setStatus("all"); }} />
+          </Stack>
         </Box>
         <Stack direction="row" gap={1} alignItems="center">
           <TextField
@@ -137,7 +152,7 @@ export function TicketsTable({ eventId }: { eventId: string }) {
         )}
         {!isLoading && !isError && tickets.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: "center" }}>
-            Aún no hay boletos para esta feria.
+            {invites ? "Aún no hay invitaciones." : "Todavía no se ha vendido ninguna entrada."}
           </Typography>
         )}
         {tickets.length > 0 && rows.length === 0 && (

@@ -217,7 +217,7 @@ export default function SalesReportPage() {
             </TableContainer>
             {data.lines.length > 300 && (
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                Se muestran 300 de {data.lines.length}. Con "Exportar detalle" las descargas todas.
+                Se muestran 300 de {data.lines.length}. Con Exportar detalle las descargas todas.
               </Typography>
             )}
           </CardContent>
