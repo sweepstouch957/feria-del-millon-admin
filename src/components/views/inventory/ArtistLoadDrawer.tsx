@@ -11,6 +11,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { formatCOP } from "@/utils/money";
 import { eyebrow } from "@/app/theme";
 import { getInventoryStatusDetail, updateApplicationProject, type InventoryStatusRow } from "@services/applications.service";
+import { uploadCampaignImage } from "@services/upload.service";
 import ArtworkViewer from "./ArtworkViewer";
 
 /* La ficha de un artista en "Estado de carga". Arriba lo que importa de un
@@ -70,12 +71,32 @@ export default function ArtistLoadDrawer({
   const [editing, setEditing] = React.useState(false);
   const [draftTitle, setDraftTitle] = React.useState("");
   const [draftReview, setDraftReview] = React.useState("");
+  const [draftBio, setDraftBio] = React.useState("");
+  const [draftPhoto, setDraftPhoto] = React.useState("");
+  const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
+  const pickPhoto = async (file?: File) => {
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      setDraftPhoto((await uploadCampaignImage(file, "artistas")).url);
+    } catch {
+      toast.error("No se pudo subir la foto");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
   React.useEffect(() => { setTab(0); setOnlyIssues(false); setViewer(null); setEditing(false); }, [row?.artistId]);
   const qc = useQueryClient();
   const saveProject = useMutation({
-    mutationFn: () => updateApplicationProject(data!.application!.id, { projectTitle: draftTitle.trim(), projectReview: draftReview.trim() }),
+    mutationFn: () =>
+      updateApplicationProject(data!.application!.id, {
+        projectTitle: draftTitle.trim(),
+        projectReview: draftReview.trim(),
+        bio: draftBio.trim(),
+        profilePhotoUrl: draftPhoto,
+      }),
     onSuccess: () => {
-      toast.success("Proyecto actualizado");
+      toast.success("Perfil actualizado");
       setEditing(false);
       qc.invalidateQueries({ queryKey: ["inventory-status-detail", eventId, row?.artistId] });
       qc.invalidateQueries({ queryKey: ["inventory-status"] });
@@ -115,7 +136,7 @@ export default function ArtistLoadDrawer({
             {/* Cabecera */}
             <Box sx={{ p: 2.5, pb: 2 }}>
               <Stack direction="row" alignItems="center" gap={1.5}>
-                <Avatar sx={{ width: 46, height: 46, bgcolor: "primary.main", color: "primary.contrastText", fontWeight: 600 }}>
+                <Avatar src={data?.application?.profilePhotoUrl || undefined} sx={{ width: 46, height: 46, bgcolor: "primary.main", color: "primary.contrastText", fontWeight: 600 }}>
                   {initials(row.name)}
                 </Avatar>
                 <Box flex={1} minWidth={0}>
@@ -147,7 +168,7 @@ export default function ArtistLoadDrawer({
 
             <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 1.5, borderBottom: "1px solid", borderColor: "divider", minHeight: 42 }}>
               <Tab label={`Obras${data ? ` (${artworks.length})` : ""}`} sx={{ textTransform: "none", minHeight: 42 }} />
-              <Tab label="Proyecto" sx={{ textTransform: "none", minHeight: 42 }} />
+              <Tab label="Perfil y proyecto" sx={{ textTransform: "none", minHeight: 42 }} />
               <Tab label="Contacto y envío" sx={{ textTransform: "none", minHeight: 42 }} />
             </Tabs>
             {isLoading && <LinearProgress />}
@@ -231,6 +252,19 @@ export default function ArtistLoadDrawer({
               {/* ── Proyecto ── */}
               {tab === 1 && data && editing && (
                 <Box sx={{ maxWidth: 620, display: "grid", gap: 2 }}>
+                  <Stack direction="row" alignItems="center" gap={2} flexWrap="wrap">
+                    <Avatar src={draftPhoto || undefined} sx={{ width: 72, height: 72 }}>{initials(row?.name || "")}</Avatar>
+                    <Button component="label" variant="outlined" size="small" disabled={uploadingPhoto} sx={{ textTransform: "none" }}>
+                      {uploadingPhoto ? "Subiendo…" : "Cambiar foto de perfil"}
+                      <input hidden type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} />
+                    </Button>
+                    {draftPhoto && <Button size="small" color="inherit" onClick={() => setDraftPhoto("")} sx={{ textTransform: "none" }}>Quitar</Button>}
+                  </Stack>
+                  <TextField
+                    label="Bio del artista" value={draftBio} onChange={(e) => setDraftBio(e.target.value)}
+                    multiline minRows={4} fullWidth inputProps={{ maxLength: 500 }}
+                    helperText={`${draftBio.length}/500 caracteres. Sale en su página, en "Sobre el artista".`}
+                  />
                   <TextField label="Título del proyecto" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} inputProps={{ maxLength: 160 }} fullWidth />
                   <TextField
                     label="Descripción del proyecto" value={draftReview} onChange={(e) => setDraftReview(e.target.value)}
@@ -238,8 +272,8 @@ export default function ArtistLoadDrawer({
                     helperText={`${words(draftReview)} palabras · ${draftReview.length}/1800 caracteres. El artista lo verá así en su estudio y en su página.`}
                   />
                   <Stack direction="row" gap={1}>
-                    <Button variant="contained" disabled={saveProject.isPending} onClick={() => saveProject.mutate()}>
-                      {saveProject.isPending ? "Guardando…" : "Guardar proyecto"}
+                    <Button variant="contained" disabled={saveProject.isPending || uploadingPhoto} onClick={() => saveProject.mutate()}>
+                      {saveProject.isPending ? "Guardando…" : "Guardar"}
                     </Button>
                     <Button onClick={() => setEditing(false)} disabled={saveProject.isPending}>Cancelar</Button>
                   </Stack>
@@ -249,10 +283,20 @@ export default function ArtistLoadDrawer({
                 <Box sx={{ maxWidth: 620 }}>
                   {data.application && (
                     <Button size="small" variant="outlined" startIcon={<Pencil size={14} />} sx={{ float: "right", textTransform: "none" }}
-                      onClick={() => { setDraftTitle(data.application?.projectTitle || ""); setDraftReview(data.application?.projectReview || ""); setEditing(true); }}>
-                      Editar proyecto
+                      onClick={() => {
+                        setDraftTitle(data.application?.projectTitle || "");
+                        setDraftReview(data.application?.projectReview || "");
+                        setDraftBio(data.application?.bio || "");
+                        setDraftPhoto(data.application?.profilePhotoUrl || "");
+                        setEditing(true);
+                      }}>
+                      Editar
                     </Button>
                   )}
+                  <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Bio del artista</Typography>
+                  <Typography sx={{ mt: 1, mb: 3, whiteSpace: "pre-line", lineHeight: 1.75, fontSize: 15 }} color={data.application?.bio ? "text.primary" : "text.secondary"}>
+                    {data.application?.bio || "Sin bio"}
+                  </Typography>
                   <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Título</Typography>
                   <Typography sx={{ fontSize: 24, lineHeight: 1.25, mt: 0.5 }} color={data.application?.projectTitle ? "text.primary" : "warning.main"}>
                     {data.application?.projectTitle || "Sin título"}

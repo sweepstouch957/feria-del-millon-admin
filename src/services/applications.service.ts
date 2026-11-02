@@ -194,7 +194,7 @@ export interface InventoryStatusDetail {
   pavilions: { name: string; minArtworkPrice: number | null; maxArtworkPrice: number | null }[];
   application: {
     id: string; status: string; invited: boolean; isPaid: boolean; createdAt: string;
-    projectTitle: string; projectReview: string; inventorySentAt: string | null;
+    projectTitle: string; projectReview: string; bio: string; profilePhotoUrl: string; inventorySentAt: string | null;
   } | null;
   otherApplications: { status: string; createdAt: string }[];
   artworks: InventoryArtworkDetail[];
@@ -202,8 +202,11 @@ export interface InventoryStatusDetail {
 }
 
 /** Ficha de un artista en "Estado de carga": proyecto completo y sus obras una por una. */
-/** El equipo corrige el título y la descripción del proyecto de un artista. */
-export const updateApplicationProject = async (id: string, body: { projectTitle?: string; projectReview?: string }) => {
+/** El equipo corrige el proyecto, la bio y la foto de un artista. */
+export const updateApplicationProject = async (
+  id: string,
+  body: { projectTitle?: string; projectReview?: string; bio?: string; profilePhotoUrl?: string },
+) => {
   const { data } = await apiClient.patch(`/applications/applications/${encodeURIComponent(id)}/project`, body, { headers: ADMIN_HEADERS });
   return data as { ok: boolean; project: { projectTitle: string; projectReview: string } };
 };
