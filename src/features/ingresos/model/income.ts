@@ -11,11 +11,11 @@ export const methodLabel = (m?: string) => {
 
 export type MethodTotal = { label: string; count: number; amount: number };
 
-/** Suma por método de pago, de mayor a menor. */
-export function byMethod<T>(rows: T[], method: (r: T) => string | undefined, amount: (r: T) => number): MethodTotal[] {
+/** Suma por grupo, de mayor a menor. */
+export function groupTotals<T>(rows: T[], group: (r: T) => string, amount: (r: T) => number): MethodTotal[] {
   const map = new Map<string, MethodTotal>();
   for (const r of rows) {
-    const label = methodLabel(method(r));
+    const label = group(r);
     const m = map.get(label) ?? { label, count: 0, amount: 0 };
     m.count += 1;
     m.amount += amount(r);
@@ -23,6 +23,13 @@ export function byMethod<T>(rows: T[], method: (r: T) => string | undefined, amo
   }
   return [...map.values()].sort((a, b) => b.amount - a.amount);
 }
+
+export const byMethod = <T,>(rows: T[], method: (r: T) => string | undefined, amount: (r: T) => number) =>
+  groupTotals(rows, (r) => methodLabel(method(r)), amount);
+
+/** Lo cobrado por una inscripción; si no quedó guardado, el valor de su convocatoria. */
+export const appAmount = (a: { paymentDetails?: { transaction_amount?: number }; convocatoria?: unknown }) =>
+  Number(a.paymentDetails?.transaction_amount ?? (a.convocatoria as { fee?: number } | undefined)?.fee ?? 0);
 
 type OrderLike = {
   status: string;

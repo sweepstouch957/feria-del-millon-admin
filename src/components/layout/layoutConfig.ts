@@ -53,7 +53,6 @@ export const ROUTES: Record<string, { crumb: string; title: string }> = {
   "/orders/cartera": { crumb: "Pedidos", title: "Cartera / Fiado" },
   "/reportes": { crumb: "Reportes", title: "Reportes" },
   "/reportes/ventas": { crumb: "Reportes", title: "Informe de ventas" },
-  "/reportes/ingresos": { crumb: "Reportes", title: "Ingresos y clientes" },
   "/my/artworks": { crumb: "Artista", title: "Mis obras" },
   "/my/orders": { crumb: "Artista", title: "Mis pedidos" },
   "/account": { crumb: "Cuenta", title: "Mi cuenta" },

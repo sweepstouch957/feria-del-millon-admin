@@ -1,6 +1,10 @@
 // node --experimental-strip-types src/features/ingresos/model/income.check.ts
 import assert from "node:assert/strict";
-import { buildCustomers, byMethod, methodLabel, orderIncome } from "./income.ts";
+import { appAmount, buildCustomers, byMethod, methodLabel, orderIncome } from "./income.ts";
+
+assert.equal(appAmount({ paymentDetails: { transaction_amount: 40000 }, convocatoria: { fee: 1 } }), 40000);
+assert.equal(appAmount({ convocatoria: { fee: 50000 } }), 50000);
+assert.equal(appAmount({ convocatoria: "id-sin-poblar" }), 0);
 
 assert.equal(methodLabel("whatsapp"), "Transferencia");
 assert.equal(methodLabel("transfer"), "Transferencia");

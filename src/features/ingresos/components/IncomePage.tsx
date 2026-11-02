@@ -1,45 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
 } from "@mui/material";
 import { Download, RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import { eyebrow } from "@/app/theme";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { listApplications, type ArtistApplication } from "@services/applications.service";
-import { getConvocatorias } from "@services/events.service";
-import { listOrders, type OrderDoc } from "@services/orders.service";
-import { getTicketSales, TICKET_TYPE_LABEL, type TicketSale } from "@services/ticket.service";
+import type { ArtistApplication } from "@services/applications.service";
+import type { OrderDoc } from "@services/orders.service";
+import { TICKET_TYPE_LABEL, type TicketSale } from "@services/ticket.service";
 import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
 import { formatCOP } from "@/utils/money";
-import { buildCustomers, byMethod, methodLabel, orderIncome, type Customer } from "../model/income";
+import { useIncome } from "../hooks/useIncome";
+import { appAmount, byMethod, groupTotals, methodLabel, orderIncome, type Customer, type MethodTotal } from "../model/income";
 
 const money = (n?: number) => formatCOP(n || 0, { code: true });
 const when = (d?: string) => (d ? new Date(d).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" }) : "");
 const day = (d?: string) => (d ? new Date(d).toLocaleDateString("es-CO", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }) : "");
 
-/** Inscripciones pagadas de las convocatorias de esta feria (la API da 100 por página). */
-async function paidApplications(eventId: string) {
-  const convocatorias = await getConvocatorias(eventId);
-  const docs: ArtistApplication[] = [];
-  for (const c of convocatorias as any[]) {
-    let page = 1;
-    let pages = 1;
-    do {
-      const r: any = await listApplications({ convocatoria: c._id || c.id, isPaid: "true", limit: 100, page } as any);
-      docs.push(...(r.docs || []));
-      pages = r.totalPages || 1;
-      page += 1;
-    } while (page <= pages);
-  }
-  return docs;
-}
-const appAmount = (a: any) => Number(a.paymentDetails?.transaction_amount ?? a.convocatoria?.fee ?? 0);
 const artistOf = (a: any) => (typeof a.artist === "object" ? a.artist : {}) || {};
 
 const TICKET_COLS: CsvCol<TicketSale>[] = [
@@ -101,7 +84,19 @@ const CUSTOMER_COLS: CsvCol<Customer>[] = [
   { header: "Total", value: (c) => c.ticketsAmount + c.ordersAmount },
 ];
 
-type Panel = "boletos" | "obras" | "inscripciones" | "clientes";
+const PANELS = ["boletos", "obras", "inscripciones", "clientes"] as const;
+type Panel = (typeof PANELS)[number];
+
+/** Una franja de totales con su título: "Por tipo de pago", "Por cajera"… */
+function Breakdown({ title, items, unit }: { title: string; items: MethodTotal[]; unit: string }) {
+  if (!items.length) return null;
+  return (
+    <Box>
+      <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary", mb: 1 }}>{title}</Typography>
+      <KpiStrip items={items.map((m) => ({ label: m.label, value: money(m.amount), sub: `${m.count} ${unit}` }))} />
+    </Box>
+  );
+}
 const MONEY_HEADERS = new Set(["Valor", "Total de la orden", "Recibido", "Saldo", "En entradas", "En obras", "Total"]);
 const SHOW = (h: string, v: unknown) => (MONEY_HEADERS.has(h) ? money(Number(v)) : String(v ?? "") || "—");
 
@@ -169,65 +164,60 @@ function Rows<T>({ rows, cols, name, screen, screenLabel }: { rows: T[]; cols: C
   );
 }
 
-export function IncomePage() {
+export function IncomePage({ initialPanel }: { initialPanel?: string }) {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
-  return <Income eventId={eventId} />;
+  return <Income eventId={eventId} initialPanel={initialPanel} />;
 }
 
 /** Cuánta plata ha generado la feria y de quién: boletos, obras e inscripciones. */
-function Income({ eventId }: { eventId: string }) {
-  const [panel, setPanel] = useState<Panel>("boletos");
-  const ticketsQ = useQuery({ queryKey: ["income", "tickets", eventId], queryFn: () => getTicketSales(eventId) });
-  const ordersQ = useQuery({ queryKey: ["income", "orders", eventId], queryFn: () => listOrders({ event: eventId }) });
-  const appsQ = useQuery({ queryKey: ["income", "apps", eventId], queryFn: () => paidApplications(eventId) });
-
-  const tickets = useMemo(() => ticketsQ.data ?? [], [ticketsQ.data]);
-  const orders = useMemo(() => (ordersQ.data ?? []).filter((o) => orderIncome(o) > 0), [ordersQ.data]);
-  const apps = useMemo(() => appsQ.data ?? [], [appsQ.data]);
-  const customers = useMemo(() => buildCustomers(tickets as any, orders as any), [tickets, orders]);
-
-  const ticketsTotal = tickets.reduce((s, t) => s + Number(t.price || 0), 0);
-  const ordersTotal = orders.reduce((s, o) => s + orderIncome(o), 0);
-  const appsTotal = apps.reduce((s, a) => s + appAmount(a), 0);
-  const failed = ticketsQ.isError || ordersQ.isError || appsQ.isError;
-  const loading = ticketsQ.isLoading || ordersQ.isLoading || appsQ.isLoading;
-
-  const methods =
-    panel === "boletos"
-      ? byMethod(tickets, (t) => t.paymentMethod, (t) => Number(t.price || 0))
-      : panel === "obras"
-        ? byMethod(orders, (o) => (o.status === "partial" ? "Apartadas (abonos)" : o.payment?.method), orderIncome)
-        : [];
+function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: string }) {
+  const router = useRouter();
+  const [panel, setPanel] = useState<Panel>(PANELS.find((p) => p === initialPanel) ?? "boletos");
+  const { tickets, orders, apps, customers, ticketsTotal, ordersTotal, appsTotal, total, pending, applications, loading, failed, refetch } = useIncome(eventId);
+  const ticketAmount = (t: TicketSale) => Number(t.price || 0);
 
   return (
     <Box>
       <PageHeader
         crumb="Reportes"
-        title="Ingresos y clientes"
-        description="Toca una cifra para ver el detalle. Toca una fila para ver toda la información."
-        actions={[{
-          label: "Actualizar",
-          kind: "sec",
-          icon: <RefreshCw size={14} />,
-          onClick: () => { ticketsQ.refetch(); ordersQ.refetch(); appsQ.refetch(); },
-        }]}
+        title="Reportes"
+        description="Toda la plata de la feria. Toca una cifra para ver su detalle y una fila para ver toda la información."
+        actions={[
+          { label: "Informe de ventas", kind: "sec", href: "/reportes/ventas" },
+          { label: "Actualizar", kind: "sec", icon: <RefreshCw size={14} />, onClick: refetch },
+        ]}
       />
       {failed && <Alert severity="error" sx={{ mb: 2 }}>Una parte del reporte no cargó: las cifras pueden estar incompletas. Pulsa Actualizar.</Alert>}
 
       <KpiStrip
         loading={loading}
         items={[
-          { label: "Total", value: money(ticketsTotal + ordersTotal + appsTotal), accent: true, sub: "boletos + obras + inscripciones" },
+          { label: "Total", value: money(total), accent: true, sub: "boletos + obras + inscripciones" },
           { label: "Boletos", value: money(ticketsTotal), sub: `${tickets.length} entrada(s)`, onClick: () => setPanel("boletos"), selected: panel === "boletos" },
           { label: "Obras", value: money(ordersTotal), sub: `${orders.length} venta(s)`, onClick: () => setPanel("obras"), selected: panel === "obras" },
           { label: "Inscripciones", value: money(appsTotal), sub: `${apps.length} pagada(s)`, onClick: () => setPanel("inscripciones"), selected: panel === "inscripciones" },
           { label: "Clientes", value: customers.length, sub: "compraron entradas u obras", onClick: () => setPanel("clientes"), selected: panel === "clientes" },
+          { label: "Por cobrar", value: money(pending), sub: "saldo de obras apartadas", onClick: () => router.push("/orders/cartera") },
+          { label: "Solicitudes", value: applications.total, sub: `${applications.accepted} aceptadas`, onClick: () => router.push("/solicitudes") },
         ]}
       />
 
-      {methods.length > 0 && (
-        <KpiStrip items={methods.map((m) => ({ label: m.label, value: money(m.amount), sub: `${m.count} ${panel === "boletos" ? "entrada(s)" : "venta(s)"}` }))} />
+      {panel === "boletos" && (
+        <>
+          <Breakdown title="Por tipo de pago" unit="entrada(s)" items={byMethod(tickets, (t) => t.paymentMethod, ticketAmount)} />
+          <Breakdown title="Por tipo de entrada" unit="entrada(s)" items={groupTotals(tickets, (t) => TICKET_TYPE_LABEL[t.type] || t.type, ticketAmount)} />
+          <Breakdown title="Por quién vendió" unit="entrada(s)" items={groupTotals(tickets, (t) => t.sellerName || "En línea", ticketAmount)} />
+        </>
+      )}
+      {panel === "obras" && (
+        <>
+          <Breakdown title="Por tipo de pago" unit="venta(s)" items={byMethod(orders, (o) => (o.status === "partial" ? "Apartadas (abonos)" : o.payment?.method), orderIncome)} />
+          <Breakdown title="Por cajera" unit="venta(s)" items={groupTotals(orders, (o) => o.cashierName || o.invoice?.issuedBy || "En línea", orderIncome)} />
+        </>
+      )}
+      {panel === "inscripciones" && (
+        <Breakdown title="Por convocatoria" unit="pagada(s)" items={groupTotals(apps, (a) => (a.convocatoria as { name?: string })?.name || "Sin convocatoria", appAmount)} />
       )}
 
       {loading ? (

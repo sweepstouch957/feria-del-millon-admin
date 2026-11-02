@@ -1,5 +1,5 @@
-import { IncomePage } from "@features/ingresos/components/IncomePage";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <IncomePage />;
+  redirect("/reportes");
 }
