@@ -20,6 +20,8 @@ const money = (n?: number) => formatCOP(n, { code: true });
 
 const VIEWS = [
   { key: "byDay", label: "Por día", col: "Día" },
+  { key: "bySeller", label: "Por cajera", col: "Cajera" },
+  { key: "byMethod", label: "Por tipo de pago", col: "Tipo de pago" },
   { key: "byPavilion", label: "Por pabellón", col: "Pabellón" },
   { key: "byArtist", label: "Por artista", col: "Artista" },
   { key: "byTechnique", label: "Por técnica", col: "Técnica" },
@@ -73,11 +75,11 @@ export default function SalesReportPage() {
       { header: "Cantidad", value: (l) => l.qty },
       { header: "Valor (COP)", value: (l) => l.amount },
       { header: "Canal", value: (l) => l.channel },
-      { header: "Método", value: (l) => l.method },
+      { header: "Tipo de pago", value: (l) => l.methodLabel || l.method },
       { header: "Comprador", value: (l) => l.buyer },
       { header: "Email", value: (l) => l.buyerEmail },
       { header: "Teléfono", value: (l) => l.buyerPhone, text: true },
-      { header: "Cajero", value: (l) => l.cashier },
+      { header: "Cajera", value: (l) => l.cashier || "En línea" },
     ]));
 
   return (
@@ -181,6 +183,46 @@ export default function SalesReportPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Venta por venta: quién la cobró y cómo pagaron. */}
+      {!!data?.lines?.length && (
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 1.5 }}>Detalle de ventas</Typography>
+            <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 520 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Día</TableCell>
+                    <TableCell>Obra</TableCell>
+                    <TableCell>Comprador</TableCell>
+                    <TableCell>Tipo de pago</TableCell>
+                    <TableCell>Cajera</TableCell>
+                    <TableCell align="right">Valor</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data.lines.slice(0, 300).map((l, i) => (
+                    <TableRow key={`${l.orderId}-${i}`} hover>
+                      <TableCell sx={{ whiteSpace: "nowrap" }}>{l.day}</TableCell>
+                      <TableCell>{l.artwork}</TableCell>
+                      <TableCell>{l.buyer}</TableCell>
+                      <TableCell>{l.methodLabel || l.method}</TableCell>
+                      <TableCell>{l.cashier || "En línea"}</TableCell>
+                      <TableCell align="right">{money(l.amount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {data.lines.length > 300 && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                Se muestran 300 de {data.lines.length}. Con "Exportar detalle" las descargas todas.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

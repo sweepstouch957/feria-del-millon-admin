@@ -252,10 +252,12 @@ export interface SalesLine {
     day: string; orderId: string; artwork: string; artist: string; technique: string; pavilion: string;
     qty: number; amount: number; channel: string; method: string; buyer: string; buyerEmail: string; buyerPhone: string;
     cashier?: string;
+    methodLabel?: string;
 }
 export interface SalesReport {
     total: number; units: number; orders: number;
     byDay: SalesBucket[]; byPavilion: SalesBucket[]; byArtist: SalesBucket[]; byTechnique: SalesBucket[];
+    bySeller?: SalesBucket[]; byMethod?: SalesBucket[];
     lines: SalesLine[];
 }
 

@@ -378,7 +378,7 @@ export const sellAtBoxOffice = async (input: BoxOfficeSaleInput) => {
 export interface AttendanceBucket { key: string; label: string; tickets: number; persons: number; attended: number }
 export interface AttendanceRow {
   shortCode: string; name: string; email: string; phone: string; company: string; companion: string;
-  type: string; category: string; method: string; price: number; persons: number; attended: number;
+  type: string; category: string; method: string; seller?: string; price: number; persons: number; attended: number;
   checkedAt: string | null;
 }
 export interface AttendanceReport {
@@ -415,6 +415,8 @@ export interface TicketSale {
   inviteLink?: string;
   /** "Para quién" del enlace: la empresa o el grupo. */
   linkLabel?: string;
+  /** Quién la vendió en taquilla; vacío si se compró en línea. */
+  sellerName?: string;
 }
 
 /** Entradas vendidas (sin invitaciones), con método de pago y comprador. */

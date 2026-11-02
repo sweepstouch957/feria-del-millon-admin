@@ -17,6 +17,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import { RefundButton } from "@features/caja/components/RefundButton";
+import { methodLabel } from "@features/ingresos/model/income";
 import { OrderDetailDialog, STATUS } from "./OrderDetailDialog";
 
 const money = (n?: number) => formatCOP(n, { code: true });
@@ -147,7 +148,8 @@ export default function OrdersPage() {
                   ...(place(o) ? [{ label: "Dirección", value: place(o) }] : []),
                   { label: "Obras", value: items(o) },
                   { label: "Total", value: money(o.total) },
-                  { label: "Método", value: o.payment?.method || "—" },
+                  { label: "Tipo de pago", value: o.payment?.method ? methodLabel(o.payment.method) : "—" },
+                  { label: "Cajera", value: o.cashierName || o.invoice?.issuedBy || "En línea" },
                   { label: "Fecha", value: formatDate(o.createdAt) },
                   ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
                   ...(receiptOf(o) ? [{ label: "Comprobante", value: <a href={receiptOf(o)} target="_blank" rel="noreferrer">Ver foto</a> }] : []),
@@ -162,7 +164,8 @@ export default function OrdersPage() {
                       <TableCell>Fecha</TableCell>
                       <TableCell>Comprador</TableCell>
                       <TableCell>Obras</TableCell>
-                      <TableCell>Método</TableCell>
+                      <TableCell>Tipo de pago</TableCell>
+                      <TableCell>Cajera</TableCell>
                       <TableCell align="right">Total</TableCell>
                       <TableCell>Estado</TableCell>
                       <TableCell />
@@ -170,7 +173,7 @@ export default function OrdersPage() {
                   </TableHead>
                   <TableBody>
                     {rows.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} align="center" sx={{ color: "text.secondary", py: 3 }}>No hay pedidos con estos filtros.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} align="center" sx={{ color: "text.secondary", py: 3 }}>No hay pedidos con estos filtros.</TableCell></TableRow>
                     ) : rows.map((o) => (
                       <TableRow key={o.id} hover onClick={() => setDetail(o)} sx={{ cursor: "pointer" }}>
                         <TableCell>{formatDate(o.createdAt)}</TableCell>
@@ -182,13 +185,14 @@ export default function OrdersPage() {
                         </TableCell>
                         <TableCell><Typography variant="caption">{items(o)}</Typography></TableCell>
                         <TableCell>
-                          {o.payment?.method || "—"}
+                          {o.payment?.method ? methodLabel(o.payment.method) : "—"}
                           {receiptOf(o) && (
                             <Typography component="a" href={receiptOf(o)} target="_blank" rel="noreferrer" variant="caption" display="block" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               Comprobante
                             </Typography>
                           )}
                         </TableCell>
+                        <TableCell>{o.cashierName || o.invoice?.issuedBy || "En línea"}</TableCell>
                         <TableCell align="right">{money(o.total)}</TableCell>
                         <TableCell>
                           {chip(o.status)}

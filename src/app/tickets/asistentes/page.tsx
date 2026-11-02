@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getAttendanceReport, getTicketDays, type AttendanceBucket } from "@services/ticket.service";
 import { toCsv, downloadCsv } from "@/utils/csv";
+import { methodLabel } from "@features/ingresos/model/income";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import { eyebrow } from "@/app/theme";
@@ -72,7 +73,8 @@ function Attendance({ eventId }: { eventId: string }) {
       { header: "Empresa", value: (r) => r.company },
       { header: "Categoría", value: (r) => r.category },
       { header: "Tipo", value: (r) => r.type },
-      { header: "Método de pago", value: (r) => r.method },
+      { header: "Método de pago", value: (r) => methodLabel(r.method) },
+      { header: "Vendió", value: (r) => r.seller },
       { header: "Valor (COP)", value: (r) => r.price },
       { header: "Personas", value: (r) => r.persons },
       { header: "Ingresaron", value: (r) => r.attended },
