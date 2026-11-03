@@ -44,8 +44,9 @@ const STATUS_TONE: Record<EventStatus, PillTone> = {
   archived: "warn",
 };
 
+// Días de feria guardados a medianoche UTC: se leen en UTC (en Colombia salían un día antes).
 const day = (iso: string, opts: Intl.DateTimeFormatOptions) =>
-  new Date(iso).toLocaleDateString("es-CO", opts);
+  new Date(iso).toLocaleDateString("es-CO", { ...opts, timeZone: "UTC" });
 
 /** "12 – 15 nov 2026" cuando cae en el mismo mes; si no, fecha completa a cada lado. */
 function formatRange(from?: string, to?: string) {
@@ -55,11 +56,11 @@ function formatRange(from?: string, to?: string) {
 
   const a = new Date(from!);
   const b = new Date(to!);
-  const sameYear = a.getFullYear() === b.getFullYear();
-  const sameMonth = sameYear && a.getMonth() === b.getMonth();
+  const sameYear = a.getUTCFullYear() === b.getUTCFullYear();
+  const sameMonth = sameYear && a.getUTCMonth() === b.getUTCMonth();
 
   const left = sameMonth
-    ? String(a.getDate())
+    ? String(a.getUTCDate())
     : day(from!, { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }) });
 
   return `${left} – ${day(to!, { day: "numeric", month: "short", year: "numeric" })}`;

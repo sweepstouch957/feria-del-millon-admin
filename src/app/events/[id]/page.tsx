@@ -50,6 +50,7 @@ const fmtDate = (iso?: string) =>
         day: "numeric",
         month: "short",
         year: "numeric",
+        timeZone: "UTC", // día de feria a medianoche UTC; en Colombia salía el día anterior
       })
     : "—";
 

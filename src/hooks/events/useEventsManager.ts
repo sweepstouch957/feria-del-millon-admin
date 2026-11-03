@@ -31,13 +31,20 @@ export type EventFormState = {
   currency?: string;
 };
 
+/* Las fechas de feria son días de calendario guardados a medianoche UTC
+   ("2026-11-05T00:00Z" = jueves 5). Con dayjs(iso) en Colombia salían como el
+   4 a las 7 p. m.; quien lo "corregía" al 5 guardaba el 5 a las 7 p. m. = el 6 UTC.
+   Se carga el día tal cual (YYYY-MM-DD) y se guarda igual (el backend lo toma como día completo). */
+export const fairDay = (iso?: string | Date | null) => (iso ? dayjs(new Date(iso).toISOString().slice(0, 10)) : null);
+export const fairDayOut = (d: Dayjs | null | undefined) => (d ? d.format("YYYY-MM-DD") : undefined);
+
 const toEventFormState = (event: EventDoc): EventFormState => ({
   name: event.name,
   slug: event.slug,
   description: event.description ?? "",
   status: event.status,
-  validFrom: event.validFrom ? dayjs(event.validFrom) : null,
-  validTo: event.validTo ? dayjs(event.validTo) : null,
+  validFrom: fairDay(event.validFrom),
+  validTo: fairDay(event.validTo),
   inventoryOpenAt: event.inventoryOpenAt ? dayjs(event.inventoryOpenAt) : null,
   inventoryCloseAt: event.inventoryCloseAt ? dayjs(event.inventoryCloseAt) : null,
   minArtworkPrice: event.minArtworkPrice,
@@ -127,8 +134,8 @@ export function useEventsManager(initialEventId?: string | null) {
       slug: eventForm.slug,
       description: eventForm.description,
       status: eventForm.status,
-      validFrom: eventForm.validFrom?.toISOString(),
-      validTo: eventForm.validTo?.toISOString(),
+      validFrom: fairDayOut(eventForm.validFrom),
+      validTo: fairDayOut(eventForm.validTo),
       // La carga abre a primera hora del día elegido y cierra al final del
       // último: nadie piensa "hasta las 00:00 del 20", piensa "hasta el 20".
       // `null` borra la fecha, que para el backend es "sin límite por ese lado".
