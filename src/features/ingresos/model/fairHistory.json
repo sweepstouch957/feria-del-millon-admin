@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-11-03T02:54:40.182Z",
+  "salesMatched": 1090,
+  "salesTotal": 2218,
+  "years": [
+    {
+      "year": "2019 y antes",
+      "artworksSold": 783,
+      "artworkRevenue": 797912999,
+      "applications": 3659,
+      "accepted": 188,
+      "paidApplications": 0,
+      "applicationRevenue": 0,
+      "inferredSales": 783,
+      "buyers": 422
+    },
+    {
+      "year": "2020",
+      "artworksSold": 493,
+      "artworkRevenue": 534839000,
+      "applications": 899,
+      "accepted": 71,
+      "paidApplications": 719,
+      "applicationRevenue": 17975000,
+      "inferredSales": 324,
+      "buyers": 267
+    },
+    {
+      "year": "2021",
+      "artworksSold": 120,
+      "artworkRevenue": 159945000,
+      "applications": 907,
+      "accepted": 73,
+      "paidApplications": 611,
+      "applicationRevenue": 18330000,
+      "inferredSales": 6,
+      "buyers": 98
+    },
+    {
+      "year": "2022",
+      "artworksSold": 97,
+      "artworkRevenue": 80187997,
+      "applications": 1026,
+      "accepted": 60,
+      "paidApplications": 610,
+      "applicationRevenue": 18300000,
+      "inferredSales": 5,
+      "buyers": 91
+    },
+    {
+      "year": "2023",
+      "artworksSold": 49,
+      "artworkRevenue": 42259999,
+      "applications": 628,
+      "accepted": 60,
+      "paidApplications": 502,
+      "applicationRevenue": 17570000,
+      "inferredSales": 0,
+      "buyers": 48
+    },
+    {
+      "year": "2024",
+      "artworksSold": 33,
+      "artworkRevenue": 52970000,
+      "applications": 2445,
+      "accepted": 79,
+      "paidApplications": 660,
+      "applicationRevenue": 23100000,
+      "inferredSales": 3,
+      "buyers": 27
+    },
+    {
+      "year": "2025",
+      "artworksSold": 643,
+      "artworkRevenue": 1066865000,
+      "applications": 1610,
+      "accepted": 82,
+      "paidApplications": 582,
+      "applicationRevenue": 23280000,
+      "inferredSales": 7,
+      "buyers": 384
+    }
+  ]
+}

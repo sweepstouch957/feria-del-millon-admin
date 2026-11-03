@@ -16,6 +16,7 @@ export default function ReportTabs() {
     <Tabs value={pathname} sx={{ mb: 2 }}>
       <Tab component={Link} href="/reportes" value="/reportes" label="Resumen de ingresos" />
       <Tab component={Link} href="/reportes/ventas" value="/reportes/ventas" label="Ventas de obras" />
+      <Tab component={Link} href="/reportes/historico" value="/reportes/historico" label="Ferias anteriores" />
     </Tabs>
   );
 }

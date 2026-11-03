@@ -34,6 +34,15 @@ export default function KpiStrip({
 }) {
   if (!items.length) return null;
 
+  // Un solo cuerpo para toda la franja, según la cifra más larga y el ancho de
+  // la celda (cqi): antes cada cifra elegía el suyo y "COP 0" salía grande
+  // mientras "COP 22.880.000" se cortaba. 0.62em ≈ ancho de un dígito en Jost 200.
+  const longest = Math.max(
+    4,
+    ...items.map((k) => (typeof k.value === "string" || typeof k.value === "number" ? String(k.value).length : 4)),
+  );
+  const valueSize = `clamp(16px, calc(100cqi / ${(longest * 0.62).toFixed(2)}), 30px)`;
+
   return (
     <Box
       sx={{
@@ -47,7 +56,6 @@ export default function KpiStrip({
       }}
     >
       {items.map((k) => {
-        const text = typeof k.value === "string" || typeof k.value === "number" ? String(k.value) : "";
         return (
           <Tooltip key={k.label} title={k.hint || ""} arrow placement="top" disableInteractive>
           <Box
@@ -81,24 +89,28 @@ export default function KpiStrip({
               {k.hint && <Box component="span" sx={{ ml: 0.75, opacity: 0.6, letterSpacing: 0 }}>ⓘ</Box>}
             </Typography>
 
-            {loading ? (
-              <Skeleton variant="text" width="60%" height={34} />
-            ) : (
-              <Typography
-                component="div"
-                sx={{
-                  fontWeight: 200,
-                  lineHeight: 1.2,
-                  letterSpacing: "0.01em",
-                  // Las cifras largas (importes) bajan de cuerpo para no cortarse.
-                  fontSize: text.length > 7 ? "clamp(18px, 1.7vw, 22px)" : 30,
-                  color: k.accent ? "primary.main" : "text.primary",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {k.value}
-              </Typography>
-            )}
+            <Box sx={{ alignSelf: "stretch", containerType: "inline-size" }}>
+              {loading ? (
+                <Skeleton variant="text" width="60%" height={34} />
+              ) : (
+                <Typography
+                  component="div"
+                  sx={{
+                    fontWeight: 200,
+                    lineHeight: 1.2,
+                    letterSpacing: "0.01em",
+                    fontSize: valueSize,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    color: k.accent ? "primary.main" : "text.primary",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {k.value}
+                </Typography>
+              )}
+            </Box>
 
             {k.sub && (
               <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
