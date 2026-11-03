@@ -117,11 +117,14 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
   /* Si una etiqueta no alcanza (título largo, código en dos líneas), se le achica
      la letra de a poco hasta que todo quepa: nada se corta y el QR conserva su mínimo. */
   window.fit = function () {
-    document.querySelectorAll(".l").forEach(function (l) {
+    var all = Array.prototype.slice.call(document.querySelectorAll(".l"));
+    all.forEach(function (l) { l.style.removeProperty("--f"); });
+    // Una sola medición para todas; solo se corrigen las que se pasan (pocas).
+    var over = all.filter(function (l) { return l.scrollHeight > l.clientHeight + 1; });
+    over.forEach(function (l) {
       var f = 1;
-      l.style.setProperty("--f", "1");
       while (l.scrollHeight > l.clientHeight + 1 && f > 0.55) {
-        f -= 0.03;
+        f -= 0.04;
         l.style.setProperty("--f", f.toFixed(2));
       }
     });

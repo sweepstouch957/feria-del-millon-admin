@@ -39,6 +39,23 @@ const ensureQr = (text: string, width: number) => {
   return p;
 };
 
+/* QR vectorial para las etiquetas: nítido a cualquier tamaño en la imprenta y casi
+   sin memoria. Con PNG de 600 px, 4.500 etiquetas se comían ~2,5 GB de RAM. */
+const svgCache = new Map<string, Promise<string>>();
+const ensureQrSvg = (text: string) => {
+  let p = svgCache.get(text);
+  if (!p) {
+    p = QRCode.toString(text, { type: "svg", margin: 1, errorCorrectionLevel: "M" }).then(
+      (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    );
+    svgCache.set(text, p);
+  }
+  return p;
+};
+
+/** Hojas por lote: la vista previa y cada PDF llevan 20 hojas (360 etiquetas en pliego). */
+const SHEETS_PER_BATCH = 20;
+
 /* QR que se genera solo cuando entra en pantalla (o de inmediato con `eager`). */
 function LazyQr({ text, alt, size = 150, width = 320, eager = false }: { text: string; alt: string; size?: number; width?: number; eager?: boolean }) {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -187,24 +204,32 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   React.useEffect(() => {
     if (tab === "labels" && hasNextPage && !isFetchingNextPage) loadMore();
   }, [tab, hasNextPage, isFetchingNextPage, loadMore]);
+  // Por lotes de 20 hojas: con todo junto (250+ hojas) el navegador se ahogaba.
+  const perBatch = lab.cols * lab.rows * SHEETS_PER_BATCH;
+  const batches = Math.max(1, Math.ceil(labels.length / perBatch));
+  const [batch, setBatch] = React.useState(0);
+  const curBatch = Math.min(batch, batches - 1);
+  React.useEffect(() => setBatch(0), [pavilion, artist]); // otro filtro: vuelve al lote 1
+  const batchLabels = React.useMemo(() => labels.slice(curBatch * perBatch, (curBatch + 1) * perBatch), [labels, curBatch, perBatch]);
+  const batchIds = React.useMemo(() => [...new Set(batchLabels.map(({ a }) => rowId(a)))], [batchLabels]);
+
   const [qrs, setQrs] = React.useState<Record<string, string>>({});
   React.useEffect(() => {
-    if (tab !== "labels" || !lab.showQr) return;
+    if (tab !== "labels") return;
     let on = true;
-    const ids = (rows as any[]).map(rowId);
-    // 600 px: el QR ocupa el centro de la etiqueta (~4 cm) y debe salir nítido en la imprenta.
-    Promise.all(ids.map((id) => ensureQr(urlFor(id), 600).catch(() => ""))).then((urls) => {
-      if (on) setQrs(Object.fromEntries(ids.map((id, i) => [id, urls[i]])));
+    // Solo los QR del lote que se ve (y queda en caché para cuando vuelvan a él).
+    Promise.all(batchIds.map((id) => ensureQrSvg(urlFor(id)).catch(() => ""))).then((urls) => {
+      if (on) setQrs((prev) => ({ ...prev, ...Object.fromEntries(batchIds.map((id, i) => [id, urls[i]])) }));
     });
     return () => { on = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, rows, lab.showQr, base]);
+  }, [tab, batchIds, base]);
   const labelsHtml = React.useMemo(
     () =>
       tab !== "labels"
         ? ""
         : buildLabelsHtml(
-            labels.map(({ a, n, total }) => ({
+            batchLabels.map(({ a, n, total }) => ({
               artist: artistName(a) || "—",
               title: a.title || "Sin título",
               technique: a.techniqueInfo?.name,
@@ -217,12 +242,12 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
             { ...lab, logoUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/logo.png` }
           ),
      
-    [tab, labels, lab, qrs]
+    [tab, batchLabels, lab, qrs]
   );
   const labelsFrame = React.useRef<HTMLIFrameElement>(null);
   // Listo para imprimir = todas las obras cargadas y, si lleva QR, todos los QR generados.
   // "in": un QR que falló queda en "" y no debe trabar el botón para siempre.
-  const qrReady = !lab.showQr || (rows as any[]).every((a) => rowId(a) in qrs);
+  const qrReady = batchIds.every((id) => id in qrs);
   const labelsReady = !hasNextPage && !isFetchingNextPage && qrReady;
   const printLabels = async () => {
     const w = labelsFrame.current?.contentWindow;
@@ -235,7 +260,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
       ),
     );
     (w as Window & { fit?: () => void }).fit?.(); // reajusta la letra con fuentes e imágenes ya cargadas
-    w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-${labels.length}`; // nombre del PDF
+    // Nombre del PDF: dice qué lote es, para mandarlos en orden a la imprenta.
+    w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-lote-${curBatch + 1}-de-${batches}`;
     w.focus();
     w.print();
   };
@@ -409,8 +435,17 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                 <MenuItem value="h">Horizontal</MenuItem>
                 <MenuItem value="v">Vertical</MenuItem>
               </TextField>
+              {/* Un PDF por lote: imprime el 1, luego el 2… (cada uno abre rápido). */}
+              <TextField select size="small" label="Lote a imprimir" value={curBatch} onChange={(e) => setBatch(Number(e.target.value))} sx={{ minWidth: 240 }}>
+                {Array.from({ length: batches }, (_, i) => {
+                  const per = lab.cols * lab.rows;
+                  const from = i * SHEETS_PER_BATCH + 1;
+                  const to = Math.min((i + 1) * SHEETS_PER_BATCH, Math.ceil(labels.length / per));
+                  return <MenuItem key={i} value={i}>Lote {i + 1} de {batches} · hojas {from}–{to}</MenuItem>;
+                })}
+              </TextField>
               <Typography variant="caption" color="text.secondary">
-                {lab.cols * lab.rows} por hoja · {Math.ceil(labels.length / (lab.cols * lab.rows))} hojas · etiqueta de {(size.w / 10).toFixed(1)} × {(size.h / 10).toFixed(1)} cm
+                {lab.cols * lab.rows} por hoja · {Math.ceil(labels.length / (lab.cols * lab.rows))} hojas en {batches} lote{batches === 1 ? "" : "s"} · etiqueta de {(size.w / 10).toFixed(1)} × {(size.h / 10).toFixed(1)} cm
               </Typography>
             </Stack>
           </CardContent></Card>
