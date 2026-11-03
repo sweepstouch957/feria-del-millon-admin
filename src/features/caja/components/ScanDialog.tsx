@@ -27,8 +27,8 @@ export function ScanDialog({
   }, [open]);
 
   return (
-    <Dialog open={open} onClose={onClose} fullScreen={fullScreen} fullWidth maxWidth="xs">
-      <DialogTitle>Escanear QR</DialogTitle>
+    <Dialog open={open} onClose={onClose} fullScreen={fullScreen} fullWidth maxWidth="xs" aria-labelledby="caja-scan-title">
+      <DialogTitle id="caja-scan-title">Escanear QR</DialogTitle>
       <DialogContent>
         <Box sx={{ aspectRatio: "1", bgcolor: "black", overflow: "hidden" }}>
           {open && (

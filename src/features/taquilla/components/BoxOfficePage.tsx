@@ -131,7 +131,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
                 <Stack direction="row" flexWrap="wrap" gap={2} mt={1.5} justifyContent={{ xs: "center", sm: "flex-start" }}>
                   {last.tickets.map((t) => (
                     <Box key={t.id} sx={{ textAlign: "center" }}>
-                      {t.qrDataUrl && <img src={t.qrDataUrl} alt={t.shortCode} width={160} height={160} />}
+                      {t.qrDataUrl && <img src={t.qrDataUrl} alt={`QR de la entrada ${t.shortCode}`} width={160} height={160} />}
                       <Typography variant="caption" display="block">{t.shortCode} · {String(t.eventDay).slice(0, 10)}</Typography>
                     </Box>
                   ))}
@@ -210,7 +210,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
                     control={control}
                     name="method"
                     render={({ field }) => (
-                      <ToggleButtonGroup exclusive fullWidth value={field.value} onChange={(_, v) => v && field.onChange(v)}>
+                      <ToggleButtonGroup aria-label="Método de pago" exclusive fullWidth value={field.value} onChange={(_, v) => v && field.onChange(v)}>
                         {BOX_OFFICE_METHODS.map((m) => {
                           const Icon = METHOD_ICON[m.value];
                           return (
@@ -225,7 +225,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
                 </Stack>
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
-                  <Typography sx={{ flex: 1, fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" }}>
+                  <Typography aria-live="polite" sx={{ flex: 1, fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" }}>
                     {formatCOP(total, { code: true })}
                   </Typography>
                   <Button type="submit" variant="contained" color="secondary" size="large" disabled={sale.isPending} sx={{ minHeight: 52, px: 3 }}>

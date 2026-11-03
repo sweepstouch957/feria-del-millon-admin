@@ -24,6 +24,7 @@ export const ArtworkCard = memo(function ArtworkCard({
     <ButtonBase
       onClick={() => onPick(artwork)}
       disabled={soldOut}
+      aria-pressed={selected}
       sx={{
         width: "100%",
         display: "flex",

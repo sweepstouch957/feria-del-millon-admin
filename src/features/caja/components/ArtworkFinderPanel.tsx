@@ -59,6 +59,7 @@ export function ArtworkFinderPanel({
         }}
         placeholder="Título, código de etiqueta o QR"
         slotProps={{
+          htmlInput: { "aria-label": "Buscar obra por título, código de etiqueta o QR" },
           input: {
             startAdornment: (
               <InputAdornment position="start">
@@ -83,7 +84,11 @@ export function ArtworkFinderPanel({
         }}
       />
 
-      <LinearProgress sx={{ height: 2, mt: "-12px !important", visibility: finder.isSearching ? "visible" : "hidden" }} />
+      <LinearProgress
+        aria-label="Buscando obras"
+        aria-hidden={!finder.isSearching}
+        sx={{ height: 2, mt: "-12px !important", visibility: finder.isSearching ? "visible" : "hidden" }}
+      />
 
       <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1.3fr" } }}>
         <TextField
@@ -137,12 +142,15 @@ export function ArtworkFinderPanel({
         ))}
       </Box>
 
-      {finder.isLoading && <Typography color="text.secondary">Buscando obras…</Typography>}
-      {!finder.isLoading && finder.rows.length === 0 && (
-        <Typography color="text.secondary">
-          No hay obras con esa búsqueda. Prueba con el código completo de la etiqueta o escanea el QR.
-        </Typography>
-      )}
+      {/* El lector de pantalla anuncia cuando la búsqueda termina o no encuentra nada. */}
+      <Box role="status" aria-live="polite">
+        {finder.isLoading && <Typography color="text.secondary">Buscando obras…</Typography>}
+        {!finder.isLoading && finder.rows.length === 0 && (
+          <Typography color="text.secondary">
+            No hay obras con esa búsqueda. Prueba con el código completo de la etiqueta o escanea el QR.
+          </Typography>
+        )}
+      </Box>
       {finder.hasNextPage && (
         <Button variant="outlined" onClick={() => finder.loadMore()} disabled={finder.isFetchingNextPage}>
           {finder.isFetchingNextPage ? "Cargando…" : "Ver más obras"}

@@ -55,6 +55,7 @@ export function ReceiptInput({
             href={value}
             target="_blank"
             rel="noreferrer"
+            aria-label="Ver la foto del comprobante"
             sx={{ width: 64, height: 64, flexShrink: 0, backgroundImage: `url(${value})`, backgroundSize: "cover", backgroundPosition: "center", border: "1px solid", borderColor: "divider" }}
           />
           <Typography variant="body2" sx={{ flex: 1 }}>Comprobante adjunto</Typography>

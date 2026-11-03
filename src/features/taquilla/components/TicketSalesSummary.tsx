@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Box, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -11,8 +11,11 @@ import { formatCOP } from "@/utils/money";
 
 const colombiaDay = (d: string | Date) => new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 
-/** Cuántas entradas y cuánta plata van, por método de pago (taquilla y en línea). */
-export function TicketSalesSummary({ eventId }: { eventId: string }) {
+/**
+ * Cuántas entradas y cuánta plata van, por método de pago (taquilla y en línea).
+ * memo: cambiar la cantidad o el tipo en el formulario no lo vuelve a pintar.
+ */
+export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: { eventId: string }) {
   const [range, setRange] = useState<"today" | "all">("today");
   const { data = [], isLoading } = useQuery({
     queryKey: ["ticketSales", eventId],
@@ -30,7 +33,7 @@ export function TicketSalesSummary({ eventId }: { eventId: string }) {
     <Box sx={{ mt: 3 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.5 }}>
         <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>Entradas vendidas</Typography>
-        <ToggleButtonGroup exclusive size="small" value={range} onChange={(_, v) => v && setRange(v)}>
+        <ToggleButtonGroup aria-label="Periodo" exclusive size="small" value={range} onChange={(_, v) => v && setRange(v)}>
           <ToggleButton value="today" sx={{ textTransform: "none" }}>Hoy</ToggleButton>
           <ToggleButton value="all" sx={{ textTransform: "none" }}>Toda la feria</ToggleButton>
         </ToggleButtonGroup>
@@ -48,4 +51,4 @@ export function TicketSalesSummary({ eventId }: { eventId: string }) {
       />
     </Box>
   );
-}
+});

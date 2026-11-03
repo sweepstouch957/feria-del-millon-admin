@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Box, Card, CardContent, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { toast } from "sonner";
 import { headerHeight } from "@/components/layout/layoutConfig";
@@ -18,6 +18,11 @@ import { SaleForm } from "./SaleForm";
 import { SelectedArtwork } from "./SelectedArtwork";
 import { PracticeBanner } from "./PracticeBanner";
 import { useCajaAccess } from "../hooks/useCajaAccess";
+import type { CityDoc } from "@services/city.service";
+import type { SaleValues } from "../model/sale";
+
+// Referencia fija: un [] nuevo en cada render hacía repintar el formulario de cobro.
+const NO_CITIES: CityDoc[] = [];
 
 export function CajaPage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
@@ -30,10 +35,12 @@ export function CajaPage() {
  * derecha. Celular: un paso a la vez (buscar → cobrar → listo).
  */
 function Caja({ eventId }: { eventId: string }) {
-  const wide = useMediaQuery(useTheme().breakpoints.up("md"));
+  // noSsr: sin esto el primer render es "celular" y la pantalla salta al montar.
+  const wide = useMediaQuery(useTheme().breakpoints.up("md"), { noSsr: true });
   const finder = useArtworkFinder(eventId);
-  const { data: cities = [] } = useCities();
+  const cities = useCities().data ?? NO_CITIES;
   const checkout = useCheckout(eventId, cities);
+  const { mutate: charge, reset: resetCheckout } = checkout;
   const access = useCajaAccess();
 
   const [selected, setSelected] = useState<CajaArtwork | null>(null);
@@ -43,16 +50,26 @@ function Caja({ eventId }: { eventId: string }) {
   const outsidePavilion =
     !!selected && finder.pavilionLocked && !finder.pavilionOptions.some((p) => pavilionId(p) === artPavilion);
 
-  const pick = (a: CajaArtwork) => {
+  // Estables: el buscador cambia en cada tecla y no debe repintar las tarjetas ni el cobro.
+  const pick = useCallback((a: CajaArtwork) => {
     setDone(null);
     setSelected(a);
-  };
-  const next = () => {
+  }, []);
+  const clearSelection = useCallback(() => setSelected(null), []);
+  const submit = useCallback(
+    (values: SaleValues) => {
+      if (!selected) return;
+      charge({ artwork: selected, values }, { onSuccess: setDone, onError: (e) => toast.error(checkoutError(e)) });
+    },
+    [selected, charge],
+  );
+  const { setText } = finder;
+  const next = useCallback(() => {
     setDone(null);
     setSelected(null);
-    checkout.reset();
-    finder.setText("");
-  };
+    resetCheckout();
+    setText("");
+  }, [resetCheckout, setText]);
 
   const showFinder = wide || (!selected && !done);
   const showCheckout = wide || !!selected || !!done;
@@ -93,7 +110,7 @@ function Caja({ eventId }: { eventId: string }) {
                 </Box>
               ) : selected ? (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-                  <SelectedArtwork artwork={selected} outsidePavilion={outsidePavilion} onChange={() => setSelected(null)} />
+                  <SelectedArtwork artwork={selected} outsidePavilion={outsidePavilion} onChange={clearSelection} />
                   <SaleForm
                     key={artworkId(selected)}
                     artwork={selected}
@@ -101,12 +118,7 @@ function Caja({ eventId }: { eventId: string }) {
                     disabled={outsidePavilion}
                     canLayaway={access.canLayaway}
                     isPending={checkout.isPending}
-                    onSubmit={(values) =>
-                      checkout.mutate(
-                        { artwork: selected, values },
-                        { onSuccess: setDone, onError: (e) => toast.error(checkoutError(e)) },
-                      )
-                    }
+                    onSubmit={submit}
                   />
                 </Box>
               ) : (
