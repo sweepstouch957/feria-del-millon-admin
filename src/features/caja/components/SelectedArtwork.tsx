@@ -37,7 +37,7 @@ export function SelectedArtwork({
           disabled={!img}
           sx={{
             position: "relative",
-            width: { xs: 120, sm: 160 },
+            width: { xs: 120, sm: 104 },
             aspectRatio: "1",
             flexShrink: 0,
             bgcolor: "action.hover",
@@ -55,13 +55,13 @@ export function SelectedArtwork({
         </ButtonBase>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ ...eyebrow, color: "text.secondary" }}>{artistName(artwork) || "Artista"}</Typography>
-          <Typography sx={{ fontSize: 18, lineHeight: 1.25, mt: 0.25, overflowWrap: "anywhere" }}>{artwork.title || "Sin título"}</Typography>
+          <Typography sx={{ fontSize: { xs: 18, sm: 16 }, lineHeight: 1.25, mt: 0.25, overflowWrap: "anywhere" }}>{artwork.title || "Sin título"}</Typography>
           {facts.length > 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {facts.join(" · ")}
             </Typography>
           )}
-          <Typography sx={{ fontSize: 22, fontWeight: 300, mt: 0.75, fontVariantNumeric: "tabular-nums" }}>
+          <Typography sx={{ fontSize: { xs: 22, sm: 18 }, fontWeight: 300, mt: 0.5, fontVariantNumeric: "tabular-nums" }}>
             {formatCOP(artwork.price, { currency: artwork.currency })}
           </Typography>
           <Typography variant="caption" sx={{ color: stock > 0 ? "text.secondary" : FDM.terracotta }}>

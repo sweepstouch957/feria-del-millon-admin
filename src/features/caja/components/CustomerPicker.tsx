@@ -35,8 +35,8 @@ export function CustomerPicker({ onPick }: { onPick: (c: CustomerDoc) => void })
       blurOnSelect
       renderOption={({ key, ...props }, c) => (
         <Box component="li" key={key} {...props} sx={{ display: "block !important", py: 1 }}>
-          <Typography sx={{ fontSize: 18 }}>{c.name || "Sin nombre"}</Typography>
-          <Typography sx={{ fontSize: 15 }} color="text.secondary">
+          <Typography sx={{ fontSize: { xs: 18, sm: 14.5 } }}>{c.name || "Sin nombre"}</Typography>
+          <Typography sx={{ fontSize: { xs: 15, sm: 12.5 } }} color="text.secondary">
             {[c.source, c.email, c.phone, c.document && `CC ${c.document}`].filter(Boolean).join(" · ")}
           </Typography>
         </Box>

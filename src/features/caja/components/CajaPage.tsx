@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Box, Card, CardContent, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { toast } from "sonner";
+import { headerHeight } from "@/components/layout/layoutConfig";
 import PageHeader from "@/components/ui/PageHeader";
 import { eyebrow } from "@/app/theme";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -72,7 +73,19 @@ function Caja({ eventId }: { eventId: string }) {
         )}
 
         {showCheckout && (
-          <Card variant="outlined" sx={{ borderRadius: 0, position: { md: "sticky" }, top: { md: 16 } }}>
+          // Con scroll propio y debajo de la cabecera: si mide más que la pantalla,
+          // enfocar un campo movía toda la página y lo dejaba tapado arriba.
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: 0,
+              position: { md: "sticky" },
+              top: { md: headerHeight + 12 },
+              maxHeight: { md: `calc(100dvh - ${headerHeight + 24}px)` },
+              overflowY: { md: "auto" },
+              overscrollBehavior: "contain",
+            }}
+          >
             <CardContent sx={{ p: 2, "&:last-child": { pb: 0 } }}>
               {done ? (
                 <Box sx={{ pb: 2 }}>

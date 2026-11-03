@@ -37,10 +37,10 @@ const norm = (s?: string | null) =>
 const Step = ({ n, title, children }: { n: number; title: string; children: ReactNode }) => (
   <Stack spacing={1.5}>
     <Stack direction="row" alignItems="center" spacing={1.25}>
-      <Box sx={{ flex: "none", width: 34, height: 34, borderRadius: "50%", bgcolor: "text.primary", color: "background.default", display: "grid", placeItems: "center", fontSize: 18, fontWeight: 600 }}>
+      <Box sx={{ flex: "none", width: { xs: 34, sm: 24 }, height: { xs: 34, sm: 24 }, borderRadius: "50%", bgcolor: "text.primary", color: "background.default", display: "grid", placeItems: "center", fontSize: { xs: 18, sm: 13 }, fontWeight: 600 }}>
         {n}
       </Box>
-      <Typography sx={{ fontSize: 22, fontWeight: 500 }}>{title}</Typography>
+      <Typography sx={{ fontSize: { xs: 22, sm: 16 }, fontWeight: 500 }}>{title}</Typography>
     </Stack>
     {children}
   </Stack>
@@ -122,12 +122,13 @@ export function SaleForm({
       noValidate
       onSubmit={handleSubmit(onSubmit, onInvalid)}
       sx={{
-        "& .MuiInputBase-input": { fontSize: 18, py: 1.75 },
-        "& .MuiInputLabel-root": { fontSize: 17 },
-        "& .MuiFormHelperText-root": { fontSize: 15 },
+        // Celular: grande para el dedo. Tablet y escritorio: compacto.
+        "& .MuiInputBase-input": { fontSize: { xs: 18, sm: 14.5 }, py: { xs: 1.75, sm: 0.75 } },
+        "& .MuiInputLabel-root": { fontSize: { xs: 17, sm: 12.5 } },
+        "& .MuiFormHelperText-root": { fontSize: { xs: 15, sm: 12 } },
       }}
     >
-      <Stack spacing={3.5}>
+      <Stack spacing={{ xs: 3.5, sm: 2.5 }}>
         {stock > 1 && (
           <TextField
             label="¿Cuántas lleva?"
@@ -142,14 +143,16 @@ export function SaleForm({
         <Step n={1} title="¿Quién compra?">
           <CustomerPicker onPick={fillCustomer} />
           {picked && (
-            <Alert severity="info" sx={{ fontSize: 17 }}>
+            <Alert severity="info" sx={{ fontSize: { xs: 17, sm: 13.5 } }}>
               Pregúntale a <strong>{picked}</strong> si estos datos están bien. Si algo cambió, corrígelo aquí.
             </Alert>
           )}
           <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
           <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
-          <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
-          <TextField label="Cédula o NIT (si la tiene a mano)" {...register("buyerDocument")} />
+          <Box sx={{ display: "grid", gap: 1.5, alignItems: "start", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
+            <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
+            <TextField label="Cédula o NIT (opcional)" {...register("buyerDocument")} />
+          </Box>
         </Step>
 
         {/* Todas las obras se entregan a domicilio: la dirección siempre se pide. */}
@@ -184,14 +187,14 @@ export function SaleForm({
                       key={m.value}
                       value={m.value}
                       sx={{
-                        py: 2,
-                        gap: 1.5,
-                        fontSize: 19,
+                        py: { xs: 2, sm: 1 },
+                        gap: 1.25,
+                        fontSize: { xs: 19, sm: 14.5 },
                         textTransform: "none",
                         "&.Mui-selected, &.Mui-selected:hover": { bgcolor: "text.primary", color: "background.default" },
                       }}
                     >
-                      <Icon size={24} /> {m.label}
+                      <Icon size={20} /> {m.label}
                     </ToggleButton>
                   );
                 })}
@@ -217,7 +220,7 @@ export function SaleForm({
             color="inherit"
             onClick={() => setMoreOpen((o) => !o)}
             endIcon={<ChevronDown size={18} style={{ transform: moreOpen ? "rotate(180deg)" : undefined }} />}
-            sx={{ textTransform: "none", fontSize: 16 }}
+            sx={{ textTransform: "none", fontSize: { xs: 16, sm: 13.5 } }}
           >
             Descuento, apartar o indicaciones
           </Button>
@@ -289,13 +292,13 @@ export function SaleForm({
             borderColor: "divider",
           }}
         >
-          <Typography sx={{ fontSize: 16 }} color="text.secondary">
+          <Typography sx={{ fontSize: { xs: 16, sm: 13 } }} color="text.secondary">
             {apartar ? `Total ${formatCOP(total)} · abona hoy` : pctOff ? `Total con ${pctOff}% de descuento` : "Total a cobrar"}
           </Typography>
-          <Typography sx={{ fontSize: 34, fontWeight: 400, fontVariantNumeric: "tabular-nums", lineHeight: 1.2, mb: 1 }}>
+          <Typography sx={{ fontSize: { xs: 34, sm: 24 }, fontWeight: 400, fontVariantNumeric: "tabular-nums", lineHeight: 1.2, mb: 1 }}>
             {formatCOP(apartar ? Number(abono) || 0 : total)}
           </Typography>
-          <Button type="submit" fullWidth variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: 64, fontSize: 20 }}>
+          <Button type="submit" fullWidth variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: { xs: 64, sm: 46 }, fontSize: { xs: 20, sm: 15 } }}>
             {isPending ? "Registrando…" : uploading ? "Subiendo foto…" : apartar ? "Apartar" : "Cobrar"}
           </Button>
         </Box>
