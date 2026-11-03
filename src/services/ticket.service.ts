@@ -538,6 +538,8 @@ export interface InviteLink {
   emailsSent?: number;
   /** Logo del aliado: arriba del correo y de la página /i/:code (que también muestra emailMessage). */
   logo?: string;
+  /** Reemplaza la línea de días del pase con QR (correo y página). Vacío = la de siempre. */
+  passNote?: string;
 }
 
 export const listInviteLinks = async (eventId: string) => {
@@ -576,7 +578,7 @@ export const createInviteLink = async (input: {
 
 export const updateInviteLink = async (
   id: string,
-  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string; logo?: string },
+  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string; logo?: string; passNote?: string },
 ) => {
   const { data } = await apiClient.patch<InviteLink>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}`, body, { withCredentials: true });
   return data;
@@ -613,8 +615,23 @@ export const sendInvitationTest = async (
   return data;
 };
 
-export const resendInvitation = async (ticketId: string) => {
-  await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
+/** Corre el "confirme antes del" de todas las invitaciones pendientes (YYYY-MM-DD, hora Bogotá). */
+export const extendInvitationDeadline = async (eventId: string, deadline: string) => {
+  const { data } = await apiClient.post<{ ok: boolean; updated: number }>("/ticket/tickets/invitations/deadline", { eventId, deadline }, { withCredentials: true });
+  return data;
+};
+
+export type ResendResult = {
+  ok: boolean;
+  /** invitation = correo para confirmar; pass = pase con QR (invitado + acompañantes). */
+  kind: "invitation" | "pass";
+  sent: { email: string; name?: string }[];
+  failed: { email: string; name?: string; error: string }[];
+};
+
+export const resendInvitation = async (ticketId: string): Promise<ResendResult> => {
+  const { data } = await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/resend`, {}, { withCredentials: true });
+  return data;
 };
 
 /** Recordatorio a todos los que no han confirmado. Se envía en segundo plano. */

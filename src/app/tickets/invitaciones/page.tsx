@@ -15,7 +15,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, extendInvitationDeadline, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import { useDialogs } from "@/components/ui/DialogsProvider";
@@ -369,6 +369,25 @@ function Invitations({ eventId }: { eventId: string }) {
     onSuccess: (r) => toast.success(`Recordatorio en camino a ${r.total} ${r.total === 1 ? "persona" : "personas"} sin confirmar`),
     onError: () => toast.error("No se pudo enviar el recordatorio."),
   });
+
+  const [newDeadline, setNewDeadline] = React.useState("2026-11-05");
+  const extend = useMutation({
+    mutationFn: () => extendInvitationDeadline(eventId, newDeadline),
+    onSuccess: (r) => toast.success(`Plazo movido al ${newDeadline} en ${r.updated} invitaciones. Ahora puedes enviar el recordatorio.`),
+    onError: () => toast.error("No se pudo extender el plazo."),
+  });
+
+  /** Reenvío por fila: invitación (sin confirmar) o pase con QR (confirmado + acompañantes). Dice a quién llegó y a quién no. */
+  const resend = (id: string) =>
+    resendInvitation(id).then(
+      (r) => {
+        const what = r.kind === "pass" ? "Pase reenviado" : "Invitación reenviada";
+        if (r.sent.length) toast.success(`${what} a ${r.sent.map((s) => s.email).join(", ")}`);
+        for (const f of r.failed) toast.error(`No le llegó a ${f.email}: ${f.error}`, { duration: 8000 });
+        if (!r.sent.length && !r.failed.length) toast.error("No hay a quién reenviarle (sin correo o sin QR).");
+      },
+      () => toast.error("No se pudo reenviar"),
+    );
 
   const importRole = async (role: Base) => {
     const { users } = await listUsers({ roles: [role], limit: 200 });
@@ -754,6 +773,18 @@ function Invitations({ eventId }: { eventId: string }) {
             </Button>
             </span>
             </Tooltip>
+            {/* El plazo no bloquea nada, pero es lo que dicen el correo y la página: se corre antes de recordar. */}
+            <TextField
+              type="date" size="small" label="Nuevo plazo" value={newDeadline} onChange={(e) => setNewDeadline(e.target.value)}
+              InputLabelProps={{ shrink: true }} sx={{ width: 160 }}
+            />
+            <Button
+              size="small" variant="outlined" sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+              disabled={!newDeadline || extend.isPending}
+              onClick={() => extend.mutate()}
+            >
+              {extend.isPending ? "Guardando…" : "Extender plazo a pendientes"}
+            </Button>
           </Stack>
           <TableContainer component={Paper} elevation={0}>
             <Table size="small">
@@ -765,7 +796,7 @@ function Invitations({ eventId }: { eventId: string }) {
                 <TableCell><Tooltip arrow title="Acompañante que nombró al confirmar; recibe su propio QR."><span>Acompañante ⓘ</span></Tooltip></TableCell>
                 <TableCell align="right"><Tooltip arrow title="Cuántas personas entran con el QR de este invitado. Si nombra a su acompañante, ese cupo pasa al QR del acompañante."><span>Personas ⓘ</span></Tooltip></TableCell>
                 <TableCell>Estado</TableCell>
-                <TableCell align="right"><Tooltip arrow title="Acciones: reenviar la invitación (pendientes) o pedir que agregue a su acompañante (confirmados sin acompañante)."><span>Acciones ⓘ</span></Tooltip></TableCell>
+                <TableCell align="right"><Tooltip arrow title="Acciones: reenviar la invitación (pendientes) o el pase con QR (confirmados, también a sus acompañantes), o pedir que agregue a su acompañante."><span>Acciones ⓘ</span></Tooltip></TableCell>
               </TableRow></TableHead>
               <TableBody>
                 {list.length === 0 ? (
@@ -803,9 +834,11 @@ function Invitations({ eventId }: { eventId: string }) {
                     <TableCell align="right">{t.admits ?? 1}</TableCell>
                     <TableCell><StatusPill label={STATUS[t.status]?.label || t.status} tone={STATUS[t.status]?.tone || "mid"} /></TableCell>
                     <TableCell align="right">
-                      {t.status === "invited" && (
-                        <Tooltip title="Reenviar correo">
-                          <IconButton size="small" onClick={() => resendInvitation(t.id).then(() => toast.success("Reenviada"), () => toast.error("No se pudo reenviar"))}>
+                      {(t.status === "invited" || t.status === "sold") && (
+                        <Tooltip title={t.status === "invited"
+                          ? "Reenviar la invitación"
+                          : t.inviteParent ? "Reenviar su pase con QR" : "Reenviar el pase con QR (a él y a sus acompañantes)"}>
+                          <IconButton size="small" onClick={() => resend(t.id)}>
                             <Send size={14} />
                           </IconButton>
                         </Tooltip>

@@ -31,6 +31,7 @@ export default function InviteLinkEmailDialog({
   const [logo, setLogo] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [deadline, setDeadline] = React.useState("");
+  const [passNote, setPassNote] = React.useState("");
   const [to, setTo] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
 
@@ -40,6 +41,7 @@ export default function InviteLinkEmailDialog({
     setLogo(link.logo || "");
     setMessage(link.emailMessage || defaultMessage);
     setDeadline(link.emailDeadline || "2026-11-01");
+    setPassNote(link.passNote || "");
     setTo("");
   }, [open, link?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -53,7 +55,7 @@ export default function InviteLinkEmailDialog({
   });
 
   const save = useMutation({
-    mutationFn: () => updateInviteLink(link!.id, draft),
+    mutationFn: () => updateInviteLink(link!.id, { ...draft, passNote: passNote.trim() }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["invite-links"] }),
   });
 
@@ -131,6 +133,12 @@ export default function InviteLinkEmailDialog({
             <TextField
               type="date" size="small" label="Confirmar antes de" value={deadline} onChange={(e) => setDeadline(e.target.value)}
               InputLabelProps={{ shrink: true }} sx={{ maxWidth: 220 }}
+            />
+            <TextField
+              label="Texto de días en el pase (opcional)" value={passNote} onChange={(e) => setPassNote(e.target.value)} fullWidth size="small"
+              inputProps={{ maxLength: 300 }}
+              placeholder="Puede entrar todos los días, validando su nombre en el ingreso con el listado Itaú"
+              helperText="Reemplaza “1 día de la feria a su elección” en el pase con QR (correo y página) de quienes se registran por este enlace y sus acompañantes. Vacío = el texto de siempre."
             />
             <TextField
               label="Enviar a (correos)" value={to} onChange={(e) => setTo(e.target.value)} multiline minRows={4} fullWidth size="small"
