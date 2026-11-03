@@ -69,11 +69,11 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
       <div class="t">${esc(it.title)}</div>
       ${it.technique ? `<div class="d">Técnica: ${esc(it.technique)}</div>` : ""}
       ${it.dimensions ? `<div class="d">Dimensiones: ${esc(it.dimensions)}</div>` : ""}
-      <div class="row"><span class="d">Serie: ${it.n} / ${it.total}</span><span class="c">${esc(it.code || "SIN CÓDIGO")}</span></div>
       <div class="foot">
         ${o.showQr && it.qr ? `<img class="qr" src="${it.qr}" alt="" />` : ""}
         ${o.priceBox ? `<div class="p">Precio:</div>` : ""}
       </div>
+      <div class="row"><span class="d">Serie: ${it.n} / ${it.total}</span><span class="c">${esc(it.code || "SIN CÓDIGO")}</span></div>
     </div>`;
 
   const pages: string[] = [];
@@ -96,12 +96,14 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
   .h { font-family: Anton, Impact, sans-serif; font-size: ${mm(6)}; line-height: 1; text-align: center; letter-spacing: .01em; }
   .s { text-align: center; font-size: ${mm(3.3)}; margin-top: ${mm(.6)}; }
   .logo { display: block; width: ${mm(15)}; margin: ${mm(1)} auto ${mm(1.4)}; mix-blend-mode: multiply; }
-  .a { font-size: ${mm(4)}; font-weight: 500; margin-bottom: ${mm(.8)}; }
-  .t, .d { font-size: ${mm(2.55)}; line-height: 1.2; }
-  .t { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .row { display: flex; justify-content: space-between; align-items: baseline; gap: ${mm(2)}; }
+  /* Nada se corta: nombre, título y datos parten línea; el código baja a su propia
+     línea si no cabe al lado de la serie (antes "FDM25-…-0001" quedaba mocho). */
+  .a { font-size: ${mm(4)}; font-weight: 500; margin-bottom: ${mm(.8)}; overflow-wrap: anywhere; }
+  .t, .d { font-size: ${mm(2.55)}; line-height: 1.2; overflow-wrap: anywhere; }
+  /* Abajo del todo: QR (y casilla de precio) y debajo la serie con el código. */
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: ${mm(2)}; row-gap: ${mm(.4)}; margin-top: ${mm(.8)}; }
   .row .d { white-space: nowrap; }
-  .c { font-size: ${mm(3.9)}; font-weight: 500; white-space: nowrap; letter-spacing: .02em; }
+  .c { font-size: ${mm(3.9)}; font-weight: 500; letter-spacing: .02em; overflow-wrap: anywhere; max-width: 100%; }
   .foot { margin-top: auto; display: flex; align-items: flex-end; gap: ${mm(2)}; }
   .qr { width: ${mm(12.5)}; height: ${mm(12.5)}; mix-blend-mode: multiply; }
   .p { flex: 1; background: #D6D0CC; border-radius: ${mm(1)}; font-size: ${mm(2.2)}; font-weight: 600; padding: ${mm(1)} ${mm(2)}; }

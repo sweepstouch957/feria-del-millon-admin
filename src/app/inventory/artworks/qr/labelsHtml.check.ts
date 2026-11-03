@@ -15,4 +15,11 @@ assert.equal((html.match(/<section class="page">/g) || []).length, 2); // 18 + 1
 assert.equal(html.split('<section class="page">')[1].split('class="l"').length - 1, 18);
 
 assert.match(buildLabelsHtml(items, { ...opts, paper: "letter", cols: 4 }), /size: letter landscape/);
+// Nada se recorta: sin límite de líneas en el título y el código puede bajar de línea.
+assert.doesNotMatch(html, /line-clamp/);
+assert.match(html, /\.row \{[^}]*flex-wrap: wrap/);
+assert.doesNotMatch(html, /\.c \{[^}]*nowrap/);
+// El QR va arriba de la serie.
+const withQr = buildLabelsHtml([{ ...items[0], qr: "data:image/png;base64,AA==" }], opts);
+assert.ok(withQr.indexOf('class="qr"') < withQr.indexOf("Serie:"), "QR antes de la serie");
 console.log("ok");
