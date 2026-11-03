@@ -436,6 +436,8 @@ export interface TicketPerson {
   addressLine: string;
   cityName: string;
   source: string;
+  kind: "invited" | "companion" | "ticket";
+  confirmed: boolean;
 }
 
 /** Invitados y compradores de entradas, para que la caja no les pida los datos otra vez. */

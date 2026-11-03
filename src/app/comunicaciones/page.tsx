@@ -26,7 +26,10 @@ const AUDIENCES: { key: string; label: string }[] = [
   { key: "asistente", label: "Asistentes" },
   { key: "comprador", label: "Compradores" },
   { key: "curador", label: "Curadores" },
-  { key: "artista", label: "Artistas" },
+  { key: "artista", label: "Artistas (todos los registrados)" },
+  { key: "artistas_habilitados", label: "Artistas habilitados" },
+  { key: "artistas_sin_obras", label: "Artistas habilitados sin obras" },
+  { key: "artistas_error_carga", label: "Artistas con error al cargar obra" },
   { key: "staff", label: "Staff" },
 ];
 

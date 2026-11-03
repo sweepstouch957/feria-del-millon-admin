@@ -31,6 +31,46 @@ export const byMethod = <T,>(rows: T[], method: (r: T) => string | undefined, am
 export const appAmount = (a: { paymentDetails?: { transaction_amount?: number }; convocatoria?: unknown }) =>
   Number(a.paymentDetails?.transaction_amount ?? (a.convocatoria as { fee?: number } | undefined)?.fee ?? 0);
 
+/** Plata real: un isPaid con el cobro rechazado por la pasarela no entró. */
+export const isCollected = (a: { isPaid?: boolean; paymentStatus?: string }) => !!a.isPaid && a.paymentStatus === "approved";
+
+/**
+ * Convocatorias de una feria. La de 2026 que recibió los pagos quedó enlazada a
+ * un evento que ya no existe; se reconoce por llevar el mismo nombre.
+ */
+export function fairConvocatorias<T extends { event?: unknown; name?: string }>(all: T[], eventId: string): T[] {
+  const eventOf = (c: T) => String((c.event as { _id?: string } | undefined)?._id ?? c.event ?? "");
+  const names = new Set(all.filter((c) => eventOf(c) === eventId).map((c) => c.name));
+  return all.filter((c) => eventOf(c) === eventId || names.has(c.name));
+}
+
+export type MonthIncome = { month: string; apps: number; orders: number; tickets: number };
+
+/** Ingresos por mes y por fuente, sin saltarse los meses en cero. Mes en hora Colombia. */
+export function monthlyIncome(rows: { at?: string; source: "apps" | "orders" | "tickets"; amount: number }[]): MonthIncome[] {
+  const key = (at: string) => new Date(at).toLocaleDateString("en-CA", { timeZone: "America/Bogota" }).slice(0, 7);
+  const map = new Map<string, MonthIncome>();
+  for (const r of rows) {
+    if (!r.at || !r.amount) continue;
+    const month = key(r.at);
+    const m = map.get(month) ?? { month, apps: 0, orders: 0, tickets: 0 };
+    m[r.source] += r.amount;
+    map.set(month, m);
+  }
+  const months = [...map.keys()].sort();
+  if (!months.length) return [];
+  const out: MonthIncome[] = [];
+  let [y, mo] = months[0].split("-").map(Number);
+  const last = months[months.length - 1];
+  for (;;) {
+    const month = `${y}-${String(mo).padStart(2, "0")}`;
+    out.push(map.get(month) ?? { month, apps: 0, orders: 0, tickets: 0 });
+    if (month === last) return out;
+    mo += 1;
+    if (mo > 12) { mo = 1; y += 1; }
+  }
+}
+
 type OrderLike = {
   status: string;
   total?: number;

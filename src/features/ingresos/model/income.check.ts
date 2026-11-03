@@ -1,6 +1,6 @@
 // node --experimental-strip-types src/features/ingresos/model/income.check.ts
 import assert from "node:assert/strict";
-import { appAmount, buildCustomers, byMethod, methodLabel, orderIncome } from "./income.ts";
+import { appAmount, buildCustomers, byMethod, fairConvocatorias, isCollected, methodLabel, monthlyIncome, orderIncome } from "./income.ts";
 
 assert.equal(appAmount({ paymentDetails: { transaction_amount: 40000 }, convocatoria: { fee: 1 } }), 40000);
 assert.equal(appAmount({ convocatoria: { fee: 50000 } }), 50000);
@@ -46,4 +46,24 @@ assert.deepEqual(
 );
 assert.equal(customers[1].city, "Cali");
 assert.equal(customers[1].ordersAmount, 100);
+
+assert.equal(isCollected({ isPaid: true, paymentStatus: "approved" }), true);
+assert.equal(isCollected({ isPaid: true, paymentStatus: "rejected" }), false);
+assert.equal(isCollected({ isPaid: false, paymentStatus: "approved" }), false);
+
+const convs = [
+  { id: "actual", event: "E", name: "Feria 2026" },
+  { id: "huerfana", event: "viejo", name: "Feria 2026" },
+  { id: "otra", event: "viejo", name: "Feria 2025" },
+];
+assert.deepEqual(fairConvocatorias(convs, "E").map((c) => c.id), ["actual", "huerfana"]);
+
+const months = monthlyIncome([
+  { at: "2026-05-10T12:00:00Z", source: "apps", amount: 40000 },
+  { at: "2026-08-01T03:00:00Z", source: "orders", amount: 100 }, // 31-jul en Colombia
+  { at: "2026-07-05T12:00:00Z", source: "tickets", amount: 0 }, // sin plata no abre mes
+]);
+assert.deepEqual(months.map((m) => m.month), ["2026-05", "2026-06", "2026-07"]);
+assert.equal(months[2].orders, 100);
+assert.deepEqual(monthlyIncome([]), []);
 console.log("income ok");

@@ -6,13 +6,15 @@ import { getApplicationStats, listApplications, type ArtistApplication } from "@
 import { getConvocatorias } from "@services/events.service";
 import { listOrders } from "@services/orders.service";
 import { getTicketSales } from "@services/ticket.service";
-import { appAmount, buildCustomers, orderIncome } from "../model/income";
+import { appAmount, buildCustomers, fairConvocatorias, isCollected, orderIncome } from "../model/income";
 
 const convocatoriaId = (c: any) => String(c._id || c.id);
 
-/** Inscripciones pagadas de las convocatorias de esta feria (la API da 100 por página). */
+const convocatoriasOf = async (eventId: string) => fairConvocatorias(await getConvocatorias(), eventId);
+
+/** Inscripciones marcadas como pagadas en las convocatorias de esta feria (la API da 100 por página). */
 async function paidApplications(eventId: string) {
-  const convocatorias = await getConvocatorias(eventId);
+  const convocatorias = await convocatoriasOf(eventId);
   const docs: ArtistApplication[] = [];
   for (const c of convocatorias) {
     let page = 1;
@@ -27,13 +29,18 @@ async function paidApplications(eventId: string) {
   return docs;
 }
 
-/** Solicitudes recibidas y aceptadas en las convocatorias de esta feria. */
+/** Solicitudes de las convocatorias de esta feria, en total y por estado. */
 async function applicationCounts(eventId: string) {
-  const convocatorias = await getConvocatorias(eventId);
+  const convocatorias = await convocatoriasOf(eventId);
   const stats = await Promise.all(convocatorias.map((c) => getApplicationStats(convocatoriaId(c))));
+  const byStatus: Record<string, number> = {};
+  for (const s of stats) {
+    for (const [k, n] of Object.entries(s.byStatus || {})) byStatus[k] = (byStatus[k] || 0) + (n || 0);
+  }
   return {
     total: stats.reduce((s, x) => s + (x.total || 0), 0),
-    accepted: stats.reduce((s, x) => s + (x.byStatus?.accepted || 0), 0),
+    accepted: byStatus.accepted || 0,
+    byStatus,
   };
 }
 
@@ -47,7 +54,7 @@ export function useIncome(eventId: string) {
 
   const tickets = useMemo(() => ticketsQ.data ?? [], [ticketsQ.data]);
   const orders = useMemo(() => (ordersQ.data ?? []).filter((o) => orderIncome(o) > 0), [ordersQ.data]);
-  const apps = useMemo(() => appsQ.data ?? [], [appsQ.data]);
+  const apps = useMemo(() => (appsQ.data ?? []).filter(isCollected), [appsQ.data]);
   const customers = useMemo(() => buildCustomers(tickets, orders), [tickets, orders]);
 
   const ticketsTotal = tickets.reduce((s, t) => s + Number(t.price || 0), 0);
@@ -65,7 +72,7 @@ export function useIncome(eventId: string) {
     total: ticketsTotal + ordersTotal + appsTotal,
     /** Lo que falta por cobrar de las obras apartadas. */
     pending: orders.reduce((s, o) => s + (o.status === "partial" ? Number(o.layaway?.balanceDue || 0) : 0), 0),
-    applications: countsQ.data ?? { total: 0, accepted: 0 },
+    applications: countsQ.data ?? { total: 0, accepted: 0, byStatus: {} as Record<string, number> },
     loading: queries.some((q) => q.isLoading),
     failed: queries.some((q) => q.isError),
     refetch: () => queries.forEach((q) => q.refetch()),

@@ -100,7 +100,7 @@ function Breakdown({ title, items, unit }: { title: string; items: MethodTotal[]
 const MONEY_HEADERS = new Set(["Valor", "Total de la orden", "Recibido", "Saldo", "En entradas", "En obras", "Total"]);
 const SHOW = (h: string, v: unknown) => (MONEY_HEADERS.has(h) ? money(Number(v)) : String(v ?? "") || "—");
 
-function Rows<T>({ rows, cols, name, screen, screenLabel }: { rows: T[]; cols: CsvCol<T>[]; name: string; screen?: string; screenLabel?: string }) {
+export function Rows<T>({ rows, cols, name, screen, screenLabel }: { rows: T[]; cols: CsvCol<T>[]; name: string; screen?: string; screenLabel?: string }) {
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(100);
   const [open, setOpen] = useState<T | null>(null);

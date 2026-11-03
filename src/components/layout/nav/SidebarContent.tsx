@@ -250,6 +250,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
             <SectionTitle label="Comunidad" rail={rail} />
             {item("/users", "Usuarios", <Users {...ICON} />)}
+            {item("/compradores", "Compradores", <Users {...ICON} />)}
             {item("/solicitudes", "Solicitudes", <FileText {...ICON} />)}
 
             <SectionTitle label="Contenido" rail={rail} />
