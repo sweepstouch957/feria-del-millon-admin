@@ -578,9 +578,9 @@ export const createInviteLink = async (input: {
 
 export const updateInviteLink = async (
   id: string,
-  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string; logo?: string; passNote?: string },
+  body: { active?: boolean; maxUses?: number; label?: string; emailImage?: string; emailMessage?: string; emailDeadline?: string; logo?: string; passNote?: string; allDays?: boolean },
 ) => {
-  const { data } = await apiClient.patch<InviteLink>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}`, body, { withCredentials: true });
+  const { data } = await apiClient.patch<InviteLink & { passesUpdated?: number }>(`/ticket/tickets/invite-links/${encodeURIComponent(id)}`, body, { withCredentials: true });
   return data;
 };
 

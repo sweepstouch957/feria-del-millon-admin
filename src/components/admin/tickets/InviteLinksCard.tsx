@@ -178,8 +178,12 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
     onError: (e: any) => toast.error(e?.response?.data?.message || "No se pudo crear el enlace"),
   });
   const update = useMutation({
-    mutationFn: ({ id, ...b }: { id: string; active?: boolean; maxUses?: number }) => updateInviteLink(id, b),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["invite-links", eventId] }),
+    mutationFn: ({ id, ...b }: { id: string; active?: boolean; maxUses?: number; allDays?: boolean }) => updateInviteLink(id, b),
+    onSuccess: (r, v) => {
+      qc.invalidateQueries({ queryKey: ["invite-links", eventId] });
+      if (v.allDays !== undefined)
+        toast.success(`${v.allDays ? "Todos los días" : "1 día a elección"}: actualizado también en ${r.passesUpdated ?? 0} pase(s) ya emitidos`);
+    },
     onError: () => toast.error("No se pudo actualizar el enlace"),
   });
 
@@ -280,7 +284,23 @@ export default function InviteLinksCard({ eventId, defaultMessage = "" }: { even
                   <TableRow key={l.id} hover>
                     <TableCell>
                       <Typography fontWeight={600} fontSize={14}>{prettyUrl(l.code)}</Typography>
-                      <Typography variant="caption" color="text.secondary">{l.admits > 1 ? `${l.admits} personas por pase` : "1 persona"} · 1 día a elección</Typography>
+                      <Typography variant="caption" color="text.secondary">{l.admits > 1 ? `${l.admits} personas por pase` : "1 persona"} · </Typography>
+                      {/* Ej. Itaú: sus colaboradores entran todos los días. Cambia también los pases ya emitidos. */}
+                      <Chip
+                        size="small" variant="outlined" sx={{ height: 20, fontSize: 11 }}
+                        color={l.allDays ? "primary" : "default"}
+                        label={l.allDays ? "Todos los días" : "1 día a elección"}
+                        onClick={async () => {
+                          const toAll = !l.allDays;
+                          const ok = await dialogs.confirm({
+                            eyebrow: prettyUrl(l.code),
+                            title: toAll ? "¿Que entren todos los días?" : "¿Volver a 1 día a elección?",
+                            message: `${toAll ? "El QR servirá jueves, viernes, sábado y domingo" : "El QR servirá un solo día"} para los nuevos registros y también para los ${l.uses} ya registrados y sus acompañantes. El pase dirá "${toAll ? "todos los días de la feria" : "1 día de la feria a su elección"}".`,
+                            confirmText: "Cambiar",
+                          });
+                          if (ok) update.mutate({ id: l.id, allDays: toAll });
+                        }}
+                      />
                     </TableCell>
                     <TableCell>{l.label || "—"}</TableCell>
                     <TableCell align="center">
