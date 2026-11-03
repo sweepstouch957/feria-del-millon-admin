@@ -35,7 +35,9 @@ export function useCustomerSearch(text: string) {
   const all = useMemo((): CustomerDoc[] => {
     const known = new Set(buyers.map((c) => c.email?.toLowerCase()));
     return [
-      ...buyers,
+      ...buyers.map((c) =>
+        c.meta?.legacy ? { ...c, source: "Compró en ferias pasadas", cityName: c.meta.legacy.cityName } : c,
+      ),
       ...people
         .filter((p) => !known.has(p.email))
         .map((p) => ({

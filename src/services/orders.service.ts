@@ -239,6 +239,8 @@ export interface CustomerDoc {
     /** Solo personas que vienen de entradas: su ciudad en texto y de dónde salieron. */
     cityName?: string;
     source?: string;
+    /** Comprador traído de la plataforma anterior (scripts/import-legacy-buyers.mjs). */
+    meta?: { legacy?: { purchases: number; spent: number; cityName?: string } };
 }
 
 /** GET /order/customers — compradores únicos (staff). */
