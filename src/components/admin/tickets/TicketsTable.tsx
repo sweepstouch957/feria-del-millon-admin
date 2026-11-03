@@ -6,8 +6,14 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
   IconButton,
   InputAdornment,
   Skeleton,
@@ -21,12 +27,13 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { RefreshCw, Search } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { CalendarDays, RefreshCw, Search } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import ResponsiveRows from "@/components/common/ResponsiveRows";
 import { formatCOP } from "@/utils/money";
 import { eyebrow } from "@/app/theme";
-import { getTicketSales, getTickets, type Ticket } from "@services/ticket.service";
+import { getTicketSales, getTickets, moveTicketsDay, type Ticket } from "@services/ticket.service";
 
 const STATUS: Record<string, { label: string; color: "primary" | "success" | "warning" | "default" }> = {
   sold: { label: "Vendido", color: "primary" },
@@ -42,6 +49,45 @@ const fmtDay = (iso: string) =>
   new Date(iso).toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 
 const code = (t: Ticket) => t.shortCode ?? String(t.id).slice(-6);
+const ymd = (iso: string) => new Date(iso).toISOString().slice(0, 10);
+const movable = (t: Ticket) => !(t as any).allDays && !(t as any).anyDay && t.status === "sold";
+
+/* Cambiar el día de una entrada (y por defecto las del mismo comprador ese día):
+   el QR sigue igual y al comprador le llega otra vez el correo con el día nuevo. */
+function MoveDayDialog({ ticket, all, onClose, onDone }: { ticket: Ticket | null; all: Ticket[]; onClose: () => void; onDone: () => void }) {
+  const [date, setDate] = useState("");
+  const [siblings, setSiblings] = useState(true);
+  const same = ticket
+    ? all.filter((t) => movable(t) && t.buyer?.email === ticket.buyer?.email && ymd(t.eventDay) === ymd(ticket.eventDay))
+    : [];
+  const ids = siblings ? same.map((t) => String(t.id)) : ticket ? [String(ticket.id)] : [];
+  const move = useMutation({
+    mutationFn: () => moveTicketsDay(ids, date),
+    onSuccess: (r) => { toast.success(`${r.moved} entrada(s) movidas al ${fmtDay(`${date}T00:00:00Z`)}. Se le reenvió el correo.`); onDone(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "No se pudo cambiar el día"),
+  });
+  return (
+    <Dialog open={!!ticket} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Cambiar el día</DialogTitle>
+      <DialogContent dividers>
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          {ticket?.buyer?.name} · hoy: <b>{ticket ? fmtDay(ticket.eventDay) : ""}</b>. El QR no cambia y le llega de nuevo el correo con el día correcto. El precio pagado no se toca.
+        </Typography>
+        <TextField type="date" label="Nuevo día" value={date} onChange={(e) => setDate(e.target.value)} fullWidth size="small" InputLabelProps={{ shrink: true }} />
+        {same.length > 1 && (
+          <FormControlLabel sx={{ mt: 1 }} control={<Checkbox checked={siblings} onChange={(e) => setSiblings(e.target.checked)} />}
+            label={`Mover también sus otras ${same.length - 1} entrada(s) de ese día`} />
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">Cancelar</Button>
+        <Button variant="contained" disabled={!date || move.isPending} onClick={() => move.mutate()}>
+          {move.isPending ? "Moviendo…" : `Mover ${ids.length}`}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 export function TicketsTable({ eventId }: { eventId: string }) {
   // Una invitación confirmada también queda "sold" (a $0): se ven aparte para
@@ -56,6 +102,7 @@ export function TicketsTable({ eventId }: { eventId: string }) {
   });
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
+  const [moving, setMoving] = useState<Ticket | null>(null);
   const dq = useDeferredValue(q.trim().toLowerCase());
   const invites = kind === "invites";
 
@@ -195,7 +242,16 @@ export function TicketsTable({ eventId }: { eventId: string }) {
                         <Typography variant="body2" noWrap>{t.buyer?.name || "—"}</Typography>
                         <Typography variant="caption" color="text.secondary" noWrap display="block">{t.buyer?.email}</Typography>
                       </TableCell>
-                      <TableCell sx={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{fmtDay(t.eventDay)}</TableCell>
+                      <TableCell sx={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>
+                        {fmtDay(t.eventDay)}
+                        {!invites && movable(t) && (
+                          <Tooltip title="Cambiar el día">
+                            <IconButton size="small" onClick={() => setMoving(t)} aria-label={`Cambiar el día de ${code(t)}`} sx={{ ml: 0.5 }}>
+                              <CalendarDays size={14} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
                       <TableCell>{chip(t)}</TableCell>
                       <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                         {formatCOP(t.price, { currency: t.currency || "COP" })}
@@ -208,6 +264,7 @@ export function TicketsTable({ eventId }: { eventId: string }) {
           </ResponsiveRows>
         )}
       </Box>
+      <MoveDayDialog ticket={moving} all={tickets} onClose={() => setMoving(null)} onDone={() => refetch()} />
     </Card>
   );
 }

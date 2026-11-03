@@ -621,6 +621,14 @@ export const extendInvitationDeadline = async (eventId: string, deadline: string
   return data;
 };
 
+/** Cambia el día de entradas de día fijo y le reenvía el correo al comprador. */
+export const moveTicketsDay = async (ids: string[], date: string) => {
+  const { data } = await apiClient.post<{ ok: boolean; moved: number; date: string; emailed: number }>(
+    "/ticket/tickets/move-day", { ids, date }, { withCredentials: true },
+  );
+  return data;
+};
+
 export type DeliveryIssue = {
   id: string; name?: string; email: string; phone?: string; status: string; hostName?: string;
   state: "bounced" | "soft-bounced" | "rejected"; at: string;
