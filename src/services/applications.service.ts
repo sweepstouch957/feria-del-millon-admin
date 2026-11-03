@@ -131,6 +131,8 @@ export interface InventoryStatusRow {
   pavilions: string[];
   artworks: number;
   copies: number;
+  /** Precio × copias disponibles: lo que daría vender todo lo que le queda. */
+  value: number;
   /** Obras devueltas a edición, aún sin corregir. */
   returned: number;
   lastArtworkAt: string | null;

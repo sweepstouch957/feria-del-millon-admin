@@ -1,6 +1,6 @@
 // node --experimental-strip-types src/features/ingresos/model/fairHistory.check.ts
 import assert from "node:assert/strict";
-import { bestByMetric, currentYearRow, rankOf, type YearRow } from "./fairHistory.ts";
+import { bestByMetric, currentYearRow, fullSaleProjection, historyTotals, methodColumns, rankOf, yearIncome, type YearRow } from "./fairHistory.ts";
 
 const base = { buyers: 0, applications: 0, accepted: 0, paidApplications: 0, applicationRevenue: 0 };
 const rows: YearRow[] = [
@@ -26,4 +26,20 @@ const cur = currentYearRow("2026", {
 assert.equal(cur.artworksSold, 4);
 assert.equal(cur.buyers, 1);
 assert.equal(cur.applications, 9);
+assert.equal(cur.ticketsSold, 0);
+assert.equal(yearIncome(cur), 300 + 40 + 7);
+
+const withMethods: YearRow[] = [
+  { ...base, year: "2024", artworksSold: 1, artworkRevenue: 100, newBuyers: 2, methods: { Efectivo: 10, Datáfono: 90 } },
+  { ...base, year: "2025", artworksSold: 1, artworkRevenue: 200, newBuyers: 3, methods: { Datáfono: 50, PSE: 70 } },
+];
+assert.deepEqual(methodColumns(withMethods), ["Datáfono", "PSE", "Efectivo"]);
+const t = historyTotals(withMethods);
+assert.equal(t.uniqueBuyers, 5);
+assert.equal(t.income, 300);
+
+assert.deepEqual(
+  fullSaleProjection({ collected: { artworks: 100, applications: 20, tickets: 5 }, stockValue: 1000, ticketsLeft: 50 }),
+  { today: 125, ifArtworksSell: 1125, ifEverythingSells: 1175 },
+);
 console.log("ok");
