@@ -15,9 +15,10 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, extendInvitationDeadline, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, extendInvitationDeadline, getInvitationDelivery, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
+import DeliveryIssuesDialog, { deliveryKey } from "@/components/admin/tickets/DeliveryIssuesDialog";
 import { useDialogs } from "@/components/ui/DialogsProvider";
 import { listUsers } from "@services/user.service";
 import { listCustomers } from "@services/orders.service";
@@ -370,6 +371,16 @@ function Invitations({ eventId }: { eventId: string }) {
     onError: () => toast.error("No se pudo enviar el recordatorio."),
   });
 
+  // Correos que no llegaron (Mailchimp): tarda unos segundos, el servidor lo guarda 15 min.
+  const [deliveryOpen, setDeliveryOpen] = React.useState(false);
+  const [deliveryRefresh, setDeliveryRefresh] = React.useState(0);
+  const delivery = useQuery({
+    queryKey: [...deliveryKey(eventId), deliveryRefresh],
+    queryFn: () => getInvitationDelivery(eventId, deliveryRefresh > 0),
+    staleTime: 5 * 60_000,
+  });
+  const deliveryRows = delivery.data?.rows ?? [];
+
   const [newDeadline, setNewDeadline] = React.useState("2026-11-05");
   const extend = useMutation({
     mutationFn: () => extendInvitationDeadline(eventId, newDeadline),
@@ -452,7 +463,18 @@ function Invitations({ eventId }: { eventId: string }) {
           { label: "Declinaron", value: stats?.declined ?? "…", hint: "Avisaron que no pueden ir.", onClick: () => { setTab(0); setListStatus("declined"); }, selected: tab === 0 && listStatus === "declined" },
           { label: "Acompañantes", value: stats?.companions ?? "…", hint: "Acompañantes que ya tienen su propio QR (los nombró el invitado al confirmar)." },
           { label: "Asistieron", value: stats?.attended ?? "…", accent: true, hint: "Pases escaneados en la entrada de la feria.", onClick: () => { setTab(0); setListStatus("attended"); }, selected: tab === 0 && listStatus === "attended" },
+          { label: "No les llegó", value: delivery.isLoading ? "…" : delivery.isError ? "—" : deliveryRows.length, hint: "Invitaciones o pases que el correo del invitado rechazó (rebote, buzón lleno, correo que no existe). Toca para verlos, corregir el correo y reenviar a todos con un botón.", onClick: () => setDeliveryOpen(true) },
         ]}
+      />
+      <DeliveryIssuesDialog
+        open={deliveryOpen}
+        onClose={() => setDeliveryOpen(false)}
+        eventId={eventId}
+        rows={deliveryRows}
+        loading={delivery.isFetching}
+        partial={delivery.data?.partial}
+        checkedAt={delivery.data?.checkedAt}
+        onRefresh={() => setDeliveryRefresh((n) => n + 1)}
       />
 
       {/* Nueva invitación: en un modal, para que la página abra con la lista. */}

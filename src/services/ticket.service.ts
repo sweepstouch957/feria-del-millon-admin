@@ -621,6 +621,35 @@ export const extendInvitationDeadline = async (eventId: string, deadline: string
   return data;
 };
 
+export type DeliveryIssue = {
+  id: string; name?: string; email: string; phone?: string; status: string; hostName?: string;
+  state: "bounced" | "soft-bounced" | "rejected"; at: string;
+  /** Motivo en palabras. retry=false → el correo está mal: hay que corregirlo. */
+  reason: string; retry: boolean;
+};
+
+/** Correos de invitación/pase que no llegaron (Mailchimp). Tarda unos segundos; el servidor lo guarda 15 min. */
+export const getInvitationDelivery = async (eventId: string, refresh = false) => {
+  const { data } = await apiClient.get<{ rows: DeliveryIssue[]; partial: boolean; checkedAt: string }>(
+    "/ticket/tickets/invitations-admin/delivery", { params: { eventId, ...(refresh ? { refresh: 1 } : {}) }, withCredentials: true, timeout: 120_000 },
+  );
+  return data;
+};
+
+/** Reenvía a todos los que se puede (no a "el correo no existe"). */
+export const resendFailedDeliveries = async (eventId: string) => {
+  const { data } = await apiClient.post<Omit<ResendResult, "kind">>(
+    "/ticket/tickets/invitations-admin/delivery/resend", { eventId }, { withCredentials: true, timeout: 300_000 },
+  );
+  return data;
+};
+
+/** Corrige el correo de un invitado o acompañante y le reenvía lo suyo. */
+export const fixInvitationEmail = async (id: string, email: string) => {
+  const { data } = await apiClient.patch<ResendResult>(`/ticket/tickets/invitations/${encodeURIComponent(id)}/email`, { email }, { withCredentials: true });
+  return data;
+};
+
 export type ResendResult = {
   ok: boolean;
   /** invitation = correo para confirmar; pass = pase con QR (invitado + acompañantes). */
