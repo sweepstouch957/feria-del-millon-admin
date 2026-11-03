@@ -62,6 +62,12 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
   // Texto que se achica solo (--f, ver fit() abajo) si la etiqueta no alcanza.
   const fm = (v: number) => `calc(${(v * k).toFixed(2)}mm * var(--f, 1))`;
 
+  // Cada QR va una sola vez (como clase CSS) y las copias de la misma obra lo reusan:
+  // con 4.500 etiquetas, repetir la imagen en cada una inflaba el documento.
+  const qrClass = new Map<string, number>();
+  for (const it of items) if (it.qr && !qrClass.has(it.qr)) qrClass.set(it.qr, qrClass.size);
+  const qrCss = [...qrClass].map(([src, i]) => `.q${i}{background-image:url("${src.replace(/"/g, "%22")}")}`).join("\n");
+
   const label = (it: LabelItem) => `
     <div class="l">
       <div class="h">¡FELICIDADES!</div>
@@ -71,7 +77,7 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
       <div class="t">${esc(it.title)}</div>
       ${it.technique ? `<div class="d">Técnica: ${esc(it.technique)}</div>` : ""}
       ${it.dimensions ? `<div class="d">Dimensiones: ${esc(it.dimensions)}</div>` : ""}
-      <div class="qrbox">${it.qr ? `<img class="qr" src="${it.qr}" alt="" />` : ""}</div>
+      <div class="qrbox">${it.qr ? `<div class="qr q${qrClass.get(it.qr)}" role="img" aria-label="QR"></div>` : ""}</div>
       <div class="row"><span class="d">Serie: ${it.n} / ${it.total}</span><span class="c">${esc(it.code || "SIN CÓDIGO")}</span></div>
       <div class="p">Precio:</div>
       <div class="rule"></div>
@@ -105,7 +111,8 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
      datos → QR (se queda con el alto libre, mínimo ~16 de 66) → serie y código →
      casilla de precio para la rebaja a mano → línea. */
   .l > .qrbox { flex: 1 1 0; min-height: ${mm(16)}; display: flex; align-items: center; justify-content: center; padding: ${mm(1.2)} 0 ${mm(.8)}; }
-  .qr { display: block; height: 100%; max-width: 100%; aspect-ratio: 1 / 1; object-fit: contain; image-rendering: pixelated; mix-blend-mode: multiply; }
+  .qr { display: block; height: 100%; max-width: 100%; aspect-ratio: 1 / 1; background: center / contain no-repeat; mix-blend-mode: multiply; }
+${qrCss}
   .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: ${fm(2)}; row-gap: ${fm(.3)}; }
   .row .d { white-space: nowrap; }
   .c { font-size: ${fm(3.6)}; font-weight: 500; letter-spacing: .02em; overflow-wrap: anywhere; max-width: 100%; }

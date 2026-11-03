@@ -22,8 +22,12 @@ assert.doesNotMatch(html, /\.c \{[^}]*nowrap/);
 // Orden: datos → QR (siempre) → serie → casilla de precio abajo (siempre, aunque no se pida).
 const withQr = buildLabelsHtml([{ ...items[0], qr: "data:image/png;base64,AA==" }], { ...opts, showQr: false, priceBox: false });
 const body = withQr.slice(withQr.indexOf("<body>"));
-const iQr = body.indexOf('class="qr"'), iSerie = body.indexOf("Serie:"), iPrecio = body.indexOf("Precio:");
+const iQr = body.indexOf('class="qr '), iSerie = body.indexOf("Serie:"), iPrecio = body.indexOf("Precio:");
 assert.ok(iQr > 0 && iSerie > iQr && iPrecio > iSerie, `orden qr(${iQr}) < serie(${iSerie}) < precio(${iPrecio})`);
+// El mismo QR en varias copias va una sola vez en el documento.
+const copies = buildLabelsHtml([1, 2, 3].map((n) => ({ ...items[0], n, total: 3, qr: "data:image/svg+xml,AAA" })), opts);
+assert.equal(copies.split("data:image/svg+xml,AAA").length - 1, 1);
+assert.equal(copies.split('class="qr q0"').length - 1, 3);
 // Y si no alcanza, se achica la letra (nunca se corta).
 assert.match(withQr, /window\.fit = function/);
 assert.match(withQr, /var\(--f, 1\)/);

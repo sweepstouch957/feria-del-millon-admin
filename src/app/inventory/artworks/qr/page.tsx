@@ -208,9 +208,14 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   const perBatch = lab.cols * lab.rows * SHEETS_PER_BATCH;
   const batches = Math.max(1, Math.ceil(labels.length / perBatch));
   const [batch, setBatch] = React.useState(0);
-  const curBatch = Math.min(batch, batches - 1);
+  // -1 = todo en un solo PDF (para mandar un único archivo a la imprenta).
+  const ALL = -1;
+  const curBatch = batch === ALL ? ALL : Math.min(batch, batches - 1);
   React.useEffect(() => setBatch(0), [pavilion, artist]); // otro filtro: vuelve al lote 1
-  const batchLabels = React.useMemo(() => labels.slice(curBatch * perBatch, (curBatch + 1) * perBatch), [labels, curBatch, perBatch]);
+  const batchLabels = React.useMemo(
+    () => (curBatch === ALL ? labels : labels.slice(curBatch * perBatch, (curBatch + 1) * perBatch)),
+    [labels, curBatch, perBatch, ALL],
+  );
   const batchIds = React.useMemo(() => [...new Set(batchLabels.map(({ a }) => rowId(a)))], [batchLabels]);
 
   const [qrs, setQrs] = React.useState<Record<string, string>>({});
@@ -261,7 +266,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     );
     (w as Window & { fit?: () => void }).fit?.(); // reajusta la letra con fuentes e imágenes ya cargadas
     // Nombre del PDF: dice qué lote es, para mandarlos en orden a la imprenta.
-    w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-lote-${curBatch + 1}-de-${batches}`;
+    w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-${curBatch === ALL ? `todas-${Math.ceil(labels.length / (lab.cols * lab.rows))}-hojas` : `lote-${curBatch + 1}-de-${batches}`}`;
     w.focus();
     w.print();
   };
@@ -436,7 +441,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                 <MenuItem value="v">Vertical</MenuItem>
               </TextField>
               {/* Un PDF por lote: imprime el 1, luego el 2… (cada uno abre rápido). */}
-              <TextField select size="small" label="Lote a imprimir" value={curBatch} onChange={(e) => setBatch(Number(e.target.value))} sx={{ minWidth: 240 }}>
+              <TextField select size="small" label="Qué imprimir" value={curBatch} onChange={(e) => setBatch(Number(e.target.value))} sx={{ minWidth: 260 }}>
+                <MenuItem value={ALL}>Todo en un solo PDF ({Math.ceil(labels.length / (lab.cols * lab.rows))} hojas · tarda más)</MenuItem>
                 {Array.from({ length: batches }, (_, i) => {
                   const per = lab.cols * lab.rows;
                   const from = i * SHEETS_PER_BATCH + 1;
