@@ -8,6 +8,7 @@ import {
 import { FileSpreadsheet, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
+import ReportTabs from "@/components/ui/ReportTabs";
 import { useQuery } from "@tanstack/react-query";
 import { getSalesReport, type SalesBucket } from "@services/orders.service";
 import { useEvents } from "@/hooks/useEvents";
@@ -86,7 +87,7 @@ export default function SalesReportPage() {
     <Box>
       <PageHeader
         crumb="Reportes"
-        title="Informe de ventas"
+        title="Ventas de obras"
         description="Obras pagadas, por día de pago (hora Colombia)."
         actions={[
           {
@@ -112,6 +113,7 @@ export default function SalesReportPage() {
           },
         ]}
       />
+      <ReportTabs />
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} mb={3} useFlexGap flexWrap="wrap">
         <TextField size="small" select label="Feria" value={f.event} onChange={set("event")} sx={{ minWidth: 180 }}>

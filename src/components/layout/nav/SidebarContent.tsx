@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Paintbrush2,
   QrCode,
-  MapPin,
   Layers,
   Users,
   FileText,
@@ -68,6 +67,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const isEditor = !!(roles as { editor?: boolean }).editor;
 
   const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));
+  const settingsActive = ["/inventory/cities", "/inventory/techniques", "/caja/guia"].includes(pathname);
+  const [settingsOpen, setSettingsOpen] = useState(settingsActive);
 
   const go = (href: string) => () => {
     router.push(href);
@@ -101,6 +102,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
     >
       {kid("/tickets", "Ver boletos")}
       {kid("/tickets/taquilla", "Taquilla")}
+      {kid("/tickets/validator", "Validar entradas")}
       {kid("/tickets/asistentes", "Informe de asistentes")}
       {kid("/tickets/invitaciones", "Invitaciones")}
     </CollapsibleGroup>
@@ -239,34 +241,47 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <>
             {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
 
-            {cajaSection}
+            <SectionTitle label="Ventas" rail={rail} />
+            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
+            {ordersItem}
+            {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
+            {ticketsGroup}
 
-            <SectionTitle label="Inventario" rail={rail} />
+            <SectionTitle label="Feria y obras" rail={rail} />
+            {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
             {item("/inventory/artworks", "Obras", <Paintbrush2 {...ICON} />)}
-            {item("/inventory/artworks/qr", "QR de artistas y obras", <QrCode {...ICON} />)}
+            {item("/solicitudes", "Solicitudes", <FileText {...ICON} />)}
             {item("/inventory/carga", "Estado de carga", <ClipboardCheck {...ICON} />)}
-            {item("/inventory/cities", "Ciudades", <MapPin {...ICON} />)}
-            {item("/inventory/techniques", "Técnicas", <Layers {...ICON} />)}
+            {item("/inventory/artworks/qr", "Etiquetas QR de obras", <QrCode {...ICON} />)}
 
-            <SectionTitle label="Comunidad" rail={rail} />
+            <SectionTitle label="Personas" rail={rail} />
             {item("/users", "Usuarios", <Users {...ICON} />)}
             {item("/compradores", "Compradores", <Users {...ICON} />)}
-            {item("/solicitudes", "Solicitudes", <FileText {...ICON} />)}
 
-            <SectionTitle label="Contenido" rail={rail} />
+            <SectionTitle label="Sitio y difusión" rail={rail} />
             {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
             {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
-            {item("/qr", "Códigos QR", <QrCode {...ICON} />)}
-
-            <SectionTitle label="Operación" rail={rail} />
-            {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
-            {ticketsGroup}
-            {ordersItem}
+            {item("/qr", "QR de enlaces", <QrCode {...ICON} />)}
 
             <SectionTitle label="Reportes" rail={rail} />
-            {item("/reportes", "Reportes", <BarChart3 {...ICON} />)}
-            {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
+            {item("/reportes", "Reportes", <BarChart3 {...ICON} />, false)}
             {item("/auditoria", "Auditoría", <ShieldCheck {...ICON} />)}
+
+            <SectionTitle label="Ajustes" rail={rail} />
+            <CollapsibleGroup
+              open={settingsOpen}
+              setOpen={setSettingsOpen}
+              rail={rail}
+              onRailClick={go("/inventory/cities")}
+              icon={<Layers {...ICON} />}
+              text="Catálogos y ayuda"
+              active={settingsActive}
+            >
+              {kid("/inventory/cities", "Ciudades")}
+              {kid("/inventory/techniques", "Técnicas")}
+              {kid("/caja/guia", "Guía y práctica")}
+            </CollapsibleGroup>
           </>
         )}
 
@@ -302,7 +317,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <>
             {cajaSection}
             {item("/orders", "Pedidos", <FileText {...ICON} />)}
-            {item("/reportes/ventas", "Informe de ventas", <BarChart3 {...ICON} />)}
+            {item("/reportes/ventas", "Ventas de obras", <BarChart3 {...ICON} />)}
           </>
         )}
 

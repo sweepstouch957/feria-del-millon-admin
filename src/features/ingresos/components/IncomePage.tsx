@@ -9,6 +9,7 @@ import {
 import { Download, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
+import ReportTabs from "@/components/ui/ReportTabs";
 import { eyebrow } from "@/app/theme";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import type { ArtistApplication } from "@services/applications.service";
@@ -184,10 +185,10 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
         title="Reportes"
         description="Toda la plata de la feria. Toca una cifra para ver su detalle y una fila para ver toda la información."
         actions={[
-          { label: "Informe de ventas", kind: "sec", href: "/reportes/ventas" },
           { label: "Actualizar", kind: "sec", icon: <RefreshCw size={14} />, onClick: refetch },
         ]}
       />
+      <ReportTabs />
       {failed && <Alert severity="error" sx={{ mb: 2 }}>Una parte del reporte no cargó: las cifras pueden estar incompletas. Pulsa Actualizar.</Alert>}
 
       <KpiStrip

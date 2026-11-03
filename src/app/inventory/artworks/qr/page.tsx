@@ -237,8 +237,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     <Box>
       <Box className="no-print">
         <PageHeader
-          crumb="Inventario"
-          title="QR de artistas y obras"
+          crumb="Feria y obras"
+          title="Etiquetas QR de obras"
           description={`${eventName}. Cada QR del artista lleva a su página con todas sus obras; cada QR de obra, a la ficha con el botón de compra.`}
           actions={[
             { label: printing ? "Preparando…" : "Imprimir", kind: "pri", icon: printing ? <CircularProgress size={14} /> : <Printer size={14} />, onClick: () => { if (tab === "labels") printLabels(); else if (!printing) setPrinting(true); }, disabled: tab === "labels" && (hasNextPage || isFetchingNextPage) },
