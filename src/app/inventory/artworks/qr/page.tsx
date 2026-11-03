@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, CircularProgress, Tabs, Tab, Collapse,
-  Switch, FormControlLabel,
 } from "@mui/material";
 import { Printer, Settings2, Wand2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
@@ -193,7 +192,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     if (tab !== "labels" || !lab.showQr) return;
     let on = true;
     const ids = (rows as any[]).map(rowId);
-    Promise.all(ids.map((id) => ensureQr(urlFor(id), 260).catch(() => ""))).then((urls) => {
+    // 600 px: el QR ocupa el centro de la etiqueta (~4 cm) y debe salir nítido en la imprenta.
+    Promise.all(ids.map((id) => ensureQr(urlFor(id), 600).catch(() => ""))).then((urls) => {
       if (on) setQrs(Object.fromEntries(ids.map((id, i) => [id, urls[i]])));
     });
     return () => { on = false; };
@@ -408,8 +408,6 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                 <MenuItem value="h">Horizontal</MenuItem>
                 <MenuItem value="v">Vertical</MenuItem>
               </TextField>
-              <FormControlLabel control={<Switch checked={lab.showQr} onChange={(e) => setLab({ ...lab, showQr: e.target.checked })} />} label="QR de la obra" />
-              <FormControlLabel control={<Switch checked={lab.priceBox} onChange={(e) => setLab({ ...lab, priceBox: e.target.checked })} />} label="Casilla de precio (a mano)" />
               <Typography variant="caption" color="text.secondary">
                 {lab.cols * lab.rows} por hoja · {Math.ceil(labels.length / (lab.cols * lab.rows))} hojas · etiqueta de {(size.w / 10).toFixed(1)} × {(size.h / 10).toFixed(1)} cm
               </Typography>

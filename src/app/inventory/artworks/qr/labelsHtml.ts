@@ -69,11 +69,10 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
       <div class="t">${esc(it.title)}</div>
       ${it.technique ? `<div class="d">Técnica: ${esc(it.technique)}</div>` : ""}
       ${it.dimensions ? `<div class="d">Dimensiones: ${esc(it.dimensions)}</div>` : ""}
-      <div class="foot">
-        ${o.showQr && it.qr ? `<img class="qr" src="${it.qr}" alt="" />` : ""}
-        ${o.priceBox ? `<div class="p">Precio:</div>` : ""}
-      </div>
       <div class="row"><span class="d">Serie: ${it.n} / ${it.total}</span><span class="c">${esc(it.code || "SIN CÓDIGO")}</span></div>
+      <div class="qrbox">${it.qr ? `<img class="qr" src="${it.qr}" alt="" />` : ""}</div>
+      <div class="p">Precio:</div>
+      <div class="rule"></div>
     </div>`;
 
   const pages: string[] = [];
@@ -100,13 +99,16 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
      línea si no cabe al lado de la serie (antes "FDM25-…-0001" quedaba mocho). */
   .a { font-size: ${mm(4)}; font-weight: 500; margin-bottom: ${mm(.8)}; overflow-wrap: anywhere; }
   .t, .d { font-size: ${mm(2.55)}; line-height: 1.2; overflow-wrap: anywhere; }
-  /* Abajo del todo: QR (y casilla de precio) y debajo la serie con el código. */
-  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: ${mm(2)}; row-gap: ${mm(.4)}; margin-top: ${mm(.8)}; }
+  /* Como la etiqueta del año pasado: datos y serie arriba, casilla de precio abajo
+     (para escribir la rebaja a mano) con su línea. En medio, siempre, el QR: se
+     queda con el alto libre, centrado y cuadrado, sin tapar nada. */
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: ${mm(2)}; row-gap: ${mm(.4)}; }
   .row .d { white-space: nowrap; }
   .c { font-size: ${mm(3.9)}; font-weight: 500; letter-spacing: .02em; overflow-wrap: anywhere; max-width: 100%; }
-  .foot { margin-top: auto; display: flex; align-items: flex-end; gap: ${mm(2)}; }
-  .qr { width: ${mm(12.5)}; height: ${mm(12.5)}; mix-blend-mode: multiply; }
-  .p { flex: 1; background: #D6D0CC; border-radius: ${mm(1)}; font-size: ${mm(2.2)}; font-weight: 600; padding: ${mm(1)} ${mm(2)}; }
+  .l > .qrbox { flex: 1 1 0; min-height: ${mm(12)}; display: flex; align-items: center; justify-content: center; padding: ${mm(1.2)} 0; }
+  .qr { display: block; height: 100%; max-width: 100%; aspect-ratio: 1 / 1; object-fit: contain; image-rendering: pixelated; mix-blend-mode: multiply; }
+  .p { background: #D6D0CC; border-radius: ${mm(1)}; font-size: ${mm(2.2)}; font-weight: 600; padding: ${mm(1.2)} ${mm(2)}; }
+  .rule { border-top: .25mm solid #888; margin-top: ${mm(2)}; }
   @media print { body { background: none; } .page { margin: 0; box-shadow: none; } }
 </style></head><body>${pages.join("") || '<p style="color:#fff;padding:20px">No hay obras con estos filtros.</p>'}</body></html>`;
 }

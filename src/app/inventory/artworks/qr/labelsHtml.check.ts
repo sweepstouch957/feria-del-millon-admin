@@ -19,7 +19,8 @@ assert.match(buildLabelsHtml(items, { ...opts, paper: "letter", cols: 4 }), /siz
 assert.doesNotMatch(html, /line-clamp/);
 assert.match(html, /\.row \{[^}]*flex-wrap: wrap/);
 assert.doesNotMatch(html, /\.c \{[^}]*nowrap/);
-// El QR va arriba de la serie.
-const withQr = buildLabelsHtml([{ ...items[0], qr: "data:image/png;base64,AA==" }], opts);
-assert.ok(withQr.indexOf('class="qr"') < withQr.indexOf("Serie:"), "QR antes de la serie");
+// Como la del año pasado: serie → QR (siempre) → casilla de precio abajo (siempre, aunque no se pida).
+const withQr = buildLabelsHtml([{ ...items[0], qr: "data:image/png;base64,AA==" }], { ...opts, showQr: false, priceBox: false });
+const iSerie = withQr.indexOf("Serie:"), iQr = withQr.indexOf('class="qr"'), iPrecio = withQr.indexOf("Precio:");
+assert.ok(iSerie > 0 && iQr > iSerie && iPrecio > iQr, `orden serie(${iSerie}) < qr(${iQr}) < precio(${iPrecio})`);
 console.log("ok");
