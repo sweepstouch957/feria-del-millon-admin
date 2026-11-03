@@ -13,10 +13,14 @@ export type LabelItem = {
   qr?: string; // data URL
 };
 
+export type Paper = "pliego" | "letter";
+
 export type LabelOpts = {
   cols: number;
   rows: number;
   landscape: boolean;
+  /** pliego = 48 × 33 cm de la imprenta (18 etiquetas: 6 × 3); letter = carta. */
+  paper?: Paper;
   showQr: boolean;
   /** Casilla "Precio:" vacía para escribir a mano. */
   priceBox: boolean;
@@ -26,12 +30,29 @@ export type LabelOpts = {
 const esc = (s = "") =>
   String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-// Carta, margen 6 mm. Se deja 2 mm de holgura vertical para que el navegador no parta la hoja.
-const PAGE = { w: 279.4, h: 215.9, margin: 6 };
+/* Medidas en mm del lado largo (w) y corto (h). Se deja 2 mm de holgura vertical
+   para que el navegador no parta la hoja.
+   Pliego de la imprenta: 48 × 33 cm, 5 mm de margen → 18 etiquetas de ~78 × 106 mm. */
+export const PAPERS: Record<Paper, { w: number; h: number; margin: number; label: string }> = {
+  pliego: { w: 480, h: 330, margin: 5, label: "Pliego 48 × 33 cm" },
+  letter: { w: 279.4, h: 215.9, margin: 6, label: "Carta" },
+};
+
+/** Tamaño de cada etiqueta en mm (para mostrarlo y verificarlo). */
+export function labelSize(o: Pick<LabelOpts, "cols" | "rows" | "landscape" | "paper">) {
+  const P = PAPERS[o.paper ?? "letter"];
+  const pw = (o.landscape ? P.w : P.h) - P.margin * 2;
+  const ph = (o.landscape ? P.h : P.w) - P.margin * 2 - 2;
+  return { pw, ph, w: pw / o.cols, h: ph / o.rows };
+}
 
 export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
   const cols = Math.max(1, Math.min(8, o.cols));
   const rows = Math.max(1, Math.min(8, o.rows));
+  const PAGE = PAPERS[o.paper ?? "letter"];
+  const pageCss = o.paper === "pliego"
+    ? (o.landscape ? `${PAGE.w}mm ${PAGE.h}mm` : `${PAGE.h}mm ${PAGE.w}mm`)
+    : `letter ${o.landscape ? "landscape" : "portrait"}`;
   const pw = (o.landscape ? PAGE.w : PAGE.h) - PAGE.margin * 2;
   const ph = (o.landscape ? PAGE.h : PAGE.w) - PAGE.margin * 2 - 2;
   const per = cols * rows;
@@ -63,7 +84,7 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Saira+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  @page { size: letter ${o.landscape ? "landscape" : "portrait"}; margin: ${PAGE.margin}mm; }
+  @page { size: ${pageCss}; margin: ${PAGE.margin}mm; }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body { font-family: "Saira Condensed", "Arial Narrow", sans-serif; color: #111; background: #8d8a86; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

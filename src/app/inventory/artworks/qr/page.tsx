@@ -14,7 +14,7 @@ import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { regenerateArtworkQrs } from "@services/artworks.service";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { formatCOP } from "@/utils/money";
-import { buildLabelsHtml } from "./labelsHtml";
+import { buildLabelsHtml, labelSize, PAPERS, type Paper } from "./labelsHtml";
 
 /* QR para imprimir, en dos pestañas:
    - Artistas: un QR por artista (lleva a su página con todas sus obras).
@@ -179,7 +179,11 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   }, [rows]);
   const missingCode = (rows as any[]).filter((a) => !a.tagId).length;
 
-  const [lab, setLab] = React.useState({ cols: 4, rows: 3, landscape: true, showQr: true, priceBox: false });
+  // Formato de la imprenta: pliego 48 × 33 cm horizontal, 18 etiquetas (6 × 3).
+  const [lab, setLab] = React.useState<{ cols: number; rows: number; landscape: boolean; showQr: boolean; priceBox: boolean; paper: Paper }>(
+    { cols: 6, rows: 3, landscape: true, showQr: true, priceBox: false, paper: "pliego" },
+  );
+  const size = labelSize(lab);
   // Las etiquetas necesitan todas las obras: se cargan solas, página por página.
   React.useEffect(() => {
     if (tab === "labels" && hasNextPage && !isFetchingNextPage) loadMore();
@@ -367,6 +371,16 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               </Typography>
             </Stack>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+              <TextField
+                select size="small" label="Papel" value={lab.paper} sx={{ width: 190 }}
+                onChange={(e) => {
+                  const paper = e.target.value as Paper;
+                  // Pliego: el formato de la imprenta (6 × 3 = 18). Carta: el de antes (4 × 3).
+                  setLab(paper === "pliego" ? { ...lab, paper, cols: 6, rows: 3, landscape: true } : { ...lab, paper, cols: 4, rows: 3, landscape: true });
+                }}
+              >
+                {(Object.keys(PAPERS) as Paper[]).map((p) => <MenuItem key={p} value={p}>{PAPERS[p].label}</MenuItem>)}
+              </TextField>
               <TextField select size="small" label="Por fila" value={lab.cols} onChange={(e) => setLab({ ...lab, cols: Number(e.target.value) })} sx={{ width: 100 }}>
                 {[2, 3, 4, 5, 6].map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
               </TextField>
@@ -379,7 +393,9 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               </TextField>
               <FormControlLabel control={<Switch checked={lab.showQr} onChange={(e) => setLab({ ...lab, showQr: e.target.checked })} />} label="QR de la obra" />
               <FormControlLabel control={<Switch checked={lab.priceBox} onChange={(e) => setLab({ ...lab, priceBox: e.target.checked })} />} label="Casilla de precio (a mano)" />
-              <Typography variant="caption" color="text.secondary">{lab.cols * lab.rows} por hoja · {Math.ceil(labels.length / (lab.cols * lab.rows))} hojas</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {lab.cols * lab.rows} por hoja · {Math.ceil(labels.length / (lab.cols * lab.rows))} hojas · etiqueta de {(size.w / 10).toFixed(1)} × {(size.h / 10).toFixed(1)} cm
+              </Typography>
             </Stack>
           </CardContent></Card>
           {isLoading ? (
