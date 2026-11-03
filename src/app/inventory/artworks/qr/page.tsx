@@ -220,10 +220,21 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     [tab, labels, lab, qrs]
   );
   const labelsFrame = React.useRef<HTMLIFrameElement>(null);
+  // Listo para imprimir = todas las obras cargadas y, si lleva QR, todos los QR generados.
+  // "in": un QR que falló queda en "" y no debe trabar el botón para siempre.
+  const qrReady = !lab.showQr || (rows as any[]).every((a) => rowId(a) in qrs);
+  const labelsReady = !hasNextPage && !isFetchingNextPage && qrReady;
   const printLabels = async () => {
     const w = labelsFrame.current?.contentWindow;
-    if (!w) return;
+    if (!w || !labelsReady) return;
+    // Fuentes, logo y QR ya pintados: si no, salen etiquetas sin QR o con otra letra.
     await w.document.fonts?.ready;
+    await Promise.all(
+      Array.from(w.document.images).map((img) =>
+        img.complete ? null : new Promise((ok) => { img.onload = img.onerror = () => ok(null); }),
+      ),
+    );
+    w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-${labels.length}`; // nombre del PDF
     w.focus();
     w.print();
   };
@@ -245,7 +256,13 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           title="Etiquetas QR de obras"
           description={`${eventName}. Cada QR del artista lleva a su página con todas sus obras; cada QR de obra, a la ficha con el botón de compra.`}
           actions={[
-            { label: printing ? "Preparando…" : "Imprimir", kind: "pri", icon: printing ? <CircularProgress size={14} /> : <Printer size={14} />, onClick: () => { if (tab === "labels") printLabels(); else if (!printing) setPrinting(true); }, disabled: tab === "labels" && (hasNextPage || isFetchingNextPage) },
+            {
+              label: printing || (tab === "labels" && !labelsReady) ? "Preparando…" : "Imprimir",
+              kind: "pri",
+              icon: printing || (tab === "labels" && !labelsReady) ? <CircularProgress size={14} /> : <Printer size={14} />,
+              onClick: () => { if (tab === "labels") printLabels(); else if (!printing) setPrinting(true); },
+              disabled: tab === "labels" && !labelsReady,
+            },
             { label: "Ajustes", kind: "sec", icon: <Settings2 size={14} />, onClick: () => setShowSettings((v) => !v) },
           ]}
         />
@@ -367,7 +384,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               <Typography variant="caption" color="text.secondary">
                 {isLoading ? "Cargando obras…" : `${rows.length} obras · ${labels.length} etiquetas${hasNextPage ? " (cargando el resto al imprimir)" : ""}`}
                 {missingCode > 0 && ` · ${missingCode} sin código: corrígelas en Ajustes → Corregir QR`}
-                <br />Imprimir → Destino «Guardar como PDF», márgenes predeterminados.
+                <br />Imprimir → Destino «Guardar como PDF» · Márgenes: predeterminados · Escala: predeterminada (100 %). Ese PDF ya va en {PAPERS[lab.paper].label}.
               </Typography>
             </Stack>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
