@@ -4,7 +4,7 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, CircularProgress, Tabs, Tab, Collapse,
 } from "@mui/material";
-import { Printer, Settings2, Wand2 } from "lucide-react";
+import { Download, Printer, Settings2, Wand2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import QRCode from "qrcode";
 import { useArtworksCursor } from "@/hooks/useArtworksCursor";
@@ -52,6 +52,46 @@ const ensureQrSvg = (text: string) => {
   }
   return p;
 };
+
+/* Fuentes (Anton y Saira Condensed, OFL, en /public/fonts) y logo para el PDF.
+   Se piden una vez. El logo viene con fondo blanco: se vuelve transparente
+   (como el multiply de la vista previa) para que no quede un recuadro blanco. */
+let pdfAssets: Promise<import("./labelsPdf").PdfAssets> | null = null;
+const loadPdfAssets = () =>
+  (pdfAssets ??= (async () => {
+    const bin = async (u: string) => {
+      const r = await fetch(u);
+      if (!r.ok) throw new Error(`${u}: ${r.status}`);
+      return new Uint8Array(await r.arrayBuffer());
+    };
+    const logo = await new Promise<Uint8Array | undefined>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const px = ctx.getImageData(0, 0, c.width, c.height);
+        for (let i = 0; i < px.data.length; i += 4) {
+          const lum = (px.data[i] + px.data[i + 1] + px.data[i + 2]) / 3;
+          px.data[i + 3] = Math.round((px.data[i + 3] * (255 - lum)) / 255); // blanco → transparente
+          px.data[i] = px.data[i + 1] = px.data[i + 2] = 17;
+        }
+        ctx.putImageData(px, 0, 0);
+        c.toBlob(async (b) => resolve(b ? new Uint8Array(await b.arrayBuffer()) : undefined), "image/png");
+      };
+      img.onerror = () => resolve(undefined);
+      img.src = "/logo.png";
+    });
+    const [anton, regular, medium, semibold] = await Promise.all([
+      bin("/fonts/Anton-Regular.ttf"),
+      bin("/fonts/SairaCondensed-Regular.ttf"),
+      bin("/fonts/SairaCondensed-Medium.ttf"),
+      bin("/fonts/SairaCondensed-SemiBold.ttf"),
+    ]);
+    return { anton, regular, medium, semibold, logo };
+  })().catch((e) => { pdfAssets = null; throw e; }));
 
 /** Hojas por lote: la vista previa y cada PDF llevan 20 hojas (360 etiquetas en pliego). */
 const SHEETS_PER_BATCH = 20;
@@ -252,23 +292,46 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   const labelsFrame = React.useRef<HTMLIFrameElement>(null);
   // Listo para imprimir = todas las obras cargadas y, si lleva QR, todos los QR generados.
   // "in": un QR que falló queda en "" y no debe trabar el botón para siempre.
-  const qrReady = batchIds.every((id) => id in qrs);
-  const labelsReady = !hasNextPage && !isFetchingNextPage && qrReady;
-  const printLabels = async () => {
-    const w = labelsFrame.current?.contentWindow;
-    if (!w || !labelsReady) return;
-    // Fuentes, logo y QR ya pintados: si no, salen etiquetas sin QR o con otra letra.
-    await w.document.fonts?.ready;
-    await Promise.all(
-      Array.from(w.document.images).map((img) =>
-        img.complete ? null : new Promise((ok) => { img.onload = img.onerror = () => ok(null); }),
-      ),
-    );
-    (w as Window & { fit?: () => void }).fit?.(); // reajusta la letra con fuentes e imágenes ya cargadas
-    // Nombre del PDF: dice qué lote es, para mandarlos en orden a la imprenta.
-    w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-${curBatch === ALL ? `todas-${Math.ceil(labels.length / (lab.cols * lab.rows))}-hojas` : `lote-${curBatch + 1}-de-${batches}`}`;
-    w.focus();
-    w.print();
+  // El PDF se arma aquí (no con "Imprimir" del navegador, que redondea la hoja):
+  // solo necesita todas las obras cargadas; el QR lo dibuja él en vectorial.
+  const labelsReady = !hasNextPage && !isFetchingNextPage;
+  const [pdfStatus, setPdfStatus] = React.useState<string | null>(null);
+  const downloadLabelsPdf = async () => {
+    if (!labelsReady || pdfStatus || !batchLabels.length) return;
+    setPdfStatus("Preparando…");
+    try {
+      const [{ buildLabelsPdf }, assets] = await Promise.all([import("./labelsPdf"), loadPdfAssets()]);
+      const bytes = await buildLabelsPdf(
+        batchLabels.map(({ a, n, total }) => ({
+          artist: artistName(a) || "—",
+          title: a.title || "Sin título",
+          technique: a.techniqueInfo?.name,
+          dimensions: a.dimensionsText,
+          n,
+          total,
+          code: a.tagId,
+          qrText: urlFor(rowId(a)),
+        })),
+        { ...lab, logoUrl: "" },
+        assets,
+        (done, total) => setPdfStatus(`Hoja ${done} de ${total}…`),
+      );
+      // Nombre del PDF: tamaño y qué lote es, para mandarlos en orden a la imprenta.
+      const name = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-${curBatch === ALL ? `todas-${Math.ceil(labels.length / (lab.cols * lab.rows))}-hojas` : `lote-${curBatch + 1}-de-${batches}`}.pdf`;
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      console.error("[etiquetas] PDF:", e);
+      window.alert("No se pudo generar el PDF. Recarga la página y vuelve a intentar.");
+    } finally {
+      setPdfStatus(null);
+    }
   };
 
   const openArtist = (id: string) => { setArtist(id); setTab("artworks"); };
@@ -288,13 +351,21 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           title="Etiquetas QR de obras"
           description={`${eventName}. Cada QR del artista lleva a su página con todas sus obras; cada QR de obra, a la ficha con el botón de compra.`}
           actions={[
-            {
-              label: printing || (tab === "labels" && !labelsReady) ? "Preparando…" : "Imprimir",
-              kind: "pri",
-              icon: printing || (tab === "labels" && !labelsReady) ? <CircularProgress size={14} /> : <Printer size={14} />,
-              onClick: () => { if (tab === "labels") printLabels(); else if (!printing) setPrinting(true); },
-              disabled: tab === "labels" && !labelsReady,
-            },
+            tab === "labels"
+              ? {
+                  // PDF con la hoja exacta (48 × 33 cm), sin pasar por "Imprimir" del navegador.
+                  label: pdfStatus ?? (labelsReady ? "Descargar PDF" : "Cargando obras…"),
+                  kind: "pri",
+                  icon: pdfStatus || !labelsReady ? <CircularProgress size={14} /> : <Download size={14} />,
+                  onClick: () => { downloadLabelsPdf(); },
+                  disabled: !labelsReady || !!pdfStatus,
+                }
+              : {
+                  label: printing ? "Preparando…" : "Imprimir",
+                  kind: "pri",
+                  icon: printing ? <CircularProgress size={14} /> : <Printer size={14} />,
+                  onClick: () => { if (!printing) setPrinting(true); },
+                },
             { label: "Ajustes", kind: "sec", icon: <Settings2 size={14} />, onClick: () => setShowSettings((v) => !v) },
           ]}
         />
@@ -416,7 +487,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               <Typography variant="caption" color="text.secondary">
                 {isLoading ? "Cargando obras…" : `${rows.length} obras · ${labels.length} etiquetas${hasNextPage ? " (cargando el resto al imprimir)" : ""}`}
                 {missingCode > 0 && ` · ${missingCode} sin código: corrígelas en Ajustes → Corregir QR`}
-                <br />Imprimir → Destino «Guardar como PDF» · Márgenes: predeterminados · Escala: predeterminada (100 %). Ese PDF ya va en {PAPERS[lab.paper].label}.
+                <br />«Descargar PDF» baja el archivo listo para la imprenta: hoja exacta de {PAPERS[lab.paper].label}, QR en vectorial. Abajo, la vista previa.
               </Typography>
             </Stack>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
