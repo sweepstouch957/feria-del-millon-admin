@@ -298,8 +298,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <>
             <SectionTitle label="Taquilla" rail={rail} />
             {!isCashier && item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
-            {item("/tickets/taquilla", "Taquilla", <Ticket {...ICON} />)}
-            {item("/tickets/asistentes", "Informe de asistentes", <BarChart3 {...ICON} />)}
+            {/* Vende y ve sus ventas del día (en la misma pantalla). */}
+            {item("/tickets/taquilla", "Vender entradas", <Ticket {...ICON} />)}
             {!isCashier && item("/caja/guia", "Guía y práctica", <GraduationCap {...ICON} />)}
           </>
         )}
@@ -313,13 +313,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           </>
         )}
 
-        {!isSuperUser && isCashier && (
-          <>
-            {cajaSection}
-            {item("/orders", "Pedidos", <FileText {...ICON} />)}
-            {item("/reportes/ventas", "Ventas de obras", <BarChart3 {...ICON} />)}
-          </>
-        )}
+        {/* Caja: vende y ve su cierre del día; pedidos y reportes de todos, no. */}
+        {!isSuperUser && isCashier && cajaSection}
 
         {!isSuperUser && !isArtist && !isCashier && !isBoxOffice && !isEditor &&
           item("/", "Tablero", <LayoutDashboard {...ICON} />)}

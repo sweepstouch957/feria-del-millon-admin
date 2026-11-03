@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Box, Card, CardContent, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Card, CardContent, Typography, useMediaQuery } from "@mui/material";
 import { toast } from "sonner";
 import { headerHeight } from "@/components/layout/layoutConfig";
 import PageHeader from "@/components/ui/PageHeader";
@@ -23,6 +23,7 @@ import type { SaleValues } from "../model/sale";
 
 // Referencia fija: un [] nuevo en cada render hacía repintar el formulario de cobro.
 const NO_CITIES: CityDoc[] = [];
+const WIDE = "(min-width: 1100px)";
 
 export function CajaPage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
@@ -35,8 +36,10 @@ export function CajaPage() {
  * derecha. Celular: un paso a la vez (buscar → cobrar → listo).
  */
 function Caja({ eventId }: { eventId: string }) {
+  // Dos columnas desde 1100 px (escritorio, tablet acostada grande); debajo, un paso
+  // a la vez (celular y tablet). Antes era 900 px y con el menú abierto no cabían.
   // noSsr: sin esto el primer render es "celular" y la pantalla salta al montar.
-  const wide = useMediaQuery(useTheme().breakpoints.up("md"), { noSsr: true });
+  const wide = useMediaQuery(WIDE, { noSsr: true });
   const finder = useArtworkFinder(eventId);
   const cities = useCities().data ?? NO_CITIES;
   const checkout = useCheckout(eventId, cities);
@@ -84,7 +87,16 @@ function Caja({ eventId }: { eventId: string }) {
       />
       <PracticeBanner />
 
-      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 7fr) minmax(0, 5fr)" }, alignItems: "start" }}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          alignItems: "start",
+          gridTemplateColumns: "minmax(0, 1fr)",
+          // El cobro con ancho propio (360–460 px); el buscador se queda con el resto.
+          [`@media ${WIDE}`]: { gridTemplateColumns: "minmax(0, 1fr) minmax(360px, 460px)" },
+        }}
+      >
         {showFinder && (
           <ArtworkFinderPanel finder={finder} selectedId={selected ? artworkId(selected) : undefined} onPick={pick} />
         )}
@@ -96,10 +108,15 @@ function Caja({ eventId }: { eventId: string }) {
             variant="outlined"
             sx={{
               borderRadius: 0,
-              position: { md: "sticky" },
-              top: { md: headerHeight + 12 },
-              maxHeight: { md: `calc(100dvh - ${headerHeight + 24}px)` },
-              overflowY: { md: "auto" },
+              // El formulario se acomoda al ancho de esta caja, no al de la pantalla.
+              containerType: "inline-size",
+              containerName: "cobro",
+              [`@media ${WIDE}`]: {
+                position: "sticky",
+                top: headerHeight + 12,
+                maxHeight: `calc(100dvh - ${headerHeight + 24}px)`,
+                overflowY: "auto",
+              },
               overscrollBehavior: "contain",
             }}
           >

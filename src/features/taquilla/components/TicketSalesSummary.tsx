@@ -8,6 +8,7 @@ import { eyebrow } from "@/app/theme";
 import { byMethod } from "@features/ingresos/model/income";
 import { getTicketSales } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
+import { useAuth } from "@/provider/authProvider";
 
 const colombiaDay = (d: string | Date) => new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 
@@ -17,6 +18,9 @@ const colombiaDay = (d: string | Date) => new Date(d).toLocaleDateString("en-CA"
  */
 export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: { eventId: string }) {
   const [range, setRange] = useState<"today" | "all">("today");
+  // Taquilla recibe solo sus ventas (lo filtra el servidor); administración, todas.
+  const roles = (useAuth().user?.roles || {}) as Record<string, boolean | undefined>;
+  const mine = !(roles.superuser || roles.staff || roles.curador);
   const { data = [], isLoading } = useQuery({
     queryKey: ["ticketSales", eventId],
     queryFn: () => getTicketSales(eventId),
@@ -32,10 +36,10 @@ export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: 
   return (
     <Box sx={{ mt: 3 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.5 }}>
-        <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>Entradas vendidas</Typography>
+        <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>{mine ? "Tus ventas" : "Entradas vendidas"}</Typography>
         <ToggleButtonGroup aria-label="Periodo" exclusive size="small" value={range} onChange={(_, v) => v && setRange(v)}>
-          <ToggleButton value="today" sx={{ textTransform: "none" }}>Hoy</ToggleButton>
-          <ToggleButton value="all" sx={{ textTransform: "none" }}>Toda la feria</ToggleButton>
+          <ToggleButton value="today" sx={{ textTransform: "none", minHeight: 40 }}>Hoy</ToggleButton>
+          <ToggleButton value="all" sx={{ textTransform: "none", minHeight: 40 }}>{mine ? "Todos los días" : "Toda la feria"}</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
       <KpiStrip

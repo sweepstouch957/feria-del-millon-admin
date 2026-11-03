@@ -8,6 +8,7 @@ import { useThemeMode } from "@/provider/ThemeModeProvider";
 import { useAuth } from "@/provider/authProvider";
 
 import SidebarContent from "./nav/SidebarContent";
+import { canOpen, homeFor } from "@/lib/roleHome";
 import {
   drawerWidth,
   railWidth,
@@ -76,6 +77,12 @@ const MergedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       return !v;
     });
   };
+
+  // Caja y taquilla: fuera de sus pantallas, a su inicio (el backend también lo niega).
+  const allowed = !user || canOpen(user.roles, pathname);
+  useEffect(() => {
+    if (user && !allowed) router.replace(homeFor(user.roles));
+  }, [user, allowed, router]);
 
   const { crumb, title } = useMemo(() => routeInfo(pathname), [pathname]);
   const width = rail ? railWidth : drawerWidth;
@@ -258,9 +265,16 @@ const MergedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             px: { xs: 2, md: 3, lg: 4 },
             pt: { xs: 2.5, md: 3.5 },
             pb: 6,
+            // Tablet y celular (pantalla táctil, de cualquier ancho): todo a la medida del dedo.
+            "@media (pointer: coarse)": {
+              "& .MuiButton-root": { minHeight: 44 },
+              "& .MuiIconButton-root": { minWidth: 44, minHeight: 44 },
+              "& .MuiToggleButton-root": { minHeight: 44 },
+              "& .MuiInputBase-input": { fontSize: 16 }, // iPhone no hace zoom al tocar el campo
+            },
           }}
         >
-          {children}
+          {allowed ? children : null}
         </Box>
       </Box>
     </Box>

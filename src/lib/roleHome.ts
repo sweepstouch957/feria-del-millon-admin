@@ -7,3 +7,26 @@ export function homeFor(roles: Roles = {}): string {
   if (roles.taquilla) return "/tickets/validator";
   return "/";
 }
+
+/* Caja y taquilla solo venden lo suyo y ven su cierre del día: el resto del
+   panel (pedidos de todos, reportes, asistentes, ferias) no se abre aunque
+   escriban la dirección. El backend lo exige igual; esto evita pantallas rotas. */
+const PATHS: Record<string, string[]> = {
+  cajero: ["/caja", "/tickets/validator"],
+  jefeCaja: ["/caja", "/tickets/validator", "/orders/cartera"],
+  taquilla: ["/tickets/taquilla", "/tickets/validator", "/caja/guia"],
+  artista: ["/", "/my"],
+  editor: ["/personalizacion", "/comunicaciones", "/qr"],
+};
+
+const r = (roles: Roles) => roles as Record<string, boolean | undefined>;
+
+export function canOpen(roles: Roles = {}, path: string): boolean {
+  const x = r(roles);
+  if (x.superuser || x.staff || x.curador) return true;
+  const seller = x.cajero || x.jefeCaja || x.taquilla;
+  if (!seller) return true; // otros perfiles: sin cambios
+  if (path === "/account" || path.startsWith("/account/") || path === "/login") return true;
+  const allowed = Object.keys(PATHS).filter((k) => x[k]).flatMap((k) => PATHS[k]);
+  return allowed.some((p) => (p === "/" ? path === "/" : path === p || path.startsWith(`${p}/`)));
+}

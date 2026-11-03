@@ -131,10 +131,17 @@ export const SaleForm = memo(function SaleForm({
       noValidate
       onSubmit={handleSubmit(onSubmit, onInvalid)}
       sx={{
-        // Celular: grande para el dedo. Tablet y escritorio: compacto.
+        // Celular: grande para el dedo. Escritorio: compacto.
         "& .MuiInputBase-input": { fontSize: { xs: 18, sm: 14.5 }, py: { xs: 1.75, sm: 0.75 } },
         "& .MuiInputLabel-root": { fontSize: { xs: 17, sm: 12.5 } },
         "& .MuiFormHelperText-root": { fontSize: { xs: 15, sm: 12 } },
+        // Tablet (pantalla táctil de cualquier ancho): campos y botones a la medida del dedo.
+        "@media (pointer: coarse)": {
+          "& .MuiInputBase-input": { fontSize: 17, py: 1.5 },
+          "& .MuiInputLabel-root": { fontSize: 15.5 },
+          "& .MuiToggleButton-root": { py: 1.75, fontSize: 17 },
+          "& .MuiButton-root": { minHeight: 48 },
+        },
       }}
     >
       <Stack spacing={{ xs: 3.5, sm: 2.5 }}>
@@ -158,7 +165,8 @@ export const SaleForm = memo(function SaleForm({
           )}
           <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
           <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
-          <Box sx={{ display: "grid", gap: 1.5, alignItems: "start", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
+          {/* Dos columnas solo si la caja del formulario es ancha (no la pantalla): al lado del buscador queda angosta. */}
+          <Box sx={{ display: "grid", gap: 1.5, alignItems: "start", gridTemplateColumns: "minmax(0, 1fr)", "@container cobro (min-width: 520px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } }}>
             <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
             <TextField label="Cédula o NIT (opcional)" {...register("buyerDocument")} />
           </Box>
