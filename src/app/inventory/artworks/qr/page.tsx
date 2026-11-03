@@ -234,6 +234,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
         img.complete ? null : new Promise((ok) => { img.onload = img.onerror = () => ok(null); }),
       ),
     );
+    (w as Window & { fit?: () => void }).fit?.(); // reajusta la letra con fuentes e imágenes ya cargadas
     w.document.title = `etiquetas-${lab.paper === "pliego" ? "48x33cm" : "carta"}-${labels.length}`; // nombre del PDF
     w.focus();
     w.print();

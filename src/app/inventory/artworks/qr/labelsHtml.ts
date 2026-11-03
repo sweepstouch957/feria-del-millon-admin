@@ -59,6 +59,8 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
   // Todo escala con el ancho de la etiqueta (referencia: 45 mm, la del año pasado).
   const k = Math.min(pw / cols / 45, ph / rows / 66);
   const mm = (v: number) => `${(v * k).toFixed(2)}mm`;
+  // Texto que se achica solo (--f, ver fit() abajo) si la etiqueta no alcanza.
+  const fm = (v: number) => `calc(${(v * k).toFixed(2)}mm * var(--f, 1))`;
 
   const label = (it: LabelItem) => `
     <div class="l">
@@ -69,8 +71,8 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
       <div class="t">${esc(it.title)}</div>
       ${it.technique ? `<div class="d">Técnica: ${esc(it.technique)}</div>` : ""}
       ${it.dimensions ? `<div class="d">Dimensiones: ${esc(it.dimensions)}</div>` : ""}
-      <div class="row"><span class="d">Serie: ${it.n} / ${it.total}</span><span class="c">${esc(it.code || "SIN CÓDIGO")}</span></div>
       <div class="qrbox">${it.qr ? `<img class="qr" src="${it.qr}" alt="" />` : ""}</div>
+      <div class="row"><span class="d">Serie: ${it.n} / ${it.total}</span><span class="c">${esc(it.code || "SIN CÓDIGO")}</span></div>
       <div class="p">Precio:</div>
       <div class="rule"></div>
     </div>`;
@@ -92,23 +94,40 @@ export function buildLabelsHtml(items: LabelItem[], o: LabelOpts) {
   .page:last-child { break-after: auto; }
   .l { border-right: .3mm solid #333; border-bottom: .3mm solid #333; padding: ${mm(2.6)} ${mm(3.4)}; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
   .l > * { flex-shrink: 0; }
-  .h { font-family: Anton, Impact, sans-serif; font-size: ${mm(6)}; line-height: 1; text-align: center; letter-spacing: .01em; }
-  .s { text-align: center; font-size: ${mm(3.3)}; margin-top: ${mm(.6)}; }
-  .logo { display: block; width: ${mm(15)}; margin: ${mm(1)} auto ${mm(1.4)}; mix-blend-mode: multiply; }
+  .h { font-family: Anton, Impact, sans-serif; font-size: ${fm(6)}; line-height: 1; text-align: center; letter-spacing: .01em; }
+  .s { text-align: center; font-size: ${fm(3.3)}; margin-top: ${fm(.6)}; }
+  .logo { display: block; width: ${fm(13)}; margin: ${fm(1)} auto ${fm(1.2)}; mix-blend-mode: multiply; }
   /* Nada se corta: nombre, título y datos parten línea; el código baja a su propia
-     línea si no cabe al lado de la serie (antes "FDM25-…-0001" quedaba mocho). */
-  .a { font-size: ${mm(4)}; font-weight: 500; margin-bottom: ${mm(.8)}; overflow-wrap: anywhere; }
-  .t, .d { font-size: ${mm(2.55)}; line-height: 1.2; overflow-wrap: anywhere; }
-  /* Como la etiqueta del año pasado: datos y serie arriba, casilla de precio abajo
-     (para escribir la rebaja a mano) con su línea. En medio, siempre, el QR: se
-     queda con el alto libre, centrado y cuadrado, sin tapar nada. */
-  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: ${mm(2)}; row-gap: ${mm(.4)}; }
-  .row .d { white-space: nowrap; }
-  .c { font-size: ${mm(3.9)}; font-weight: 500; letter-spacing: .02em; overflow-wrap: anywhere; max-width: 100%; }
-  .l > .qrbox { flex: 1 1 0; min-height: ${mm(12)}; display: flex; align-items: center; justify-content: center; padding: ${mm(1.2)} 0; }
+     línea si no cabe al lado de la serie. Si aun así no alcanza, fit() achica la letra. */
+  .a { font-size: ${fm(4)}; font-weight: 500; margin-bottom: ${fm(.8)}; overflow-wrap: anywhere; }
+  .t, .d { font-size: ${fm(2.55)}; line-height: 1.2; overflow-wrap: anywhere; }
+  /* Como la del año pasado, con el QR arriba de la serie (es lo más importante):
+     datos → QR (se queda con el alto libre, mínimo ~16 de 66) → serie y código →
+     casilla de precio para la rebaja a mano → línea. */
+  .l > .qrbox { flex: 1 1 0; min-height: ${mm(16)}; display: flex; align-items: center; justify-content: center; padding: ${mm(1.2)} 0 ${mm(.8)}; }
   .qr { display: block; height: 100%; max-width: 100%; aspect-ratio: 1 / 1; object-fit: contain; image-rendering: pixelated; mix-blend-mode: multiply; }
-  .p { background: #D6D0CC; border-radius: ${mm(1)}; font-size: ${mm(2.2)}; font-weight: 600; padding: ${mm(1.2)} ${mm(2)}; }
-  .rule { border-top: .25mm solid #888; margin-top: ${mm(2)}; }
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: ${fm(2)}; row-gap: ${fm(.3)}; }
+  .row .d { white-space: nowrap; }
+  .c { font-size: ${fm(3.6)}; font-weight: 500; letter-spacing: .02em; overflow-wrap: anywhere; max-width: 100%; }
+  .p { background: #D6D0CC; border-radius: ${mm(1)}; font-size: ${fm(2.2)}; font-weight: 600; padding: ${fm(1.1)} ${mm(2)}; margin-top: ${fm(1.2)}; }
+  .rule { border-top: .25mm solid #888; margin-top: ${fm(1.6)}; }
   @media print { body { background: none; } .page { margin: 0; box-shadow: none; } }
-</style></head><body>${pages.join("") || '<p style="color:#fff;padding:20px">No hay obras con estos filtros.</p>'}</body></html>`;
+</style></head><body>${pages.join("") || '<p style="color:#fff;padding:20px">No hay obras con estos filtros.</p>'}
+<script>
+  /* Si una etiqueta no alcanza (título largo, código en dos líneas), se le achica
+     la letra de a poco hasta que todo quepa: nada se corta y el QR conserva su mínimo. */
+  window.fit = function () {
+    document.querySelectorAll(".l").forEach(function (l) {
+      var f = 1;
+      l.style.setProperty("--f", "1");
+      while (l.scrollHeight > l.clientHeight + 1 && f > 0.55) {
+        f -= 0.03;
+        l.style.setProperty("--f", f.toFixed(2));
+      }
+    });
+  };
+  window.fit();
+  window.addEventListener("load", window.fit);
+  if (document.fonts) document.fonts.ready.then(window.fit);
+</script></body></html>`;
 }

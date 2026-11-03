@@ -19,8 +19,12 @@ assert.match(buildLabelsHtml(items, { ...opts, paper: "letter", cols: 4 }), /siz
 assert.doesNotMatch(html, /line-clamp/);
 assert.match(html, /\.row \{[^}]*flex-wrap: wrap/);
 assert.doesNotMatch(html, /\.c \{[^}]*nowrap/);
-// Como la del año pasado: serie → QR (siempre) → casilla de precio abajo (siempre, aunque no se pida).
+// Orden: datos → QR (siempre) → serie → casilla de precio abajo (siempre, aunque no se pida).
 const withQr = buildLabelsHtml([{ ...items[0], qr: "data:image/png;base64,AA==" }], { ...opts, showQr: false, priceBox: false });
-const iSerie = withQr.indexOf("Serie:"), iQr = withQr.indexOf('class="qr"'), iPrecio = withQr.indexOf("Precio:");
-assert.ok(iSerie > 0 && iQr > iSerie && iPrecio > iQr, `orden serie(${iSerie}) < qr(${iQr}) < precio(${iPrecio})`);
+const body = withQr.slice(withQr.indexOf("<body>"));
+const iQr = body.indexOf('class="qr"'), iSerie = body.indexOf("Serie:"), iPrecio = body.indexOf("Precio:");
+assert.ok(iQr > 0 && iSerie > iQr && iPrecio > iSerie, `orden qr(${iQr}) < serie(${iSerie}) < precio(${iPrecio})`);
+// Y si no alcanza, se achica la letra (nunca se corta).
+assert.match(withQr, /window\.fit = function/);
+assert.match(withQr, /var\(--f, 1\)/);
 console.log("ok");
