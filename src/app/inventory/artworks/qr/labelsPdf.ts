@@ -23,7 +23,7 @@ export type PdfAssets = {
 };
 
 /** En el PDF el QR se dibuja desde su texto (vectorial); no hace falta la imagen. */
-export type PdfLabel = Omit<LabelItem, "qr"> & { qrText?: string };
+export type PdfLabel = Omit<LabelItem, "qr"> & { qrText?: string; /** Reemplaza "Serie: n / total" (catálogo). */ serieText?: string };
 
 /** Tamaño de página en puntos: exacto, sin redondeos. */
 export function pageSizePt(o: Pick<LabelOpts, "landscape" | "paper">) {
@@ -161,7 +161,7 @@ export async function buildLabelsPdf(
         ...(it.technique ? wrap(reg.font, clean(reg, `Técnica: ${it.technique}`), tSize, IW) : []),
         ...(it.dimensions ? wrap(reg.font, clean(reg, `Dimensiones: ${it.dimensions}`), tSize, IW) : []),
       ];
-      const serie = clean(reg, `Serie: ${it.n} / ${it.total}`);
+      const serie = clean(reg, it.serieText ?? `Serie: ${it.n} / ${it.total}`);
       const code = clean(med, it.code || "SIN CÓDIGO");
       const sameLine = textWidth(reg.font, serie, tSize) + 2 * u * f + textWidth(med.font, code, cSize) <= IW;
       const codeLines = sameLine ? [code] : wrap(med.font, code, cSize, IW);

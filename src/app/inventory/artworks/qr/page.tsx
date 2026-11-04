@@ -117,7 +117,7 @@ function LazyQr({ text, alt, size = 150, width = 320, eager = false }: { text: s
   );
 }
 
-type TabKey = "artists" | "artworks" | "labels";
+type TabKey = "artists" | "artworks" | "labels" | "catalog";
 
 type ArtistOpt = { id: string; name: string; pavilion: string };
 
@@ -180,10 +180,10 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     event: eventId,
     pavilion: pavilion || undefined,
     artist: artist || undefined,
-    limit: tab === "labels" ? 60 : 30,
+    limit: tab === "labels" || tab === "catalog" ? 60 : 30,
     includeHidden: 1,
     project: "tagId,dimensionsText",
-    enabled: tab === "artworks" || tab === "labels",
+    enabled: tab !== "artists",
   });
 
   // Centinela al final de la grilla: al verse, carga la siguiente página.
@@ -242,7 +242,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   const size = labelSize(lab);
   // Las etiquetas necesitan todas las obras: se cargan solas, página por página.
   React.useEffect(() => {
-    if (tab === "labels" && hasNextPage && !isFetchingNextPage) loadMore();
+    if ((tab === "labels" || tab === "catalog") && hasNextPage && !isFetchingNextPage) loadMore();
   }, [tab, hasNextPage, isFetchingNextPage, loadMore]);
   // Por lotes de 20 hojas: con todo junto (250+ hojas) el navegador se ahogaba.
   const perBatch = lab.cols * lab.rows * SHEETS_PER_BATCH;
@@ -334,6 +334,68 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     }
   };
 
+  // Catálogo: una etiqueta por obra (no por copia), un PDF por artista, todo en un ZIP.
+  const catalog = React.useMemo(() => {
+    const by = new Map<string, any[]>();
+    for (const a of rows as any[]) {
+      const k = artistName(a) || "Sin artista";
+      by.set(k, [...(by.get(k) ?? []), a]);
+    }
+    return [...by.entries()]
+      .sort(([x], [y]) => x.localeCompare(y, "es"))
+      .map(([name, arts]) => ({ name, arts: arts.sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? ""), "es")) }));
+  }, [rows]);
+  const downloadCatalogZip = async () => {
+    if (!labelsReady || pdfStatus || !catalog.length) return;
+    setPdfStatus("Preparando…");
+    try {
+      const [{ buildLabelsPdf }, assets, { default: JSZip }] = await Promise.all([import("./labelsPdf"), loadPdfAssets(), import("jszip")]);
+      const zip = new JSZip();
+      const used = new Set<string>();
+      for (const [i, { name, arts }] of catalog.entries()) {
+        setPdfStatus(`Artista ${i + 1} de ${catalog.length}…`);
+        const bytes = await buildLabelsPdf(
+          arts.map((a) => {
+            const stock = Math.max(1, Number(a.stock) || 0);
+            return {
+              artist: name,
+              title: a.title || "Sin título",
+              technique: a.techniqueInfo?.name,
+              dimensions: a.dimensionsText,
+              n: 1,
+              total: stock,
+              serieText: stock > 1 ? `Edición de ${stock}` : "Pieza única",
+              code: a.tagId,
+              qrText: urlFor(rowId(a)),
+            };
+          }),
+          // Siempre el formato de la imprenta: pliego 48 × 33 cm, 6 × 3.
+          { cols: 6, rows: 3, landscape: true, showQr: true, priceBox: false, paper: "pliego", logoUrl: "" },
+          assets,
+        );
+        let file = name.replace(/[\\/:*?"<>|]+/g, "").trim() || "Sin artista";
+        while (used.has(file.toLowerCase())) file += "_";
+        used.add(file.toLowerCase());
+        zip.file(`${file}.pdf`, bytes);
+      }
+      setPdfStatus("Armando ZIP…");
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `catalogo-por-artista-48x33cm.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      console.error("[catalogo] ZIP:", e);
+      window.alert("No se pudo generar el ZIP. Recarga la página y vuelve a intentar.");
+    } finally {
+      setPdfStatus(null);
+    }
+  };
+
   const openArtist = (id: string) => { setArtist(id); setTab("artworks"); };
 
   const PavilionSelect = (
@@ -351,7 +413,15 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           title="Etiquetas QR de obras"
           description={`${eventName}. Cada QR del artista lleva a su página con todas sus obras; cada QR de obra, a la ficha con el botón de compra.`}
           actions={[
-            tab === "labels"
+            tab === "catalog"
+              ? {
+                  label: pdfStatus ?? (labelsReady ? "Descargar ZIP" : "Cargando obras…"),
+                  kind: "pri",
+                  icon: pdfStatus || !labelsReady ? <CircularProgress size={14} /> : <Download size={14} />,
+                  onClick: () => { downloadCatalogZip(); },
+                  disabled: !labelsReady || !!pdfStatus || !catalog.length,
+                }
+              : tab === "labels"
               ? {
                   // PDF con la hoja exacta (48 × 33 cm), sin pasar por "Imprimir" del navegador.
                   label: pdfStatus ?? (labelsReady ? "Descargar PDF" : "Cargando obras…"),
@@ -397,6 +467,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           <Tab value="artists" label={`Artistas (${artistOptions.length})`} />
           <Tab value="artworks" label="Obras" />
           <Tab value="labels" label="Etiquetas (PDF)" />
+          <Tab value="catalog" label="Catálogo por artista (ZIP)" />
         </Tabs>
       </Box>
 
@@ -535,6 +606,38 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               srcDoc={labelsHtml}
               style={{ width: "100%", height: "75vh", border: 0, borderRadius: 8, background: "#8d8a86" }}
             />
+          )}
+        </>
+      )}
+
+      {/* ── Catálogo: un PDF por artista, una etiqueta por obra ── */}
+      {tab === "catalog" && (
+        <>
+          <Card sx={{ mb: 2 }} className="no-print"><CardContent sx={{ py: 1.5 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+              {PavilionSelect}
+              <TextField select size="small" label="Artista" value={artist} onChange={(e) => setArtist(e.target.value)} sx={{ minWidth: 260 }}>
+                <MenuItem value=""><em>Todos los artistas</em></MenuItem>
+                {artistOptions.map((a) => <MenuItem key={a.id} value={a.id}>{a.name}</MenuItem>)}
+              </TextField>
+              <Typography variant="caption" color="text.secondary">
+                {isLoading ? "Cargando obras…" : `${catalog.length} artistas · ${rows.length} obras${hasNextPage ? " (cargando…)" : ""}`}
+                {missingCode > 0 && ` · ${missingCode} sin código`}
+                <br />«Descargar ZIP» baja un PDF por artista (con su nombre), una etiqueta y un QR por obra, en el pliego de 48 × 33 cm.
+              </Typography>
+            </Stack>
+          </CardContent></Card>
+          {isLoading ? (
+            <Box sx={{ p: 6, textAlign: "center" }}><CircularProgress /></Box>
+          ) : (
+            <Card><CardContent>
+              {catalog.map(({ name, arts }) => (
+                <Typography key={name} variant="body2" sx={{ py: 0.25 }}>
+                  {name} — {arts.length} obra{arts.length === 1 ? "" : "s"} · {Math.ceil(arts.length / 18)} hoja{Math.ceil(arts.length / 18) === 1 ? "" : "s"}
+                </Typography>
+              ))}
+              {catalog.length === 0 && <Typography variant="body2" color="text.secondary">No hay obras con estos filtros.</Typography>}
+            </CardContent></Card>
           )}
         </>
       )}
