@@ -11,6 +11,7 @@ import { useArtworksCursor } from "@/hooks/useArtworksCursor";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { listPavilions, type PavilionDoc } from "@services/pavilions.service";
 import { regenerateArtworkQrs } from "@services/artworks.service";
+import { copyCode, copyUrl } from "@/features/caja/model/parseScan";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { formatCOP } from "@/utils/money";
 import { buildLabelsHtml, labelSize, PAPERS, type Paper } from "./labelsHtml";
@@ -256,19 +257,24 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     () => (curBatch === ALL ? labels : labels.slice(curBatch * perBatch, (curBatch + 1) * perBatch)),
     [labels, curBatch, perBatch, ALL],
   );
-  const batchIds = React.useMemo(() => [...new Set(batchLabels.map(({ a }) => rowId(a)))], [batchLabels]);
+  // Cada etiqueta es una copia: su QR lleva ?c=<n> y su código termina en el número
+  // de copia, para que la caja descuente justo la copia escaneada.
+  const batchUrls = React.useMemo(
+    () => [...new Set(batchLabels.map(({ a, n }) => copyUrl(base, rowId(a), n)))],
+    [batchLabels, base],
+  );
 
   const [qrs, setQrs] = React.useState<Record<string, string>>({});
   React.useEffect(() => {
     if (tab !== "labels") return;
     let on = true;
     // Solo los QR del lote que se ve (y queda en caché para cuando vuelvan a él).
-    Promise.all(batchIds.map((id) => ensureQrSvg(urlFor(id)).catch(() => ""))).then((urls) => {
-      if (on) setQrs((prev) => ({ ...prev, ...Object.fromEntries(batchIds.map((id, i) => [id, urls[i]])) }));
+    Promise.all(batchUrls.map((u) => ensureQrSvg(u).catch(() => ""))).then((svgs) => {
+      if (on) setQrs((prev) => ({ ...prev, ...Object.fromEntries(batchUrls.map((u, i) => [u, svgs[i]])) }));
     });
     return () => { on = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, batchIds, base]);
+  }, [tab, batchUrls]);
   const labelsHtml = React.useMemo(
     () =>
       tab !== "labels"
@@ -281,8 +287,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               dimensions: a.dimensionsText,
               n,
               total,
-              code: a.tagId,
-              qr: qrs[rowId(a)],
+              code: copyCode(a.tagId, n),
+              qr: qrs[copyUrl(base, rowId(a), n)],
             })),
             { ...lab, logoUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/logo.png` }
           ),
@@ -309,8 +315,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           dimensions: a.dimensionsText,
           n,
           total,
-          code: a.tagId,
-          qrText: urlFor(rowId(a)),
+          code: copyCode(a.tagId, n),
+          qrText: copyUrl(base, rowId(a), n),
         })),
         { ...lab, logoUrl: "" },
         assets,
