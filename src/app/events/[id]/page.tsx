@@ -20,6 +20,7 @@ import ConvocatoriasCard from "@components/views/events/ConvocatoriasCard";
 import PavilionSalesCard from "@components/views/events/PavilionSalesCard";
 import PavilionsTableCard from "@components/views/events/PavilionsTableCard";
 import PavilionDialog from "@components/views/events/PavilionDialog";
+import ShopSalesCard from "@components/views/events/ShopSalesCard";
 
 import PageHeader from "@components/ui/PageHeader";
 import KpiStrip from "@components/ui/KpiStrip";
@@ -206,6 +207,7 @@ export default function EventDetailPage() {
         />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <ShopSalesCard event={selectedEvent} />
           <PavilionsTableCard
             selectedEvent={selectedEvent}
             pavilions={pavilions}
