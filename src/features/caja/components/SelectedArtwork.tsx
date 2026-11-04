@@ -7,7 +7,6 @@ import { ImageLightbox } from "./ImageLightbox";
 import { eyebrow, FDM } from "@/app/theme";
 import { formatCOP } from "@/utils/money";
 import { artistName, imageOf, stockOf, type CajaArtwork } from "../model/artwork";
-import { copyCode } from "../model/parseScan";
 
 /** Ficha corta de la obra que se va a cobrar. */
 export function SelectedArtwork({
@@ -67,9 +66,7 @@ export function SelectedArtwork({
           </Typography>
           <Typography variant="caption" sx={{ color: stock > 0 ? "text.secondary" : FDM.terracotta }}>
             {stock > 0 ? `${stock} disponible${stock > 1 ? "s" : ""}` : "Vendida"}
-            {artwork.copy
-              ? ` · Copia ${artwork.copy}${artwork.tagId ? ` · ${copyCode(artwork.tagId, artwork.copy)}` : ""}`
-              : artwork.tagId ? ` · ${artwork.tagId}` : ""}
+            {artwork.tagId ? ` · ${artwork.tagId}` : ""}
           </Typography>
         </Box>
       </Box>

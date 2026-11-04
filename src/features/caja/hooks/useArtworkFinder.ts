@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useArtworksCursor } from "@hooks/useArtworksCursor";
 import { useDebouncedValue } from "@hooks/useDebouncedValue";
 import { useTechniques } from "@hooks/useTechniques";
-import { getArtworkById, listArtworks } from "@services/artworks.service";
+import { getArtworkById } from "@services/artworks.service";
 import { listEventArtists, type EventArtistOption } from "@services/events.service";
 import { parseScan } from "../model/parseScan";
 import type { CajaArtwork } from "../model/artwork";
@@ -70,28 +70,12 @@ export function useArtworkFinder(eventId?: string) {
           setText("");
           return null;
         }
-        // Código de copia digitado (FDM25-XXXXXX-01-0004): primero la obra.
-        let id = target.kind === "artwork" ? target.id : "";
-        if (target.kind === "code") {
-          const { docs } = await listArtworks({ q: target.prefix, event: eventId, includeHidden: 1, limit: 2 } as any);
-          if (docs.length !== 1) {
-            setText(target.prefix); // ninguna o varias: que la cajera elija
-            return null;
-          }
-          id = String(docs[0].id);
-        }
         const res = await qc.fetchQuery({
-          queryKey: ["artwork-detail", id],
-          queryFn: () => getArtworkById(id),
+          queryKey: ["artwork-detail", target.id],
+          queryFn: () => getArtworkById(target.id),
           staleTime: 0, // el stock tiene que ser el de ahora
         });
-        const copy = target.copy;
-        if (!copy) return res.doc as CajaArtwork;
-        const c = (res.copies as any[] | undefined)?.find((x) => Number(x.number) === copy);
-        if (c && c.status !== "available") {
-          toast.warning(`La copia ${copy} figura ${c.status === "sold" ? "vendida" : "reservada"}: se descontará otra copia libre.`);
-        }
-        return { ...(res.doc as CajaArtwork), copy };
+        return res.doc as CajaArtwork;
       } catch {
         toast.error("No se encontró la obra de ese código.");
         return null;

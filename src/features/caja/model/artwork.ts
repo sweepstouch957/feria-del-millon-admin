@@ -1,13 +1,7 @@
 import type { ArtworkRow } from "@hooks/useArtworksCursor";
 
 /** Obra tal como la usa la caja (lista o detalle traen la misma forma). */
-export type CajaArtwork = ArtworkRow & {
-  _id?: string;
-  tagId?: string;
-  dimensionsText?: string;
-  /** Copia escaneada (número de la etiqueta): la venta descuenta esa copia. */
-  copy?: number;
-};
+export type CajaArtwork = ArtworkRow & { _id?: string; tagId?: string; dimensionsText?: string };
 
 export const artworkId = (a: CajaArtwork) => String(a.id ?? a._id ?? "");
 

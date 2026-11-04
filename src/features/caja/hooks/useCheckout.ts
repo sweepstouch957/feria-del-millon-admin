@@ -108,8 +108,6 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
           artworkId: artworkId(artwork),
           artistId: String(artwork.artistInfo?._id ?? artwork.artist ?? ""),
           qty: values.qty,
-          // La copia de la etiqueta escaneada: inventario descuenta esa.
-          ...(artwork.copy ? { copyNumbers: [artwork.copy] } : {}),
           // Con descuento el servidor lo acepta solo si es menor al de la obra.
           unitPrice: values.price,
           currency: artwork.currency ?? "COP",
