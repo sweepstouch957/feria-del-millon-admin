@@ -117,7 +117,22 @@ function LazyQr({ text, alt, size = 150, width = 320, eager = false }: { text: s
   );
 }
 
-type TabKey = "artists" | "artworks" | "labels" | "catalog";
+type TabKey = "artists" | "artworks" | "labels" | "catalog" | "artistBook";
+
+/** Tarjetas por hoja del catálogo de artistas: [columnas, filas]. */
+const BOOK_LAYOUTS: Record<string, [number, number]> = { "1": [1, 1], "2": [2, 1], "4": [2, 2], "6": [3, 2], "8": [4, 2], "12": [4, 3] };
+
+/** Imagen de la obra en JPG y a un tamaño razonable (Cloudinary la convierte). */
+async function fetchArtImage(url: string | undefined, width: number): Promise<Uint8Array | undefined> {
+  if (!url) return undefined;
+  const u = url.includes("res.cloudinary.com") ? url.replace("/upload/", `/upload/f_jpg,q_82,w_${width},c_limit/`) : url;
+  try {
+    const r = await fetch(u);
+    return r.ok ? new Uint8Array(await r.arrayBuffer()) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 type ArtistOpt = { id: string; name: string; pavilion: string };
 
@@ -180,7 +195,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     event: eventId,
     pavilion: pavilion || undefined,
     artist: artist || undefined,
-    limit: tab === "labels" || tab === "catalog" ? 60 : 30,
+    limit: tab === "artworks" ? 30 : 60,
     includeHidden: 1,
     project: "tagId,dimensionsText",
     enabled: tab !== "artists",
@@ -242,7 +257,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   const size = labelSize(lab);
   // Las etiquetas necesitan todas las obras: se cargan solas, página por página.
   React.useEffect(() => {
-    if ((tab === "labels" || tab === "catalog") && hasNextPage && !isFetchingNextPage) loadMore();
+    if (tab !== "artists" && tab !== "artworks" && hasNextPage && !isFetchingNextPage) loadMore();
   }, [tab, hasNextPage, isFetchingNextPage, loadMore]);
   // Por lotes de 20 hojas: con todo junto (250+ hojas) el navegador se ahogaba.
   const perBatch = lab.cols * lab.rows * SHEETS_PER_BATCH;
@@ -396,6 +411,74 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     }
   };
 
+  // Catálogo de artistas: una tarjeta por artista (obra destacada = la primera que subió)
+  // con el QR a su página. Todo en un solo PDF.
+  const [bookLayout, setBookLayout] = React.useState("4");
+  const [bookPaper, setBookPaper] = React.useState<Paper>("pliego");
+  // Este catálogo es de todos los artistas: un filtro de artista de otra pestaña no aplica.
+  React.useEffect(() => { if (tab === "artistBook") setArtist(""); }, [tab]);
+  const book = React.useMemo(() => {
+    const pav = new Map(artistOptions.map((o) => [o.id, o.pavilion]));
+    const by = new Map<string, any[]>();
+    for (const a of rows as any[]) {
+      const id = String(a.artist?._id ?? a.artist ?? a.artistInfo?.id ?? "");
+      if (id) by.set(id, [...(by.get(id) ?? []), a]);
+    }
+    return [...by.entries()]
+      .map(([id, arts]) => {
+        const first = [...arts].sort((x, y) => String(x.createdAt ?? "").localeCompare(String(y.createdAt ?? "")))
+          .find((a) => a.image || a.images?.[0]) ?? arts[0];
+        return { id, name: artistName(first) || "Sin nombre", pavilion: pav.get(id), arts, first };
+      })
+      .sort((x, y) => x.name.localeCompare(y.name, "es"));
+  }, [rows, artistOptions]);
+  const downloadArtistBook = async () => {
+    if (!labelsReady || pdfStatus || !book.length) return;
+    setPdfStatus("Preparando…");
+    try {
+      const [cols, rowsN] = BOOK_LAYOUTS[bookLayout];
+      const [{ buildArtistsPdf }, assets] = await Promise.all([import("./artistsPdf"), loadPdfAssets()]);
+      // Imágenes de a 6 a la vez; más grandes si van pocas por hoja.
+      const width = cols * rowsN <= 2 ? 1800 : 1000;
+      const images: (Uint8Array | undefined)[] = new Array(book.length);
+      let next = 0, done = 0;
+      await Promise.all(Array.from({ length: 6 }, async () => {
+        while (next < book.length) {
+          const i = next++;
+          const f = book[i].first;
+          images[i] = await fetchArtImage(f.image || f.images?.[0], width);
+          setPdfStatus(`Imágenes ${++done} de ${book.length}…`);
+        }
+      }));
+      const bytes = await buildArtistsPdf(
+        book.map((b, i) => ({
+          name: b.name,
+          pavilion: b.pavilion,
+          count: b.arts.length,
+          qrText: artistUrl(b.id),
+          featured: { title: b.first.title || "Sin título", technique: b.first.techniqueInfo?.name, dimensions: b.first.dimensionsText },
+          image: images[i],
+        })),
+        { cols, rows: rowsN, paper: bookPaper, landscape: true },
+        assets,
+        (d, t) => setPdfStatus(`Hoja ${d} de ${t}…`),
+      );
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `catalogo-artistas-${bookPaper === "pliego" ? "48x33cm" : "carta"}-${bookLayout}-por-hoja.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      console.error("[catalogo artistas] PDF:", e);
+      window.alert("No se pudo generar el PDF. Recarga la página y vuelve a intentar.");
+    } finally {
+      setPdfStatus(null);
+    }
+  };
+
   const openArtist = (id: string) => { setArtist(id); setTab("artworks"); };
 
   const PavilionSelect = (
@@ -413,7 +496,15 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           title="Etiquetas QR de obras"
           description={`${eventName}. Cada QR del artista lleva a su página con todas sus obras; cada QR de obra, a la ficha con el botón de compra.`}
           actions={[
-            tab === "catalog"
+            tab === "artistBook"
+              ? {
+                  label: pdfStatus ?? (labelsReady ? "Descargar PDF" : "Cargando obras…"),
+                  kind: "pri",
+                  icon: pdfStatus || !labelsReady ? <CircularProgress size={14} /> : <Download size={14} />,
+                  onClick: () => { downloadArtistBook(); },
+                  disabled: !labelsReady || !!pdfStatus || !book.length,
+                }
+              : tab === "catalog"
               ? {
                   label: pdfStatus ?? (labelsReady ? "Descargar ZIP" : "Cargando obras…"),
                   kind: "pri",
@@ -468,6 +559,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           <Tab value="artworks" label="Obras" />
           <Tab value="labels" label="Etiquetas (PDF)" />
           <Tab value="catalog" label="Catálogo por artista (ZIP)" />
+          <Tab value="artistBook" label="Catálogo de artistas (PDF)" />
         </Tabs>
       </Box>
 
@@ -638,6 +730,46 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
               ))}
               {catalog.length === 0 && <Typography variant="body2" color="text.secondary">No hay obras con estos filtros.</Typography>}
             </CardContent></Card>
+          )}
+        </>
+      )}
+
+      {/* ── Catálogo de artistas: tarjeta con obra destacada y QR a su página ── */}
+      {tab === "artistBook" && (
+        <>
+          <Card sx={{ mb: 2 }} className="no-print"><CardContent sx={{ py: 1.5 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }} flexWrap="wrap" useFlexGap>
+              {PavilionSelect}
+              <TextField select size="small" label="Papel" value={bookPaper} onChange={(e) => setBookPaper(e.target.value as Paper)} sx={{ width: 190 }}>
+                {(Object.keys(PAPERS) as Paper[]).map((p) => <MenuItem key={p} value={p}>{PAPERS[p].label}</MenuItem>)}
+              </TextField>
+              <TextField select size="small" label="Artistas por hoja" value={bookLayout} onChange={(e) => setBookLayout(e.target.value)} sx={{ width: 170 }}>
+                {Object.entries(BOOK_LAYOUTS).map(([k, [c, r]]) => (
+                  <MenuItem key={k} value={k}>{k === "1" ? "1 (una hoja por artista)" : `${k} (${c} × ${r})`}</MenuItem>
+                ))}
+              </TextField>
+              <Typography variant="caption" color="text.secondary">
+                {isLoading ? "Cargando obras…" : `${book.length} artistas · ${Math.ceil(book.length / Number(bookLayout))} hojas${hasNextPage ? " (cargando…)" : ""}`}
+                <br />Un solo PDF: nombre del artista, su primera obra destacada y un QR «Conozca más obras aquí» que abre su página.
+              </Typography>
+            </Stack>
+          </CardContent></Card>
+          {isLoading ? (
+            <Box sx={{ p: 6, textAlign: "center" }}><CircularProgress /></Box>
+          ) : (
+            <Box className="qr-grid">
+              {book.map((b) => (
+                <div key={b.id} className="qr-label">
+                  {(b.first.image || b.first.images?.[0]) && (
+                    <img src={b.first.image || b.first.images?.[0]} alt={b.first.title || ""} loading="lazy" style={{ width: "100%", height: 140, objectFit: "contain" }} />
+                  )}
+                  <div className="qr-title">{b.name}</div>
+                  <div className="qr-artist">{b.first.title || "Sin título"}</div>
+                  <div className="qr-id">{b.arts.length} obra{b.arts.length === 1 ? "" : "s"}</div>
+                </div>
+              ))}
+              {book.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ gridColumn: "1 / -1", p: 2 }}>No hay obras con estos filtros.</Typography>}
+            </Box>
           )}
         </>
       )}

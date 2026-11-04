@@ -41,9 +41,9 @@ const LINE = rgb(0x33 / 255, 0x33 / 255, 0x33 / 255);
 const BOX = rgb(0xd6 / 255, 0xd0 / 255, 0xcc / 255);
 const RULE = rgb(0x88 / 255, 0x88 / 255, 0x88 / 255);
 
-type F = { font: PDFFont; chars: Set<number> };
+export type F = { font: PDFFont; chars: Set<number> };
 /** Quita lo que la fuente no tiene (emojis, símbolos raros): si no, pdf-lib falla. */
-const clean = (f: F, s: string) =>
+export const clean =(f: F, s: string) =>
   Array.from(String(s ?? "")).filter((c) => f.chars.has(c.codePointAt(0)!) || c === " ").join("");
 
 /* Medir texto con fontkit es lo lento (4.500 etiquetas × varias líneas × varios
@@ -87,7 +87,7 @@ export function wrap(f: PDFFont, text: string, size: number, maxW: number): stri
 }
 
 /** QR como página vectorial reutilizable: una por obra, se dibuja en cada copia. */
-async function qrPages(doc: PDFDocument, texts: string[]) {
+export async function qrPages(doc: PDFDocument, texts: string[]) {
   const scratch = await PDFDocument.create();
   for (const text of texts) {
     const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
