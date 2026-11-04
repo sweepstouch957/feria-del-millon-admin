@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, CircularProgress, Tabs, Tab, Collapse,
+  Checkbox, FormControlLabel,
 } from "@mui/material";
 import { Download, Printer, Settings2, Wand2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
@@ -349,17 +350,42 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     }
   };
 
+  // Artistas de prueba: no salen en los catálogos. Se marcan en la pestaña del catálogo
+  // de artistas. ponytail: se guarda en este navegador; pasar a un campo del artista si
+  // lo usan varias personas desde equipos distintos.
+  const TEST_KEY = "qr-catalog-test-artists";
+  const [testIds, setTestIds] = React.useState<Set<string> | null>(null);
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TEST_KEY);
+      setTestIds(raw ? new Set(JSON.parse(raw)) : null);
+    } catch { setTestIds(null); }
+  }, []);
+  const saveTestIds = (s: Set<string>) => {
+    setTestIds(new Set(s));
+    try { localStorage.setItem(TEST_KEY, JSON.stringify([...s])); } catch { /* sin almacenamiento: dura la sesión */ }
+  };
+  const artistIdOf = (a: any) => String(a.artist?._id ?? a.artist ?? a.artistInfo?.id ?? "");
+  // Sin nada guardado aún: las cuentas de prueba conocidas salen marcadas.
+  const isTestDefault = (a: any) => /allan\s+aceituno/i.test(artistName(a)) || /choco\s*ramit/i.test(String(a.title ?? ""));
+  const testArtists = React.useMemo(() => {
+    if (testIds) return testIds;
+    return new Set((rows as any[]).filter(isTestDefault).map(artistIdOf));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testIds, rows]);
+  const realRows = React.useMemo(() => (rows as any[]).filter((a) => !testArtists.has(artistIdOf(a))), [rows, testArtists]);
+
   // Catálogo: una etiqueta por obra (no por copia), un PDF por artista, todo en un ZIP.
   const catalog = React.useMemo(() => {
     const by = new Map<string, any[]>();
-    for (const a of rows as any[]) {
+    for (const a of realRows) {
       const k = artistName(a) || "Sin artista";
       by.set(k, [...(by.get(k) ?? []), a]);
     }
     return [...by.entries()]
       .sort(([x], [y]) => x.localeCompare(y, "es"))
       .map(([name, arts]) => ({ name, arts: arts.sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? ""), "es")) }));
-  }, [rows]);
+  }, [realRows]);
   const downloadCatalogZip = async () => {
     if (!labelsReady || pdfStatus || !catalog.length) return;
     setPdfStatus("Preparando…");
@@ -421,45 +447,61 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     const pav = new Map(artistOptions.map((o) => [o.id, o.pavilion]));
     const by = new Map<string, any[]>();
     for (const a of rows as any[]) {
-      const id = String(a.artist?._id ?? a.artist ?? a.artistInfo?.id ?? "");
+      const id = artistIdOf(a);
       if (id) by.set(id, [...(by.get(id) ?? []), a]);
     }
     return [...by.entries()]
       .map(([id, arts]) => {
         const first = [...arts].sort((x, y) => String(x.createdAt ?? "").localeCompare(String(y.createdAt ?? "")))
           .find((a) => a.image || a.images?.[0]) ?? arts[0];
-        return { id, name: artistName(first) || "Sin nombre", pavilion: pav.get(id), arts, first };
+        return { id, name: artistName(first) || "Sin nombre", pavilion: pav.get(id), arts, first, test: testArtists.has(id) };
       })
       .sort((x, y) => x.name.localeCompare(y.name, "es"));
-  }, [rows, artistOptions]);
+  }, [rows, artistOptions, testArtists]);
+  const bookReal = React.useMemo(() => book.filter((b) => !b.test), [book]);
+  const toggleTest = (id: string) => {
+    const s = new Set(testArtists);
+    if (s.has(id)) s.delete(id); else s.add(id);
+    saveTestIds(s);
+  };
   const downloadArtistBook = async () => {
-    if (!labelsReady || pdfStatus || !book.length) return;
+    const list = bookReal;
+    if (!labelsReady || pdfStatus || !list.length) return;
     setPdfStatus("Preparando…");
     try {
       const [cols, rowsN] = BOOK_LAYOUTS[bookLayout];
       const [{ buildArtistsPdf }, assets] = await Promise.all([import("./artistsPdf"), loadPdfAssets()]);
       // Imágenes de a 6 a la vez; más grandes si van pocas por hoja.
       const width = cols * rowsN <= 2 ? 1800 : 1000;
-      const images: (Uint8Array | undefined)[] = new Array(book.length);
+      const images: (Uint8Array | undefined)[] = new Array(list.length);
       let next = 0, done = 0;
       await Promise.all(Array.from({ length: 6 }, async () => {
-        while (next < book.length) {
+        while (next < list.length) {
           const i = next++;
-          const f = book[i].first;
+          const f = list[i].first;
           images[i] = await fetchArtImage(f.image || f.images?.[0], width);
-          setPdfStatus(`Imágenes ${++done} de ${book.length}…`);
+          setPdfStatus(`Imágenes ${++done} de ${list.length}…`);
         }
       }));
+      const pavName = pavilion ? pavilions.find((p) => String(p.id) === pavilion)?.name : "";
       const bytes = await buildArtistsPdf(
-        book.map((b, i) => ({
+        list.map((b, i) => ({
           name: b.name,
           pavilion: b.pavilion,
           count: b.arts.length,
           qrText: artistUrl(b.id),
-          featured: { title: b.first.title || "Sin título", technique: b.first.techniqueInfo?.name, dimensions: b.first.dimensionsText },
+          featured: {
+            title: b.first.title || "Sin título",
+            technique: b.first.techniqueInfo?.name,
+            dimensions: b.first.dimensionsText,
+            price: Number(b.first.price) > 0 ? money(b.first.price, b.first.currency) : undefined,
+          },
           image: images[i],
         })),
-        { cols, rows: rowsN, paper: bookPaper, landscape: true },
+        {
+          cols, rows: rowsN, paper: bookPaper, landscape: true,
+          cover: { event: eventName, pavilion: pavName || "", artists: list.length, works: list.reduce((n, b) => n + b.arts.length, 0) },
+        },
         assets,
         (d, t) => setPdfStatus(`Hoja ${d} de ${t}…`),
       );
@@ -502,7 +544,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                   kind: "pri",
                   icon: pdfStatus || !labelsReady ? <CircularProgress size={14} /> : <Download size={14} />,
                   onClick: () => { downloadArtistBook(); },
-                  disabled: !labelsReady || !!pdfStatus || !book.length,
+                  disabled: !labelsReady || !!pdfStatus || !bookReal.length,
                 }
               : tab === "catalog"
               ? {
@@ -749,8 +791,9 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                 ))}
               </TextField>
               <Typography variant="caption" color="text.secondary">
-                {isLoading ? "Cargando obras…" : `${book.length} artistas · ${Math.ceil(book.length / Number(bookLayout))} hojas${hasNextPage ? " (cargando…)" : ""}`}
-                <br />Un solo PDF: nombre del artista, su primera obra destacada y un QR «Conozca más obras aquí» que abre su página.
+                {isLoading ? "Cargando obras…" : `${bookReal.length} artistas · portada + ${Math.ceil(bookReal.length / Number(bookLayout))} hojas${book.length > bookReal.length ? ` · ${book.length - bookReal.length} de prueba (no salen)` : ""}${hasNextPage ? " (cargando…)" : ""}`}
+                <br />Un solo PDF: portada, y por artista su obra destacada con precio y un QR «Conozca más obras aquí» que abre su página.
+                <br />Marca «De prueba» en los artistas que no deben salir (tampoco salen en el ZIP).
               </Typography>
             </Stack>
           </CardContent></Card>
@@ -759,13 +802,19 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           ) : (
             <Box className="qr-grid">
               {book.map((b) => (
-                <div key={b.id} className="qr-label">
+                <div key={b.id} className="qr-label" style={b.test ? { opacity: 0.45, borderStyle: "dashed" } : undefined}>
                   {(b.first.image || b.first.images?.[0]) && (
                     <img src={b.first.image || b.first.images?.[0]} alt={b.first.title || ""} loading="lazy" style={{ width: "100%", height: 140, objectFit: "contain" }} />
                   )}
                   <div className="qr-title">{b.name}</div>
                   <div className="qr-artist">{b.first.title || "Sin título"}</div>
+                  {Number(b.first.price) > 0 && <div className="qr-price">{money(b.first.price, b.first.currency)}</div>}
                   <div className="qr-id">{b.arts.length} obra{b.arts.length === 1 ? "" : "s"}</div>
+                  <FormControlLabel
+                    sx={{ mt: 0.5, mr: 0, "& .MuiFormControlLabel-label": { fontSize: 12 } }}
+                    control={<Checkbox size="small" checked={b.test} onChange={() => toggleTest(b.id)} />}
+                    label="De prueba (no sale)"
+                  />
                 </div>
               ))}
               {book.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ gridColumn: "1 / -1", p: 2 }}>No hay obras con estos filtros.</Typography>}
