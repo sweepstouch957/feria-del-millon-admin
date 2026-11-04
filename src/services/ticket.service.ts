@@ -664,6 +664,14 @@ export type ResendResult = {
   kind: "invitation" | "pass";
   sent: { email: string; name?: string }[];
   failed: { email: string; name?: string; error: string }[];
+  /** Solo en kind=pass: WhatsApp por persona (error vacío = salió). */
+  whatsapp?: { name?: string; phone?: string; error?: string }[];
+};
+
+/** Solo WhatsApp del pase: invitado + acompañantes (fila de acompañante: solo él). */
+export const whatsappInvitation = async (ticketId: string): Promise<{ whatsapp: NonNullable<ResendResult["whatsapp"]> }> => {
+  const { data } = await apiClient.post(`/ticket/tickets/invitations/${encodeURIComponent(ticketId)}/whatsapp`, {}, { withCredentials: true });
+  return data;
 };
 
 export const resendInvitation = async (ticketId: string): Promise<ResendResult> => {

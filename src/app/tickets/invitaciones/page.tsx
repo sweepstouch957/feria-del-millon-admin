@@ -7,7 +7,7 @@ import {
   Checkbox, FormControlLabel, TablePagination, InputAdornment, Dialog, DialogTitle, DialogContent, Tabs, Tab,
 } from "@mui/material";
 import { useDebouncedValue } from "@/hooks/useAuth";
-import { FileUp, ImagePlus, Search, Send, UserPlus, X } from "lucide-react";
+import { FileUp, ImagePlus, MessageCircle, Pencil, Search, Send, UserPlus, X } from "lucide-react";
 import { uploadCampaignImage } from "@services/upload.service";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -15,7 +15,7 @@ import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
-import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, resendPendingInvitations, extendInvitationDeadline, getInvitationDelivery, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
+import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, whatsappInvitation, fixInvitationEmail, resendPendingInvitations, extendInvitationDeadline, getInvitationDelivery, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
 import DeliveryIssuesDialog, { deliveryKey } from "@/components/admin/tickets/DeliveryIssuesDialog";
@@ -195,6 +195,19 @@ function Step({ n, title, hint, last, children }: { n: number; title: string; hi
       </Box>
     </Box>
   );
+}
+
+/** Dice a quién le salió el WhatsApp y a quién no (2Chat vencido = 402). */
+function toastWhatsapp(wa: { name?: string; phone?: string; error?: string }[]) {
+  const ok = wa.filter((w) => !w.error);
+  const bad = wa.filter((w) => w.error);
+  if (ok.length) toast.success(`WhatsApp enviado a ${ok.map((w) => w.phone || w.name).join(", ")}`);
+  if (bad.length) {
+    const why = bad.some((w) => /402|expired/i.test(w.error || ""))
+      ? "la cuenta de 2Chat está vencida"
+      : bad.map((w) => `${w.name || w.phone}: ${w.error === "sin_celular" ? "sin celular" : w.error}`).join(" · ");
+    toast.error(`WhatsApp no salió (${bad.length}): ${why}`, { duration: 8000 });
+  }
 }
 
 export default function InvitationsPage() {
@@ -396,8 +409,30 @@ function Invitations({ eventId }: { eventId: string }) {
         if (r.sent.length) toast.success(`${what} a ${r.sent.map((s) => s.email).join(", ")}`);
         for (const f of r.failed) toast.error(`No le llegó a ${f.email}: ${f.error}`, { duration: 8000 });
         if (!r.sent.length && !r.failed.length) toast.error("No hay a quién reenviarle (sin correo o sin QR).");
+        toastWhatsapp(r.whatsapp || []);
       },
       () => toast.error("No se pudo reenviar"),
+    );
+
+  // ponytail: window.prompt basta para un campo; diálogo propio si piden validar más.
+  const fixEmail = (id: string, current: string) => {
+    const email = window.prompt("Correo correcto:", current)?.trim();
+    if (!email || email === current) return;
+    fixInvitationEmail(id, email).then(
+      (r) => {
+        toast.success(`Correo cambiado a ${email}${r.sent?.length ? " y reenviado" : ""}`);
+        for (const f of r.failed || []) toast.error(`No le llegó a ${f.email}: ${f.error}`, { duration: 8000 });
+        qc.invalidateQueries({ queryKey: ["invitations", eventId] });
+      },
+      (e) => toast.error(e?.response?.data?.error === "email_invalid" ? "Correo inválido" : "No se pudo cambiar el correo"),
+    );
+  };
+
+  /** Solo WhatsApp por fila: invitado + acompañantes. */
+  const sendWhatsapp = (id: string) =>
+    whatsappInvitation(id).then(
+      (r) => { toastWhatsapp(r.whatsapp); qc.invalidateQueries({ queryKey: ["invitations", eventId] }); },
+      () => toast.error("No se pudo enviar el WhatsApp"),
     );
 
   const importRole = async (role: Base) => {
@@ -856,12 +891,24 @@ function Invitations({ eventId }: { eventId: string }) {
                     <TableCell align="right">{t.admits ?? 1}</TableCell>
                     <TableCell><StatusPill label={STATUS[t.status]?.label || t.status} tone={STATUS[t.status]?.tone || "mid"} /></TableCell>
                     <TableCell align="right">
+                      <Tooltip title="Corregir correo (y reenviarle)">
+                        <IconButton size="small" onClick={() => fixEmail(t.id, t.buyer?.email || "")}>
+                          <Pencil size={14} />
+                        </IconButton>
+                      </Tooltip>
                       {(t.status === "invited" || t.status === "sold") && (
                         <Tooltip title={t.status === "invited"
                           ? "Reenviar la invitación"
                           : t.inviteParent ? "Reenviar su pase con QR" : "Reenviar el pase con QR (a él y a sus acompañantes)"}>
                           <IconButton size="small" onClick={() => resend(t.id)}>
                             <Send size={14} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {t.status === "sold" && (
+                        <Tooltip title={t.inviteParent ? "Enviar su pase por WhatsApp" : "Enviar el pase por WhatsApp (a él y a sus acompañantes)"}>
+                          <IconButton size="small" color={t.whatsappSentAt ? "success" : "default"} onClick={() => sendWhatsapp(t.id)}>
+                            <MessageCircle size={14} />
                           </IconButton>
                         </Tooltip>
                       )}
