@@ -15,6 +15,7 @@ import { regenerateArtworkQrs } from "@services/artworks.service";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { formatCOP } from "@/utils/money";
 import { buildLabelsHtml, labelSize, PAPERS, type Paper } from "./labelsHtml";
+import AccessQrTab from "./AccessQrTab";
 
 /* QR para imprimir, en dos pestañas:
    - Artistas: un QR por artista (lleva a su página con todas sus obras).
@@ -118,7 +119,7 @@ function LazyQr({ text, alt, size = 150, width = 320, eager = false }: { text: s
   );
 }
 
-type TabKey = "artists" | "artworks" | "labels" | "catalog" | "artistBook";
+type TabKey = "artists" | "artworks" | "labels" | "catalog" | "artistBook" | "access";
 
 /** Tarjetas por hoja del catálogo de artistas: [columnas, filas]. */
 const BOOK_LAYOUTS: Record<string, [number, number]> = { "1": [1, 1], "2": [2, 1], "4": [2, 2], "6": [3, 2], "8": [4, 2], "12": [4, 3] };
@@ -199,7 +200,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
     limit: tab === "artworks" ? 30 : 60,
     includeHidden: 1,
     project: "tagId,dimensionsText",
-    enabled: tab !== "artists",
+    enabled: tab !== "artists" && tab !== "access",
   });
 
   // Centinela al final de la grilla: al verse, carga la siguiente página.
@@ -258,7 +259,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
   const size = labelSize(lab);
   // Las etiquetas necesitan todas las obras: se cargan solas, página por página.
   React.useEffect(() => {
-    if (tab !== "artists" && tab !== "artworks" && hasNextPage && !isFetchingNextPage) loadMore();
+    if (tab !== "artists" && tab !== "artworks" && tab !== "access" && hasNextPage && !isFetchingNextPage) loadMore();
   }, [tab, hasNextPage, isFetchingNextPage, loadMore]);
   // Por lotes de 20 hojas: con todo junto (250+ hojas) el navegador se ahogaba.
   const perBatch = lab.cols * lab.rows * SHEETS_PER_BATCH;
@@ -570,7 +571,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
                   onClick: () => { if (!printing) setPrinting(true); },
                 },
             { label: "Ajustes", kind: "sec", icon: <Settings2 size={14} />, onClick: () => setShowSettings((v) => !v) },
-          ]}
+          ].slice(tab === "access" ? 1 : 0) as any}
         />
 
         <Collapse in={showSettings}>
@@ -602,6 +603,7 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           <Tab value="labels" label="Etiquetas (PDF)" />
           <Tab value="catalog" label="Catálogo por artista (ZIP)" />
           <Tab value="artistBook" label="Catálogo de artistas (PDF)" />
+          <Tab value="access" label="Accesos al panel (QR)" />
         </Tabs>
       </Box>
 
@@ -775,6 +777,8 @@ function QrPage({ eventId, eventName }: { eventId: string; eventName: string }) 
           )}
         </>
       )}
+
+      {tab === "access" && <AccessQrTab loadAssets={loadPdfAssets} />}
 
       {/* ── Catálogo de artistas: tarjeta con obra destacada y QR a su página ── */}
       {tab === "artistBook" && (
