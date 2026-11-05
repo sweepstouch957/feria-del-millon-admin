@@ -2,7 +2,7 @@
    una obra destacada y el QR a su página ("Conozca más obras aquí").
    Varias tarjetas por hoja (con líneas de corte) o una por hoja. */
 import {
-  PDFDocument, rgb, pushGraphicsState, popGraphicsState, rectangle, clip, endPath,
+  PDFDocument, rgb, degrees, pushGraphicsState, popGraphicsState, rectangle, clip, endPath,
   type PDFFont, type PDFImage, type PDFPage,
 } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -44,6 +44,8 @@ export async function buildArtistsPdf(
     return { font, chars: new Set(font.getCharacterSet()) };
   };
   const [anton, reg, med, semi] = await Promise.all([mk(assets.anton), mk(assets.regular), mk(assets.medium), mk(assets.semibold)]);
+  const sans = assets.sans ? await mk(assets.sans) : reg;
+  const sansBold = assets.sansBold ? await mk(assets.sansBold) : semi;
   const logo: PDFImage | null = assets.logo ? await doc.embedPng(assets.logo) : null;
   const qrs = await qrPages(doc, [...new Set(cards.map((c) => c.qrText))]);
 
@@ -141,17 +143,63 @@ export async function buildArtistsPdf(
 
     const IW = W - pad * 2;
     if (wide) {
-      const artW = (W - pad * 3) * 0.6, colW = W - pad * 3 - artW, colX = x0 + pad * 2 + artW;
-      drawArt(x0 + pad, yTop - pad, artW, H - pad * 2);
-      // QR justo debajo del nombre (no pegado abajo) y los textos debajo del QR.
-      const top = head(colX, yTop - pad, colW, 9 * u) - 3 * u;
-      const qrSize = Math.max(0, Math.min(colW * 0.75, top - (yTop - H + pad) - 16 * u));
+      // Diseño acordado (hoja apaisada): medidas en % del alto (h) y ancho (w) de la tarjeta.
+      const h = H / 100, w = W / 100;
+      const at = (pctFromTop: number) => yTop - pctFromTop * h; // y de una línea base
+      const mid = (f: PDFFont, s: string, size: number, cx: number, baseline: number, color = INK) =>
+        page.drawText(s, { x: cx - textWidth(f, s, size) / 2, y: baseline, size, font: f, color });
+      /** Achica hasta que quepa en el ancho. */
+      const shrink = (f: PDFFont, s: string, size: number, maxW: number) => Math.min(size, (size * maxW) / Math.max(1, textWidth(f, s, size)));
+
+      // Izquierda: obra (sin recortar) y, pegados debajo, ficha y precio; todo centrado en el alto.
+      const artCx = x0 + 30.7 * w, artMaxW = 44 * w;
+      const capSize = 1.5 * h, priceSize = 4.3 * h;
+      const cap = caption ? fit(sans, caption, capSize, artMaxW, 2) : { ls: [] as string[], size: capSize };
+      const price = c.featured?.price ? clean(sans, c.featured.price) : "";
+      const below = (cap.ls.length ? 2.9 * h + (cap.ls.length - 1) * cap.size * 1.2 : 0) + (price ? 5.5 * h : 0) + 1 * h;
+      const areaTop = 5.7, areaBottom = 92.8; // % desde arriba
+      const maxH = (areaBottom - areaTop) * h - below;
+      let iw = artMaxW * 0.82, ih = maxH;
+      if (img) {
+        const k = Math.min(artMaxW / img.width, maxH / img.height);
+        iw = img.width * k; ih = img.height * k;
+      }
+      const imgTop = at(areaTop) - ((areaBottom - areaTop) * h - ih - below) / 2;
+      if (img) page.drawImage(img, { x: artCx - iw / 2, y: imgTop - ih, width: iw, height: ih });
+      else page.drawRectangle({ x: artCx - iw / 2, y: imgTop - ih, width: iw, height: ih, color: HOLE });
+      // Líneas base: ficha 2,9 h bajo la obra; precio 5,5 h bajo la última línea de ficha.
+      let base = imgTop - ih;
+      cap.ls.forEach((l, i) => { base = imgTop - ih - 2.9 * h - i * cap.size * 1.2; mid(sans.font, l, cap.size, artCx, base, SOFT); });
+      if (price) mid(sans.font, price, shrink(sans.font, price, priceSize, artMaxW), artCx, base - 5.5 * h, INK);
+
+      // Derecha, abajo: nombre en dos líneas, pabellón, QR y llamado.
+      const cx = x0 + 85.5 * w, colW = 2 * (W - 85.5 * w) - 4 * w;
+      const subBase = at(90.3), headBase = at(87.9), qrSize = 17 * h, qrBottom = at(82.3);
       const qr = qrs.get(c.qrText);
-      if (qr) page.drawPage(qr, { x: colX + (colW - qrSize) / 2, y: top - qrSize, width: qrSize, height: qrSize });
-      const hs = fit(anton, "CONOZCA MÁS OBRAS AQUÍ", 6 * u, colW, 1);
-      const sub = fit(reg, `Escanee el código y vea ${c.count === 1 ? "su obra" : `sus ${c.count} obras`}`, 3.2 * u, colW, 2);
-      const t = lines(page, anton.font, hs.ls, hs.size, colX, colW, top - qrSize - 2 * u, INK, 1.12);
-      lines(page, reg.font, sub.ls, sub.size, colX, colW, t - 1 * u, SOFT);
+      const sub = clean(sans, `Escanee el código y vea ${c.count === 1 ? "su obra" : `sus ${c.count} obras`}`);
+      mid(sans.font, sub, shrink(sans.font, sub, 1.3 * h, colW), cx, subBase, SOFT);
+      const hl = clean(sans, "CONOZCA MÁS OBRAS AQUÍ");
+      mid(sans.font, hl, shrink(sans.font, hl, 2.3 * h, colW), cx, headBase, INK);
+      if (qr) page.drawPage(qr, { x: cx - qrSize / 2, y: qrBottom, width: qrSize, height: qrSize });
+      let nb = qrBottom + qrSize + 2.6 * h;
+      if (c.pavilion) {
+        const pv = clean(sans, c.pavilion);
+        mid(sans.font, pv, shrink(sans.font, pv, 1.2 * h, colW), cx, nb, SOFT);
+        nb += 2.2 * h;
+      } else nb += 0.2 * h;
+      // Nombre partido en dos líneas parejas (nombre / apellidos).
+      const words = clean(sans, c.name.toUpperCase()).split(/\s+/).filter(Boolean);
+      let nameLs = [words.join(" ")];
+      if (words.length > 1) {
+        let best = 1, bestW = Infinity;
+        for (let k = 1; k < words.length; k++) {
+          const m = Math.max(textWidth(sans.font, words.slice(0, k).join(" "), 1), textWidth(sans.font, words.slice(k).join(" "), 1));
+          if (m < bestW) { bestW = m; best = k; }
+        }
+        nameLs = [words.slice(0, best).join(" "), words.slice(best).join(" ")];
+      }
+      const ns = Math.min(3.6 * h, ...nameLs.map((l) => shrink(sans.font, l, 3.6 * h, colW)));
+      for (const l of [...nameLs].reverse()) { mid(sans.font, l, ns, cx, nb, INK); nb += ns * 1.03; }
     } else {
       const top = head(x0 + pad, yTop - pad, IW, 9 * u);
       const qrSize = Math.min(24 * u, IW * 0.35);
@@ -212,6 +260,55 @@ export async function buildArtistsPdf(
       page.pushOperators(pushGraphicsState(), rectangle(cx, cy, cw, ch), clip(), endPath());
       page.drawImage(img, { x: cx + (cw - iw) / 2, y: cy + (ch - ih) / 2, width: iw, height: ih });
       page.pushOperators(popGraphicsState());
+    }
+  }
+
+  // ── Índice tras la portada: "ARTISTAS" y la lista nombre + obra destacada ──
+  if (o.cover) {
+    const U = Math.min(P.w, P.h) / 100;
+    const mL = 11 * U, mR = 8 * U, top = P.h - 12 * U, bottom = 12 * U;
+    const listX = mL + 9 * U, listW = P.w - listX - mR;
+    const ncol = P.w > P.h ? 4 : 3, colW = listW / ncol, gutter = 2 * U;
+    const nameSize = 1.85 * U, workSize = 1.65 * U, gap = 1.1 * U;
+    const event = o.cover.event;
+    const newPage = () => {
+      const page = doc.addPage([P.w, P.h]);
+      page.drawRectangle({ x: 0, y: 0, width: P.w, height: P.h, color: BG });
+      page.drawText(clean(anton, "ARTISTAS"), { x: mL, y: top - 6 * U * 0.8, size: 6 * U, font: anton.font, color: INK });
+      page.drawText(clean(sans, event), { x: mL + 1.4 * U, y: top - 6 * U - 2.4 * U, size: 1.9 * U, font: sans.font, color: INK });
+      const foot = clean(sans, `- ${event} -`);
+      page.drawText(foot, { x: P.w - mR - textWidth(sans.font, foot, 1.8 * U), y: bottom - 6 * U, size: 1.8 * U, font: sans.font, color: INK });
+      return page;
+    };
+    const entries = cards.map((c) => ({
+      name: wrap(sansBold.font, clean(sansBold, c.name), nameSize, colW - gutter).slice(0, 3),
+      work: c.featured?.title ? clean(sans, c.featured.title) : "",
+    }));
+    let page = newPage();
+    const listTop = top - 13 * U;
+    let y = listTop;
+    const label = clean(sansBold, "FDM");
+    page.drawText(label, { x: mL + 5 * U, y: listTop, size: 2 * U, font: sansBold.font, color: INK, rotate: degrees(-90) });
+    for (let i = 0; i < entries.length; i += ncol) {
+      const row = entries.slice(i, i + ncol);
+      const rowH = Math.max(...row.map((e) => e.name.length * nameSize * 1.1 + (e.work ? workSize * 1.25 : 0))) + gap;
+      if (y - rowH < bottom) {
+        page = newPage();
+        y = listTop;
+        page.drawText(label, { x: mL + 5 * U, y: listTop, size: 2 * U, font: sansBold.font, color: INK, rotate: degrees(-90) });
+      }
+      row.forEach((e, j) => {
+        const x = listX + j * colW;
+        let t = y;
+        for (const l of e.name) { page.drawText(l, { x, y: t - nameSize * 0.8, size: nameSize, font: sansBold.font, color: INK }); t -= nameSize * 1.1; }
+        if (e.work) {
+          // Una línea: se corta con "…" si no cabe.
+          let w = e.work;
+          while (w.length > 1 && textWidth(sans.font, w, workSize) > colW - gutter) w = w.slice(0, -2).trimEnd() + "…";
+          page.drawText(w, { x, y: t - workSize * 0.8, size: workSize, font: sans.font, color: SOFT });
+        }
+      });
+      y -= rowH;
     }
   }
 

@@ -18,6 +18,9 @@ export type PdfAssets = {
   regular: Uint8Array;
   medium: Uint8Array;
   semibold: Uint8Array;
+  /** Source Sans 3 (catálogo de artistas, una por hoja). */
+  sans?: Uint8Array;
+  sansBold?: Uint8Array;
   /** PNG del logo con fondo transparente (opcional). */
   logo?: Uint8Array;
 };

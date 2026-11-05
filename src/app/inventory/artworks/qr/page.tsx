@@ -86,13 +86,15 @@ const loadPdfAssets = () =>
       img.onerror = () => resolve(undefined);
       img.src = "/logo.png";
     });
-    const [anton, regular, medium, semibold] = await Promise.all([
+    const [anton, regular, medium, semibold, sans, sansBold] = await Promise.all([
       bin("/fonts/Anton-Regular.ttf"),
       bin("/fonts/SairaCondensed-Regular.ttf"),
       bin("/fonts/SairaCondensed-Medium.ttf"),
       bin("/fonts/SairaCondensed-SemiBold.ttf"),
+      bin("/fonts/SourceSans3-Regular.ttf"),
+      bin("/fonts/SourceSans3-Semibold.ttf"),
     ]);
-    return { anton, regular, medium, semibold, logo };
+    return { anton, regular, medium, semibold, sans, sansBold, logo };
   })().catch((e) => { pdfAssets = null; throw e; }));
 
 /** Hojas por lote: la vista previa y cada PDF llevan 20 hojas (360 etiquetas en pliego). */
