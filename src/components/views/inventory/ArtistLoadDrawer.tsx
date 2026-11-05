@@ -4,7 +4,7 @@ import * as React from "react";
 import {
   Alert, Avatar, Box, Button, Chip, Divider, Drawer, IconButton, LinearProgress, Skeleton, Stack, Tab, Tabs, TextField, Typography,
 } from "@mui/material";
-import { AlertTriangle, ImageOff, Images, Mail, MessageCircle, Pencil, X } from "lucide-react";
+import { AlertTriangle, ImageOff, Images, Mail, MessageCircle, Pencil, Plus, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import StatusPill, { type PillTone } from "@/components/ui/StatusPill";
@@ -13,6 +13,9 @@ import { eyebrow } from "@/app/theme";
 import { getInventoryStatusDetail, updateApplicationProject, type InventoryStatusRow } from "@services/applications.service";
 import { uploadCampaignImage } from "@services/upload.service";
 import ArtworkViewer from "./ArtworkViewer";
+import CreateEditArtworkModal from "@components/views/artist/CreateEditArtworkModal";
+import { useTechniques } from "@hooks/useTechniques";
+import { usePavilionsByUser } from "@hooks/usePavilionsByUser";
 
 /* La ficha de un artista en "Estado de carga". Arriba lo que importa de un
    vistazo (estado, totales, qué falta); abajo tres pestañas: sus obras como
@@ -85,8 +88,22 @@ export default function ArtistLoadDrawer({
       setUploadingPhoto(false);
     }
   };
-  React.useEffect(() => { setTab(0); setOnlyIssues(false); setViewer(null); setEditing(false); }, [row?.artistId]);
+  React.useEffect(() => { setTab(0); setOnlyIssues(false); setViewer(null); setEditing(false); setAdding(false); }, [row?.artistId]);
   const qc = useQueryClient();
+
+  // Agregar obra a nombre del artista: mismo formulario de su estudio (el back
+  // acepta `artist` cuando quien crea es staff).
+  const [adding, setAdding] = React.useState(false);
+  const { data: techniques = [] } = useTechniques();
+  const { data: pavsByUser } = usePavilionsByUser(eventId, row?.artistId as string, !!row);
+  const techniqueOptions = React.useMemo(
+    () => (techniques ?? []).map((t: any) => ({ value: t.id || t._id, label: t.name })),
+    [techniques]
+  );
+  const pavilionOptions = React.useMemo(
+    () => (pavsByUser?.rows ?? []).map((p) => ({ value: String(p.pavilionId), label: p.name || p.slug || "Pabellón" })),
+    [pavsByUser]
+  );
   const saveProject = useMutation({
     mutationFn: () =>
       updateApplicationProject(data!.application!.id, {
@@ -179,12 +196,17 @@ export default function ArtistLoadDrawer({
               {/* ── Obras: galería ── */}
               {tab === 0 && (
                 <>
-                  {data && artworks.some((a) => a.issues.length) && (
-                    <Stack direction="row" gap={1} mb={2}>
-                      <Chip label={`Todas (${artworks.length})`} color={!onlyIssues ? "secondary" : "default"} variant={!onlyIssues ? "filled" : "outlined"} onClick={() => setOnlyIssues(false)} />
-                      <Chip label={`Por revisar (${data.totals.withIssues})`} color={onlyIssues ? "warning" : "default"} variant={onlyIssues ? "filled" : "outlined"} onClick={() => setOnlyIssues(true)} />
-                    </Stack>
-                  )}
+                  <Stack direction="row" gap={1} mb={2} alignItems="center" flexWrap="wrap">
+                    {data && artworks.some((a) => a.issues.length) && (
+                      <>
+                        <Chip label={`Todas (${artworks.length})`} color={!onlyIssues ? "secondary" : "default"} variant={!onlyIssues ? "filled" : "outlined"} onClick={() => setOnlyIssues(false)} />
+                        <Chip label={`Por revisar (${data.totals.withIssues})`} color={onlyIssues ? "warning" : "default"} variant={onlyIssues ? "filled" : "outlined"} onClick={() => setOnlyIssues(true)} />
+                      </>
+                    )}
+                    <Button size="small" variant="contained" startIcon={<Plus size={15} />} onClick={() => setAdding(true)} sx={{ ml: "auto", textTransform: "none" }}>
+                      Agregar obra
+                    </Button>
+                  </Stack>
                   {data && !artworks.length && (
                     <Stack alignItems="center" gap={1} sx={{ py: 6, color: "text.secondary" }}>
                       <Images size={28} />
@@ -377,6 +399,24 @@ export default function ArtistLoadDrawer({
           </Box>
         )}
       </Drawer>
+
+      {row && (
+        <CreateEditArtworkModal
+          open={adding}
+          onOpenChange={setAdding}
+          eventId={eventId}
+          artistId={row.artistId}
+          editingId={null}
+          currentRows={[]}
+          techniqueOptions={techniqueOptions}
+          pavilionOptions={pavilionOptions}
+          onDone={() => {
+            setAdding(false);
+            qc.invalidateQueries({ queryKey: ["inventory-status-detail", eventId, row.artistId] });
+            qc.invalidateQueries({ queryKey: ["inventory-status"] });
+          }}
+        />
+      )}
 
       {data && viewer != null && (
         <ArtworkViewer
