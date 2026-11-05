@@ -152,7 +152,9 @@ export const me = async (): Promise<AuthUser> => {
     roles: u.roles,
     firstName: u.firstName,
     lastName: u.lastName,
-    practiceMode: !!u.practiceMode,
+    // Modo práctica apagado para siempre (5-nov): cajeras con el flag puesto
+    // "vendían" sin guardar ni bajar stock durante la feria real.
+    practiceMode: false,
   };
 };
 
