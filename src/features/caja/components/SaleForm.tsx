@@ -163,18 +163,20 @@ export const SaleForm = memo(function SaleForm({
               Pregúntale a <strong>{picked}</strong> si estos datos están bien. Si algo cambió, corrígelo aquí.
             </Alert>
           )}
-          <TextField label="Nombre completo" autoComplete="off" {...register("buyerName")} {...err("buyerName")} />
-          <TextField label="Correo" type="email" slotProps={{ htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
+          {/* Etiqueta siempre arriba (shrink): al elegir un cliente se llenan por código
+              y MUI no lo nota, la etiqueta quedaba encima del texto. */}
+          <TextField label="Nombre completo" autoComplete="off" slotProps={{ inputLabel: { shrink: true } }} {...register("buyerName")} {...err("buyerName")} />
+          <TextField label="Correo" type="email" slotProps={{ inputLabel: { shrink: true }, htmlInput: { inputMode: "email" } }} {...register("buyerEmail")} {...err("buyerEmail")} />
           {/* Dos columnas solo si la caja del formulario es ancha (no la pantalla): al lado del buscador queda angosta. */}
           <Box sx={{ display: "grid", gap: 1.5, alignItems: "start", gridTemplateColumns: "minmax(0, 1fr)", "@container cobro (min-width: 520px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } }}>
-            <TextField label="Teléfono" type="tel" slotProps={{ htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
-            <TextField label="Cédula o NIT (opcional)" {...register("buyerDocument")} />
+            <TextField label="Teléfono" type="tel" slotProps={{ inputLabel: { shrink: true }, htmlInput: { inputMode: "tel" } }} {...register("buyerPhone")} {...err("buyerPhone")} />
+            <TextField label="Cédula o NIT (opcional)" slotProps={{ inputLabel: { shrink: true } }} {...register("buyerDocument")} />
           </Box>
         </Step>
 
         {/* Todas las obras se entregan a domicilio: la dirección siempre se pide. */}
         <Step n={2} title="¿A dónde se la llevamos?">
-          <TextField label="Dirección" {...register("addressLine1")} {...err("addressLine1")} />
+          <TextField label="Dirección" slotProps={{ inputLabel: { shrink: true } }} {...register("addressLine1")} {...err("addressLine1")} />
           <Controller
             control={control}
             name="cityId"
