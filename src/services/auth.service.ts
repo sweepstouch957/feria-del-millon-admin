@@ -61,7 +61,14 @@ export interface LoginResponse {
 // ─────────────────────────────────────────────────────────────
 const setAuthToken = (token: string | null) => {
   if (token) {
-    Cookies.set(AUTH_TOKEN_KEY, token);
+    // Cookie con fecha (la del JWT): sin ella es "de sesión" y el acceso directo
+    // de la pantalla de inicio (webapp) o cerrar Chrome la borra.
+    let expires: Date | undefined;
+    try {
+      const exp = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).exp;
+      if (exp) expires = new Date(exp * 1000);
+    } catch {}
+    Cookies.set(AUTH_TOKEN_KEY, token, { expires, sameSite: "lax", secure: location.protocol === "https:" });
     apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
   } else {
     Cookies.remove(AUTH_TOKEN_KEY);
