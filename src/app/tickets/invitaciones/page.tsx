@@ -18,6 +18,7 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { createInvitations, getTicketDays, getInvitationsAdmin, getInvitedEmails, previewInvitation, resendInvitation, whatsappInvitation, fixInvitationEmail, resendPendingInvitations, extendInvitationDeadline, getInvitationDelivery, requestCompanion, sendInvitationTest, type InvitationStatusFilter, type Ticket } from "@services/ticket.service";
 import { useAuth } from "@/provider/authProvider";
 import InviteLinksCard from "@/components/admin/tickets/InviteLinksCard";
+import BatchPassesCard from "@/components/admin/tickets/BatchPassesCard";
 import DeliveryIssuesDialog, { deliveryKey } from "@/components/admin/tickets/DeliveryIssuesDialog";
 import { useDialogs } from "@/components/ui/DialogsProvider";
 import { listUsers } from "@services/user.service";
@@ -416,9 +417,11 @@ function Invitations({ eventId }: { eventId: string }) {
 
   // ponytail: window.prompt basta para un campo; diálogo propio si piden validar más.
   const fixEmail = (id: string, current: string) => {
-    const email = window.prompt("Correo correcto:", current)?.trim();
+    const batch = current.endsWith("@invitado.invalid"); // pase en lote: también lleva nombre real
+    const email = window.prompt("Correo correcto:", batch ? "" : current)?.trim();
     if (!email || email === current) return;
-    fixInvitationEmail(id, email).then(
+    const name = batch ? window.prompt("Nombre completo (vacío = dejar el del lote):", "")?.trim() : undefined;
+    fixInvitationEmail(id, email, name || undefined).then(
       (r) => {
         toast.success(`Correo cambiado a ${email}${r.sent?.length ? " y reenviado" : ""}`);
         for (const f of r.failed || []) toast.error(`No le llegó a ${f.email}: ${f.error}`, { duration: 8000 });
@@ -501,6 +504,7 @@ function Invitations({ eventId }: { eventId: string }) {
           { label: "No les llegó", value: delivery.isLoading ? "…" : delivery.isError ? "—" : deliveryRows.length, hint: "Invitaciones o pases que el correo del invitado rechazó (rebote, buzón lleno, correo que no existe). Toca para verlos, corregir el correo y reenviar a todos con un botón.", onClick: () => setDeliveryOpen(true) },
         ]}
       />
+      <BatchPassesCard eventId={eventId} />
       <DeliveryIssuesDialog
         open={deliveryOpen}
         onClose={() => setDeliveryOpen(false)}

@@ -652,9 +652,18 @@ export const resendFailedDeliveries = async (eventId: string) => {
   return data;
 };
 
-/** Corrige el correo de un invitado o acompañante y le reenvía lo suyo. */
-export const fixInvitationEmail = async (id: string, email: string) => {
-  const { data } = await apiClient.patch<ResendResult>(`/ticket/tickets/invitations/${encodeURIComponent(id)}/email`, { email }, { withCredentials: true });
+/** Corrige el correo (y opcionalmente el nombre) de un invitado o acompañante y le reenvía lo suyo. */
+export const fixInvitationEmail = async (id: string, email: string, name?: string) => {
+  const { data } = await apiClient.patch<ResendResult>(`/ticket/tickets/invitations/${encodeURIComponent(id)}/email`, { email, ...(name ? { name } : {}) }, { withCredentials: true });
+  return data;
+};
+
+export type BatchPass = { id: string; name: string; shortCode: string; qrToken: string };
+/** Pases confirmados sin correo ("Bavaria 1..N", todos los días): QR listo para entregar como imagen. */
+export const createBatchPasses = async (eventId: string, label: string, count: number) => {
+  const { data } = await apiClient.post<{ eventName: string; passes: BatchPass[] }>(
+    "/ticket/tickets/invitations/batch-passes", { eventId, label, count }, { withCredentials: true, timeout: 120_000 },
+  );
   return data;
 };
 
