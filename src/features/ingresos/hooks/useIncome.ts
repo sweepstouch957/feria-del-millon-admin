@@ -10,28 +10,25 @@ import { appAmount, buildCustomers, fairConvocatorias, isCollected, orderIncome 
 
 const convocatoriaId = (c: any) => String(c._id || c.id);
 
-const convocatoriasOf = async (eventId: string) => fairConvocatorias(await getConvocatorias(), eventId);
-
-/** Inscripciones marcadas como pagadas en las convocatorias de esta feria (la API da 100 por página). */
-async function paidApplications(eventId: string) {
-  const convocatorias = await convocatoriasOf(eventId);
-  const docs: ArtistApplication[] = [];
-  for (const c of convocatorias) {
-    let page = 1;
-    let pages = 1;
-    do {
-      const r = await listApplications({ convocatoria: convocatoriaId(c), isPaid: "true", limit: 100, page });
-      docs.push(...r.docs);
-      pages = r.totalPages || 1;
-      page += 1;
-    } while (page <= pages);
-  }
-  return docs;
+/** Inscripciones marcadas como pagadas en las convocatorias de esta feria. */
+async function paidApplications(convocatorias: any[]) {
+  // Una petición liviana por convocatoria (lite: solo campos de plata, hasta 2000).
+  // Si el servidor aún no tiene lite (tope 100), se piden las páginas que falten.
+  const perConv = await Promise.all(
+    convocatorias.map(async (c) => {
+      const q = { convocatoria: convocatoriaId(c), isPaid: "true", lite: "1" as const, limit: 2000 };
+      const first = await listApplications({ ...q, page: 1 });
+      const rest = await Promise.all(
+        Array.from({ length: Math.max(0, (first.totalPages || 1) - 1) }, (_, i) => listApplications({ ...q, page: i + 2 })),
+      );
+      return [first, ...rest].flatMap((r) => r.docs as ArtistApplication[]);
+    }),
+  );
+  return perConv.flat();
 }
 
 /** Solicitudes de las convocatorias de esta feria, en total y por estado. */
-async function applicationCounts(eventId: string) {
-  const convocatorias = await convocatoriasOf(eventId);
+async function applicationCounts(convocatorias: any[]) {
   const stats = await Promise.all(convocatorias.map((c) => getApplicationStats(convocatoriaId(c))));
   const byStatus: Record<string, number> = {};
   for (const s of stats) {
@@ -46,11 +43,16 @@ async function applicationCounts(eventId: string) {
 
 /** Toda la plata de una feria y quién la pagó: una sola fuente para Tablero y Reportes. */
 export function useIncome(eventId: string) {
-  const ticketsQ = useQuery({ queryKey: ["income", "tickets", eventId], queryFn: () => getTicketSales(eventId) });
-  const ordersQ = useQuery({ queryKey: ["income", "orders", eventId], queryFn: () => listOrders({ event: eventId }) });
-  const appsQ = useQuery({ queryKey: ["income", "apps", eventId], queryFn: () => paidApplications(eventId) });
-  const countsQ = useQuery({ queryKey: ["income", "appCounts", eventId], queryFn: () => applicationCounts(eventId) });
-  const queries = [ticketsQ, ordersQ, appsQ, countsQ];
+  // 1 min de caché: ir y volver entre Tablero y Reportes no vuelve a pedir todo.
+  const staleTime = 60_000;
+  const ticketsQ = useQuery({ queryKey: ["income", "tickets", eventId], queryFn: () => getTicketSales(eventId), staleTime });
+  const ordersQ = useQuery({ queryKey: ["income", "orders", eventId], queryFn: () => listOrders({ event: eventId }), staleTime });
+  // Convocatorias una sola vez; inscripciones y conteos salen de ahí.
+  const convQ = useQuery({ queryKey: ["income", "convocatorias", eventId], queryFn: async () => fairConvocatorias(await getConvocatorias(), eventId), staleTime });
+  const convs = convQ.data;
+  const appsQ = useQuery({ queryKey: ["income", "apps", eventId], queryFn: () => paidApplications(convs!), enabled: !!convs, staleTime });
+  const countsQ = useQuery({ queryKey: ["income", "appCounts", eventId], queryFn: () => applicationCounts(convs!), enabled: !!convs, staleTime });
+  const queries = [ticketsQ, ordersQ, convQ, appsQ, countsQ];
 
   const tickets = useMemo(() => ticketsQ.data ?? [], [ticketsQ.data]);
   const orders = useMemo(() => (ordersQ.data ?? []).filter((o) => orderIncome(o) > 0), [ordersQ.data]);
@@ -74,6 +76,13 @@ export function useIncome(eventId: string) {
     pending: orders.reduce((s, o) => s + (o.status === "partial" ? Number(o.layaway?.balanceDue || 0) : 0), 0),
     applications: countsQ.data ?? { total: 0, accepted: 0, byStatus: {} as Record<string, number> },
     loading: queries.some((q) => q.isLoading),
+    /** Por fuente: así una consulta lenta no deja en gris las demás cifras. */
+    loadingBy: {
+      apps: convQ.isLoading || appsQ.isLoading,
+      orders: ordersQ.isLoading,
+      tickets: ticketsQ.isLoading,
+      counts: convQ.isLoading || countsQ.isLoading,
+    },
     failed: queries.some((q) => q.isError),
     refetch: () => queries.forEach((q) => q.refetch()),
   };

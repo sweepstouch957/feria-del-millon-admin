@@ -46,6 +46,8 @@ export interface ArtistApplication {
 }
 
 export interface ApplicationListParams {
+  /** "1": solo campos de plata, hasta 2000 por página (tablero / reportes). */
+  lite?: "1";
   status?: string;
   convocatoria?: string;
   isPaid?: boolean | string;

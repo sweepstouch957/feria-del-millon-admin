@@ -20,6 +20,8 @@ export type Kpi = {
   selected?: boolean;
   /** Qué significa la cifra: sale al pasar el mouse. */
   hint?: string;
+  /** Solo esta cifra está cargando (las demás ya se muestran). */
+  loading?: boolean;
 };
 
 export default function KpiStrip({
@@ -90,7 +92,7 @@ export default function KpiStrip({
             </Typography>
 
             <Box sx={{ alignSelf: "stretch", containerType: "inline-size" }}>
-              {loading ? (
+              {loading || k.loading ? (
                 <Skeleton variant="text" width="60%" height={34} />
               ) : (
                 <Typography

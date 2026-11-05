@@ -108,22 +108,20 @@ function Dashboard({ eventId }: { eventId: string }) {
       )}
 
       <KpiStrip
-        loading={income.loading}
         items={[
-          { label: "Ingresos", value: money(income.total), accent: true, sub: "inscripciones + obras + boletos", onClick: () => router.push("/reportes") },
-          { label: "Inscripciones", value: money(income.appsTotal), sub: `${income.apps.length} pagada(s)`, hint: "Solo cobros aprobados por la pasarela o registrados a mano.", onClick: () => router.push("/reportes?ver=inscripciones") },
-          { label: "Obras", value: money(income.ordersTotal), sub: `${income.orders.length} venta(s)`, onClick: () => router.push("/reportes?ver=obras") },
-          { label: "Boletos", value: money(income.ticketsTotal), sub: `${income.tickets.length} entrada(s)`, onClick: () => router.push("/reportes?ver=boletos") },
+          { label: "Ingresos", loading: income.loading, value: money(income.total), accent: true, sub: "inscripciones + obras + boletos", onClick: () => router.push("/reportes") },
+          { label: "Inscripciones", loading: income.loadingBy.apps, value: money(income.appsTotal), sub: income.loadingBy.apps ? "cargando…" : `${income.apps.length} pagada(s)`, hint: "Solo cobros aprobados por la pasarela o registrados a mano.", onClick: () => router.push("/reportes?ver=inscripciones") },
+          { label: "Obras", loading: income.loadingBy.orders, value: money(income.ordersTotal), sub: `${income.orders.length} venta(s)`, onClick: () => router.push("/reportes?ver=obras") },
+          { label: "Boletos", loading: income.loadingBy.tickets, value: money(income.ticketsTotal), sub: `${income.tickets.length} entrada(s)`, onClick: () => router.push("/reportes?ver=boletos") },
         ]}
         min={210}
       />
       <KpiStrip
-        loading={income.loading || invitesQ.isLoading}
         items={[
-          { label: "Invitaciones aceptadas", value: inv?.confirmed ?? 0, sub: `${percent(inv?.confirmed ?? 0, invited)} de ${invited} · +${inv?.companions ?? 0} acompañantes`, onClick: () => router.push("/tickets/invitaciones") },
-          { label: "Solicitudes", value: income.applications.total, sub: `${income.applications.accepted} aceptadas (${percent(income.applications.accepted, income.applications.total)})`, onClick: () => router.push("/solicitudes") },
-          { label: "Clientes", value: income.customers.length, sub: "compraron entradas u obras", onClick: () => router.push("/reportes?ver=clientes") },
-          { label: "Artistas", value: artists?.total ?? 0, sub: "con cuenta", onClick: () => router.push("/users") },
+          { label: "Invitaciones aceptadas", loading: invitesQ.isLoading, value: inv?.confirmed ?? 0, sub: `${percent(inv?.confirmed ?? 0, invited)} de ${invited} · +${inv?.companions ?? 0} acompañantes`, onClick: () => router.push("/tickets/invitaciones") },
+          { label: "Solicitudes", loading: income.loadingBy.counts, value: income.applications.total, sub: `${income.applications.accepted} aceptadas (${percent(income.applications.accepted, income.applications.total)})`, onClick: () => router.push("/solicitudes") },
+          { label: "Clientes", loading: income.loadingBy.orders || income.loadingBy.tickets, value: income.customers.length, sub: "compraron entradas u obras", onClick: () => router.push("/reportes?ver=clientes") },
+          { label: "Artistas", loading: !artists, value: artists?.total ?? 0, sub: "con cuenta", onClick: () => router.push("/users") },
         ]}
         min={210}
       />
