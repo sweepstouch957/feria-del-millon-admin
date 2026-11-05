@@ -184,6 +184,18 @@ export function QrValidationPanel() {
     };
   }, [showSuccess]);
 
+  // Rechazos (ya usado, otro día, inválido…): 5 s para leer cuándo entró y quién
+  // validó, y la cámara vuelve sola para el siguiente. Si están habilitando el QR, espera.
+  useEffect(() => {
+    if (!lastResult || showSuccess || reactivate.isPending) return;
+    const t = setTimeout(() => {
+      setLastResult(null);
+      setToken("");
+      setScannerOpen(true);
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [lastResult, showSuccess, reactivate.isPending]);
+
   // Un QR ya usado se rechaza: rojo, aunque el servidor responda ok.
   const severity: "success" | "warning" | "error" =
     lastResult?.status === "already_checked_in" && !lastResult.practice
