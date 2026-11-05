@@ -10,8 +10,6 @@ import {
   CardHeader,
   Divider,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
   TextField,
   Typography,
   Modal,
@@ -48,11 +46,10 @@ export function QrValidationPanel() {
   const [token, setToken] = useState("");
   const [lastResult, setLastResult] = useState<ValidationResult | null>(null);
   const [scannerOpen, setScannerOpen] = useState(true);
-  // Práctica: para capacitar o probar antes de la feria sin gastar ingresos.
-  // Una cuenta en capacitación queda fija en práctica (el servidor también lo exige).
+  // Feria abierta (5-nov): sin interruptor de práctica, todo escaneo registra el ingreso.
+  // Solo una cuenta en capacitación sigue en práctica (el servidor también lo exige).
   const access = useCajaAccess();
-  const [practicePicked, setPractice] = useState(false);
-  const practice = access.practice || practicePicked;
+  const practice = access.practice;
   const queryClient = useQueryClient();
   const [reactivated, setReactivated] = useState<string | null>(null);
 
@@ -244,19 +241,9 @@ export function QrValidationPanel() {
         />
         <CardContent>
           <Stack spacing={1.5}>
-            <ToggleButtonGroup
-              exclusive
-              fullWidth
-              disabled={access.practice}
-              value={practice ? "practica" : "real"}
-              onChange={(_, v) => { if (v) { setPractice(v === "practica"); setLastResult(null); } }}
-            >
-              <ToggleButton value="real" color="success" sx={{ py: 1.25 }}>Real · registra el ingreso</ToggleButton>
-              <ToggleButton value="practica" color="warning" sx={{ py: 1.25 }}>Práctica · no gasta el pase</ToggleButton>
-            </ToggleButtonGroup>
             {practice && (
               <Alert severity="warning" sx={{ py: 0 }}>
-                Práctica activada: los QR NO quedan marcados como usados. Apágalo antes de abrir la puerta.
+                Tu cuenta está en modo práctica: los QR NO quedan marcados como usados. Pide a coordinación que lo apague.
               </Alert>
             )}
             {/* Campo para pegar token manualmente */}
