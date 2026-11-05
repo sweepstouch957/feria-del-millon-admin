@@ -25,6 +25,45 @@ import type { SaleValues } from "../model/sale";
 const NO_CITIES: CityDoc[] = [];
 const WIDE = "(min-width: 1100px)";
 
+const STEPS = ["Elegir obra", "Datos del comprador", "Cobro"];
+
+/** 1 Elegir obra → 2 Datos → 3 Cobro. Con la obra elegida, datos y cobro van en el mismo formulario. */
+function Steps({ current }: { current: number }) {
+  return (
+    <Box component="ol" aria-label="Pasos de la venta" sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.25, listStyle: "none", p: 0, m: "0 0 16px" }}>
+      {STEPS.map((label, i) => {
+        const n = i + 1;
+        const active = current === n || (current === 2 && n === 3);
+        const doneStep = current > n && !active;
+        return (
+          <Box component="li" key={label} aria-current={active ? "step" : undefined} sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                component="span"
+                sx={(t) => {
+                  const inv = t.palette.mode === "dark";
+                  return {
+                    width: 26, height: 26, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 600,
+                    transition: "background-color .25s ease, color .25s ease",
+                    bgcolor: doneStep ? "#3FA46E" : active ? (inv ? "#F5F4EF" : "#0B0B0A") : t.palette.action.selected,
+                    color: doneStep ? "#0B0B0A" : active ? (inv ? "#0B0B0A" : "#F5F4EF") : "text.secondary",
+                  };
+                }}
+              >
+                {doneStep ? "✓" : n}
+              </Box>
+              <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: active || doneStep ? "text.primary" : "text.secondary" }}>
+                {label}
+              </Typography>
+            </Box>
+            {n < STEPS.length && <Box component="span" aria-hidden sx={{ width: 28, height: "1px", bgcolor: "divider" }} />}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
 export function CajaPage() {
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
@@ -86,6 +125,7 @@ function Caja({ eventId }: { eventId: string }) {
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
       <PracticeBanner />
+      <Steps current={done ? 4 : selected ? 2 : 1} />
 
       <Box
         sx={{

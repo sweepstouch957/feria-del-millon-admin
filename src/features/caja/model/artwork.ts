@@ -15,4 +15,10 @@ export const imageOf = (a: CajaArtwork): string | undefined => {
   return (first as { url?: string } | undefined)?.url;
 };
 
-export const stockOf = (a: CajaArtwork) => Number(a.stock ?? 0);
+/** Miniatura liviana (Cloudinary): en la feria el internet es lento y la foto original pesa megas. */
+export const thumbOf = (a: CajaArtwork, width = 480): string | undefined => {
+  const url = imageOf(a);
+  return url?.includes("/upload/") ? url.replace("/upload/", `/upload/f_auto,q_auto,w_${width},c_limit/`) : url;
+};
+
+export const stockOf =(a: CajaArtwork) => Number(a.stock ?? 0);

@@ -34,6 +34,9 @@ export function useArtworkFinder(eventId?: string) {
       : pickedPavilion;
 
   const q = useDebouncedValue(text.trim(), 200);
+  // Sin búsqueda no se cargan obras: la cajera escanea o escribe. Así la caja
+  // abre al instante y no se gasta el internet de la feria en una lista que nadie mira.
+  const searching = !!q || !!technique || !!artist;
   const list = useArtworksCursor({
     q: q || undefined,
     event: eventId,
@@ -43,7 +46,7 @@ export function useArtworkFinder(eventId?: string) {
     includeHidden: 1, // la caja vende aunque el catálogo en línea no se haya revelado
     project: "tagId,dimensionsText",
     limit: 24,
-    enabled: !!eventId,
+    enabled: !!eventId && searching,
     keepPrevious: true,
   });
 
@@ -52,7 +55,8 @@ export function useArtworkFinder(eventId?: string) {
   const artists = useQuery({
     queryKey: ["caja", "artists", eventId, pavilion, debouncedArtistQ],
     queryFn: () => listEventArtists(eventId!, { q: debouncedArtistQ || undefined, pavilionId: pavilion || undefined, limit: 30 }),
-    enabled: !!eventId,
+    // Solo cuando escriben un nombre en el filtro de artista.
+    enabled: !!eventId && !!debouncedArtistQ,
     staleTime: 60_000,
   });
 
@@ -96,8 +100,9 @@ export function useArtworkFinder(eventId?: string) {
     pavilion, setPavilion, pavilionOptions: pavs.options, pavilionLocked: pavs.locked,
     technique, setTechnique, techniqueOptions: techniques.data ?? [],
     artist, setArtist, setArtistQ, artistOptions: artists.data ?? [],
-    rows: list.rows as CajaArtwork[],
-    isLoading: list.isLoading,
+    searching,
+    rows: (searching ? list.rows : []) as CajaArtwork[],
+    isLoading: searching && list.isLoading,
     isSearching: list.isFetching && !list.isFetchingNextPage,
     hasNextPage: list.hasNextPage,
     isFetchingNextPage: list.isFetchingNextPage,
