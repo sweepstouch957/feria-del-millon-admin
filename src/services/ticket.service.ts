@@ -101,6 +101,8 @@ export interface ValidateQrResponse {
     type?: TicketType;
     name?: string;
     companionName?: string;
+    /** Empresa o grupo del enlace de invitación del que viene. */
+    source?: string;
     allDays?: boolean;
     admits?: number;
     usedToday?: number;

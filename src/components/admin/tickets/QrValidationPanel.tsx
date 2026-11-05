@@ -334,6 +334,11 @@ export function QrValidationPanel() {
                           {lastResult.info.companionName ? ` + ${lastResult.info.companionName}` : ""}
                         </Typography>
                       )}
+                      {lastResult.info?.source && (
+                        <Typography variant="body2">
+                          <strong>Viene de:</strong> {lastResult.info.source}
+                        </Typography>
+                      )}
                       {(lastResult.info?.admits || 1) > 1 && (
                         <Typography variant="body2">
                           <strong>Ingresos hoy:</strong> {lastResult.info?.usedToday} de {lastResult.info?.admits}
