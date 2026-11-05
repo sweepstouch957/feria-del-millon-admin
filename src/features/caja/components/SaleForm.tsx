@@ -245,7 +245,7 @@ export const SaleForm = memo(function SaleForm({
             endIcon={<ChevronDown size={18} aria-hidden style={{ transform: moreOpen ? "rotate(180deg)" : undefined }} />}
             sx={{ textTransform: "none", fontSize: { xs: 16, sm: 13.5 } }}
           >
-            Descuento, apartar o indicaciones
+            {canLayaway ? "Descuento, apartar o indicaciones" : "Descuento o indicaciones"}
           </Button>
           <Collapse in={moreOpen} id={moreId}>
             <Stack spacing={2} sx={{ mt: 1.5 }}>

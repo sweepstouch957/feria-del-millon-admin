@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Alert, Box, Button, Card, CardContent, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
+  Alert, Box, Button, Card, CardContent, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from "@mui/material";
 import { Banknote, CreditCard, Landmark, Minus, Plus } from "lucide-react";
 import type { Ticket } from "@services/ticket.service";
@@ -26,6 +26,8 @@ import {
 } from "../model/boxOffice";
 
 const METHOD_ICON = { cash: Banknote, card_offline: CreditCard, transfer: Landmark } as const;
+// Botón táctil grande (guantes/afán en la fila): nombre arriba, precio abajo.
+const BIG_TOGGLE = { minHeight: 64, flexDirection: "column", gap: 0.25, textTransform: "none", fontSize: 15, fontWeight: 600, lineHeight: 1.2 } as const;
 // Un toque completa el dominio: la mayoría de correos en la fila son de estos.
 const EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "icloud.com"];
 
@@ -110,7 +112,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
       />
       <PracticeBanner />
 
-      <Card variant="outlined" sx={{ borderRadius: 0 }}>
+      <Card variant="outlined" sx={{ borderRadius: 0, overflow: "visible" /* si no, la barra sticky no pega */ }}>
         <CardContent>
           {last && (
             <Box sx={{ mb: 2.5 }}>
@@ -141,35 +143,51 @@ function BoxOffice({ eventId }: { eventId: string }) {
           )}
             <Box component="form" noValidate onSubmit={submit}>
               <Stack spacing={2.5}>
-                <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1.2fr 1.4fr 0.8fr" } }}>
+                {/* Tipo y día con un toque (antes eran listas desplegables: 2 toques cada una). */}
+                <Controller
+                  control={control}
+                  name="type"
+                  render={({ field }) => (
+                    <ToggleButtonGroup aria-label="Tipo de entrada" exclusive fullWidth value={field.value} onChange={(_, v) => v && field.onChange(v)}>
+                      {TICKET_TYPES.map((t) => (
+                        <ToggleButton key={t.key} value={t.key} sx={BIG_TOGGLE}>
+                          <span>{TICKET_TYPE_LABEL[t.key]}</span>
+                          {t.price != null && <Box component="span" sx={{ fontSize: 12, opacity: 0.75 }}>{formatCOP(t.price)} · los 4 días</Box>}
+                        </ToggleButton>
+                      ))}
+                    </ToggleButtonGroup>
+                  )}
+                />
+                {spec.pickDay && (
                   <Controller
                     control={control}
-                    name="type"
+                    name="date"
                     render={({ field }) => (
-                      <TextField select label="Tipo de entrada" {...field}>
-                        {TICKET_TYPES.map((t) => <MenuItem key={t.key} value={t.key}>{TICKET_TYPE_LABEL[t.key]}</MenuItem>)}
-                      </TextField>
+                      <Box>
+                        <ToggleButtonGroup
+                          aria-label="Día"
+                          exclusive
+                          value={field.value}
+                          onChange={(_, v) => v && field.onChange(v)}
+                          sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: `repeat(${Math.min(days.length || 1, 4)}, 1fr)` }, gap: 1, "& .MuiToggleButton-root": { border: "1px solid", borderColor: "divider", borderRadius: "0 !important", m: "0 !important" } }}
+                        >
+                          {days.map((d) => (
+                            <ToggleButton key={d.date} value={d.date} disabled={!d.isActive || d.remaining <= 0} sx={BIG_TOGGLE}>
+                              <span>{d.isToday ? "Hoy · " : ""}{d.display || d.date}</span>
+                              <Box component="span" sx={{ fontSize: 12, opacity: 0.75 }}>
+                                {formatCOP(d.price)} · {d.remaining <= 0 ? "agotado" : `quedan ${d.remaining}`}
+                              </Box>
+                            </ToggleButton>
+                          ))}
+                        </ToggleButtonGroup>
+                        {errors.date && <Typography color="error" variant="caption">{errors.date.message}</Typography>}
+                      </Box>
                     )}
                   />
-                  {spec.pickDay ? (
-                    <Controller
-                      control={control}
-                      name="date"
-                      render={({ field }) => (
-                        <TextField select label="Día" {...field} {...err("date")}>
-                          {days.map((d) => (
-                            <MenuItem key={d.date} value={d.date} disabled={!d.isActive || d.remaining <= 0}>
-                              {d.display || d.date} · {formatCOP(d.price)} · quedan {d.remaining}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      )}
-                    />
-                  ) : (
-                    <TextField label="Día" value="Los 4 días" disabled />
-                  )}
+                )}
+                <Box>
                   {/* −/+ grandes: una familia de 5 son 4 toques, sin teclado. */}
-                  <Stack direction="row" alignItems="flex-start" spacing={0.5}>
+                  <Stack direction="row" alignItems="flex-start" spacing={0.5} sx={{ maxWidth: 260 }}>
                     <Button variant="outlined" tabIndex={-1} aria-label="Una menos" disabled={quantity <= 1} onClick={() => step(-1)} sx={{ minWidth: 48, height: 56 }}>
                       <Minus size={18} />
                     </Button>
@@ -214,7 +232,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
                         {BOX_OFFICE_METHODS.map((m) => {
                           const Icon = METHOD_ICON[m.value];
                           return (
-                            <ToggleButton key={m.value} value={m.value} sx={{ py: 1.5, gap: 1, textTransform: "none", flexDirection: { xs: "column", sm: "row" } }}>
+                            <ToggleButton key={m.value} value={m.value} sx={{ minHeight: 56, gap: 1, textTransform: "none", fontSize: 15, flexDirection: { xs: "column", sm: "row" } }}>
                               <Icon size={20} /> {m.label}
                             </ToggleButton>
                           );
@@ -224,7 +242,8 @@ function BoxOffice({ eventId }: { eventId: string }) {
                   />
                 </Stack>
 
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
+                {/* Total y Cobrar siempre a la vista en celular/tablet (no hay que bajar). */}
+                <Box sx={{ position: "sticky", bottom: 0, zIndex: 2, bgcolor: "background.paper", display: "flex", alignItems: "center", gap: 2, py: 1.25, borderTop: "1px solid", borderColor: "divider" }}>
                   <Typography aria-live="polite" sx={{ flex: 1, fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" }}>
                     {formatCOP(total, { code: true })}
                   </Typography>
