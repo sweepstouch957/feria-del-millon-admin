@@ -24,9 +24,9 @@ export async function buildAccessPdf(cards: AccessCard[], assets: PdfAssets, hos
   const logo: PDFImage | null = assets.logo ? await doc.embedPng(assets.logo) : null;
   const qrs = await qrPages(doc, cards.map((c) => c.url));
 
-  // Carta vertical, 2 × 3 tarjetas con líneas de corte.
+  // Carta vertical, 2 × 2 tarjetas con líneas de corte (QR grande, se lee rápido).
   const PW = 215.9 * MM, PH = 279.4 * MM, M = 8 * MM;
-  const cols = 2, rows = 3;
+  const cols = 2, rows = 2;
   const W = (PW - M * 2) / cols, H = (PH - M * 2) / rows;
   const pad = 6 * MM;
 
@@ -54,7 +54,7 @@ export async function buildAccessPdf(cards: AccessCard[], assets: PdfAssets, hos
 
     // Pie de abajo hacia arriba: credenciales en recuadro + aviso.
     let b = yTop - H + pad;
-    center(page, reg, `Personal · vence el${new Date(c.expiresAt).toLocaleDateString("es-CO")}`, 6.5, x0, W, b, SOFT);
+    center(page, reg, `Personal · vence el ${new Date(c.expiresAt).toLocaleDateString("es-CO")}`, 6.5, x0, W, b, SOFT);
     b += 6.5 + 2 * MM;
     const boxH = 15 * MM;
     page.drawRectangle({ x: x0 + pad, y: b, width: IW, height: boxH, color: BOX });
@@ -75,7 +75,7 @@ export async function buildAccessPdf(cards: AccessCard[], assets: PdfAssets, hos
     b += 8 + 2 * MM;
 
     const qr = qrs.get(c.url);
-    const qs = Math.max(0, Math.min(IW * 0.7, y - b));
+    const qs = Math.max(0, Math.min(IW * 0.9, y - b));
     if (qr) page.drawPage(qr, { x: x0 + (W - qs) / 2, y: b + (y - b - qs) / 2, width: qs, height: qs });
   };
 
