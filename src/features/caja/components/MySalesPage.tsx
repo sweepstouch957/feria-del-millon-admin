@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Stack, TextField, Typography } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -9,7 +9,8 @@ import { formatCOP } from "@/utils/money";
 import { downloadCsv, stamp, toCsv } from "@/utils/csv";
 import { todayBogota, useMySales } from "../hooks/useMySales";
 import { CAJA_METHODS, METHOD_LABEL } from "../model/sale";
-import { clearPracticeSales } from "../model/practice";
+import { clearPracticeSales, listPracticeSales } from "../model/practice";
+import type { SalesLine } from "@services/orders.service";
 import { useCajaAccess } from "../hooks/useCajaAccess";
 import { PracticeBanner } from "./PracticeBanner";
 
@@ -19,11 +20,16 @@ export function MySalesPage() {
   const [day, setDay] = useState(todayBogota);
   const sales = useMySales(eventId ?? undefined, day);
   const { practice } = useCajaAccess();
+  const [unsaved, setUnsaved] = useState<SalesLine[]>([]);
+  useEffect(() => setUnsaved(listPracticeSales()), []);
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
 
   const lines = sales.data?.lines ?? [];
-  const exportCsv = () =>
-    downloadCsv(`mi_cierre_${day}_${stamp()}.csv`, toCsv(lines, [
+  // Ventas hechas en modo práctica: quedaron solo en este navegador, NO en el
+  // sistema. Hay que volver a registrarlas en caja (sin cobrar otra vez).
+  const exportCsv = () => toExcel(`mi_cierre_${day}_${stamp()}.csv`, lines);
+  const toExcel = (name: string, rows: SalesLine[]) =>
+    downloadCsv(name, toCsv(rows, [
       { header: "Día", value: (l) => l.day },
       { header: "Pedido", value: (l) => l.orderId, text: true },
       { header: "Obra", value: (l) => l.artwork },
@@ -54,6 +60,34 @@ export function MySalesPage() {
         <TextField type="date" size="small" label="Día" value={day} onChange={(e) => setDay(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
       </PageHeader>
       <PracticeBanner />
+
+      {unsaved.length > 0 && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography fontWeight={600}>
+            {unsaved.length} venta(s) hechas en modo práctica NO se guardaron en el sistema
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5 }}>
+            No bajaron stock ni salen en reportes. Vuelve a registrar cada una en la caja con los mismos datos
+            (si ya se pasó el datáfono, no cobres otra vez: usa el voucher). Descarga la lista antes de borrar datos del navegador.
+          </Typography>
+          <Stack sx={{ mt: 1.5 }} divider={<Box sx={{ borderTop: "1px solid", borderColor: "divider" }} />}>
+            {unsaved.map((l, i) => (
+              <Box key={`${l.orderId}-${i}`} sx={{ py: 0.75 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  {l.day} · {l.artwork} · {l.artist} · {formatCOP(l.amount)} · {METHOD_LABEL[l.method] ?? l.method}
+                </Typography>
+                <Typography variant="body2">
+                  {[l.buyer, l.buyerEmail, l.buyerPhone].filter(Boolean).join(" · ")}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+          <Button size="small" variant="contained" color="error" sx={{ mt: 1.5 }}
+            onClick={() => toExcel(`ventas_NO_guardadas_${stamp()}.csv`, unsaved)}>
+            Descargar Excel
+          </Button>
+        </Alert>
+      )}
 
       <KpiStrip
         loading={sales.isLoading}

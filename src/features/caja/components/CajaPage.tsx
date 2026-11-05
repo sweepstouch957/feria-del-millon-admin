@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Box, Card, CardContent, Typography, useMediaQuery } from "@mui/material";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Box, Button, Card, CardContent, Typography, useMediaQuery } from "@mui/material";
+import { listPracticeSales } from "../model/practice";
 import { toast } from "sonner";
 import PageHeader from "@/components/ui/PageHeader";
 import { eyebrow } from "@/app/theme";
@@ -61,6 +62,18 @@ function Steps({ current }: { current: number }) {
         );
       })}
     </Box>
+  );
+}
+
+/** Ventas hechas en modo práctica que quedaron solo en este navegador: hay que volver a registrarlas. */
+function UnsavedPracticeAlert() {
+  const [n, setN] = useState(0);
+  useEffect(() => setN(listPracticeSales().length), []);
+  if (!n) return null;
+  return (
+    <Alert severity="error" sx={{ mb: 2 }} action={<Button color="inherit" size="small" href="/caja/cierre">Ver</Button>}>
+      {n} venta(s) hechas en modo práctica NO se guardaron. Ábrelas en "Mi cierre del día" y vuelve a registrarlas.
+    </Alert>
   );
 }
 
@@ -125,6 +138,7 @@ function Caja({ eventId }: { eventId: string }) {
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
       <PracticeBanner />
+      <UnsavedPracticeAlert />
       <Steps current={done ? 4 : selected ? 2 : 1} />
 
       <Box
