@@ -3,7 +3,7 @@
 /* Pestaña "Accesos (QR)": se pega la lista de correo + clave (como en
    /users/equipo/accesos) y sale un PDF con un QR por persona que entra
    directo al panel. El servidor verifica cada clave y crea un enlace de
-   un solo uso (7 días); las filas con error no salen en el PDF. */
+   reutilizable que vence a los 7 días; las filas con error no salen en el PDF. */
 import * as React from "react";
 import { Alert, Box, Button, Card, CardContent, Chip, LinearProgress, Stack, TextField, Typography } from "@mui/material";
 import { Download } from "lucide-react";
@@ -71,8 +71,8 @@ export default function AccessQrTab({ loadAssets }: { loadAssets: () => Promise<
           el QR entra directo al panel ({typeof window !== "undefined" ? window.location.host : "panel"}) sin escribir nada, y abajo van su correo y clave de respaldo.
         </Typography>
         <Alert severity="warning">
-          Cada QR sirve <b>una sola vez</b> y vence en 7 días. Quien lo escanee primero entra con esa cuenta: entrega cada tarjeta en mano.
-          Si se usa o se pierde, genera otro (los anteriores siguen sirviendo hasta usarse o vencer).
+          Cada QR sirve <b>todas las veces</b> durante 7 días: quien lo escanee entra con esa cuenta. Entrega cada tarjeta en mano.
+          Si se pierde una, cambia la clave de esa cuenta (el QR sigue sirviendo hasta vencer). Los QR impresos antes de este cambio eran de un solo uso.
         </Alert>
         <TextField
           multiline minRows={6} maxRows={16} fullWidth

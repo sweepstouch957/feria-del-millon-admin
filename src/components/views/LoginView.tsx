@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Box, Stack, Typography, CircularProgress } from "@mui/material";
+import { Box, Stack, Typography, CircularProgress, Dialog, Button } from "@mui/material";
+import dynamic from "next/dynamic";
+
+// zxing pesa: solo se baja cuando abren el lector.
+const BetterQrScanner = dynamic(() => import("@/components/admin/tickets/BetterQrScanner").then((m) => m.BetterQrScanner), { ssr: false });
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/provider/authProvider";
 import { FDM, eyebrow } from "@/app/theme";
@@ -55,22 +59,37 @@ const LoginClient: React.FC = () => {
   const firstRef = useRef<HTMLInputElement | null>(null);
   const linkRef = useRef(false);
 
+  const [scanning, setScanning] = useState(false);
+
+  const redeem = (token: string) => {
+    linkRef.current = true;
+    setErrorMsg(null);
+    setSubmitting(true);
+    loginWithLink(token)
+      .catch((err: any) => {
+        linkRef.current = false;
+        setErrorMsg(err?.response?.data?.error || err?.message || "No se pudo ingresar con el enlace.");
+      })
+      .finally(() => setSubmitting(false));
+  };
+
   // Botón "Ingresar" del correo de acceso: /login#acceso=<token>. Reemplaza
   // cualquier sesión abierta en este navegador. Se quita el # antes de canjear.
   useEffect(() => {
     const { hash, pathname } = window.location;
     if (!hash.startsWith("#acceso=")) return;
     window.history.replaceState(null, "", pathname);
-    linkRef.current = true;
-    setSubmitting(true);
-    loginWithLink(hash.slice("#acceso=".length))
-      .catch((err: any) => {
-        linkRef.current = false;
-        setErrorMsg(err?.response?.data?.error || err?.message || "No se pudo ingresar con el enlace.");
-      })
-      .finally(() => setSubmitting(false));
+    redeem(hash.slice("#acceso=".length));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // QR de la tarjeta impresa leído con la cámara del propio panel.
+  const onScan = (text: string) => {
+    const m = text.match(/#acceso=([a-f0-9]{64})/i);
+    if (!m) return setErrorMsg("Ese QR no es una tarjeta de acceso al panel.");
+    setScanning(false);
+    redeem(m[1]);
+  };
 
   // Redirige si ya está autenticado
   useEffect(() => {
@@ -374,8 +393,50 @@ const LoginClient: React.FC = () => {
             >
               Ingresar
             </Box>
+
+            <Box
+              component="button"
+              type="button"
+              onClick={() => { setErrorMsg(null); setScanning(true); }}
+              sx={{
+                mt: 1.5,
+                width: "100%",
+                height: 54,
+                borderRadius: 999,
+                cursor: "pointer",
+                border: `1px solid ${FDM.ink}`,
+                background: "transparent",
+                color: FDM.ink,
+                ...eyebrow,
+                fontSize: 11,
+                letterSpacing: "0.18em",
+                transition: "all .3s ease",
+                "&:hover": { background: FDM.green, borderColor: FDM.green },
+              }}
+            >
+              Leer QR de acceso
+            </Box>
           </Box>
         </Box>
+
+        <Dialog open={scanning} onClose={() => setScanning(false)} fullWidth maxWidth="xs">
+          <Box sx={{ p: 2.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Typography sx={{ ...eyebrow, fontSize: 10, color: dim }}>Apunta la cámara al QR de tu tarjeta</Typography>
+            <Box sx={{ aspectRatio: "1", borderRadius: 2, overflow: "hidden", background: "#000" }}>
+              <BetterQrScanner
+                active={scanning}
+                onResult={onScan}
+                onError={(e: any) => {
+                  // "no se detectó nada" llega en cada cuadro; solo mostrar fallas de cámara.
+                  if (e?.name === "NotAllowedError") setErrorMsg("Permite el acceso a la cámara para leer el QR.");
+                  else if (e?.message === "No se encontraron cámaras") setErrorMsg(e.message);
+                }}
+              />
+            </Box>
+            {errorMsg && <Typography role="alert" sx={{ fontSize: 14, color: FDM.terracotta }}>{errorMsg}</Typography>}
+            <Button onClick={() => setScanning(false)} sx={{ color: FDM.ink }}>Cancelar</Button>
+          </Box>
+        </Dialog>
 
         <Stack
           direction="row"

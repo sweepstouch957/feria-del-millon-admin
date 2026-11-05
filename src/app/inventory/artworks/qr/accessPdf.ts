@@ -1,5 +1,5 @@
 /* PDF de accesos: una tarjeta por persona con un QR que entra directo al
-   panel (enlace de un solo uso) y, de respaldo, su correo y clave. */
+   panel (enlace reutilizable hasta que vence) y, de respaldo, su correo y clave. */
 import { PDFDocument, rgb, type PDFImage, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { clean, qrPages, textWidth, wrap, MM, type F, type PdfAssets } from "./labelsPdf";
@@ -54,7 +54,7 @@ export async function buildAccessPdf(cards: AccessCard[], assets: PdfAssets, hos
 
     // Pie de abajo hacia arriba: credenciales en recuadro + aviso.
     let b = yTop - H + pad;
-    center(page, reg, `Un solo uso · vence el ${new Date(c.expiresAt).toLocaleDateString("es-CO")}`, 6.5, x0, W, b, SOFT);
+    center(page, reg, `Personal · vence el${new Date(c.expiresAt).toLocaleDateString("es-CO")}`, 6.5, x0, W, b, SOFT);
     b += 6.5 + 2 * MM;
     const boxH = 15 * MM;
     page.drawRectangle({ x: x0 + pad, y: b, width: IW, height: boxH, color: BOX });
