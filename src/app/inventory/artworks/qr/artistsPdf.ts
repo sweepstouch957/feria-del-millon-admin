@@ -208,8 +208,19 @@ export async function buildArtistsPdf(
     }
   };
 
-  // ── Portada: logo grande, título y mosaico con obras de los artistas ──
-  if (o.cover) {
+  // ── Portada diseñada (imagen): mismo tamaño de hoja que el resto. Se ajusta al
+  // ancho y lo que sobra arriba/abajo se rellena con su mismo fondo menta. ──
+  const coverImg = o.cover && assets.coverImage ? await embedImage(assets.coverImage) : null;
+  if (o.cover && coverImg) {
+    const page = doc.addPage([P.w, P.h]);
+    page.drawRectangle({ x: 0, y: 0, width: P.w, height: P.h, color: rgb(0xba / 255, 0xe1 / 255, 0xd6 / 255) });
+    const k = Math.min(P.w / coverImg.width, P.h / coverImg.height);
+    const iw = coverImg.width * k, ih = coverImg.height * k;
+    page.drawImage(coverImg, { x: (P.w - iw) / 2, y: (P.h - ih) / 2, width: iw, height: ih });
+  }
+
+  // ── Portada generada (si no hay imagen): logo grande, título y mosaico con obras ──
+  if (o.cover && !coverImg) {
     const page = doc.addPage([P.w, P.h]);
     page.drawRectangle({ x: 0, y: 0, width: P.w, height: P.h, color: BG });
     const U = Math.min(P.w, P.h) / 100;

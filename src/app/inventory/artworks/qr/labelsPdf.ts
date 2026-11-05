@@ -21,6 +21,8 @@ export type PdfAssets = {
   /** Source Sans 3 (catálogo de artistas, una por hoja). */
   sans?: Uint8Array;
   sansBold?: Uint8Array;
+  /** JPG de la portada diseñada del catálogo de artistas (fondo menta parejo). */
+  coverImage?: Uint8Array;
   /** PNG del logo con fondo transparente (opcional). */
   logo?: Uint8Array;
 };
