@@ -76,8 +76,8 @@ export function ArtworkFinderPanel({
           bgcolor: "background.paper",
           border: 1,
           borderColor: "divider",
-          borderRadius: "20px",
-          p: 2,
+          borderRadius: { xs: "16px", sm: "20px" },
+          p: { xs: 1.5, sm: 2 },
           display: "flex",
           flexDirection: "column",
           gap: 1.75,
@@ -88,9 +88,9 @@ export function ArtworkFinderPanel({
           sx={(t) => ({
             display: "flex",
             alignItems: "center",
-            gap: 1.25,
-            height: 56,
-            pl: 2,
+            gap: { xs: 0.75, sm: 1.25 },
+            height: { xs: 52, sm: 56 },
+            pl: { xs: 1.5, sm: 2 },
             pr: 0.75,
             borderRadius: "14px",
             border: "1.5px solid",
@@ -113,7 +113,7 @@ export function ArtworkFinderPanel({
             }}
             placeholder="Título, código de etiqueta o QR"
             inputProps={{ "aria-label": "Buscar obra por título, código de etiqueta o QR", enterKeyHint: "search" }}
-            sx={{ flex: 1, minWidth: 0, fontSize: 17 }}
+            sx={{ flex: 1, minWidth: 0, fontSize: { xs: 16, sm: 17 } }}
           />
           {finder.text && (
             <IconButton aria-label="Borrar búsqueda" onClick={() => finder.setText("")} sx={{ width: 44, height: 44 }}>
@@ -123,10 +123,11 @@ export function ArtworkFinderPanel({
           <ButtonBase
             onClick={() => setScanOpen(true)}
             aria-label="Escanear QR"
-            sx={(t) => ({ ...invSx(t), flex: "none", height: 44, px: 2, borderRadius: "10px", gap: 1, fontSize: 14, fontWeight: 500 })}
+            sx={(t) => ({ ...invSx(t), flex: "none", height: 44, minWidth: 44, px: { xs: 1.25, sm: 2 }, borderRadius: "10px", gap: 1, fontSize: 14, fontWeight: 500 })}
           >
             <QrIcon />
-            <span>Escanear</span>
+            {/* Celular: solo el ícono, así el campo de búsqueda no queda de 3 letras. */}
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Escanear</Box>
           </ButtonBase>
         </Box>
 
@@ -136,7 +137,16 @@ export function ArtworkFinderPanel({
           sx={{ height: 2, mt: "-12px !important", borderRadius: 1, visibility: finder.isSearching ? "visible" : "hidden" }}
         />
 
-        <Box sx={{ display: "grid", gap: 1.25, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", mt: "-6px" }}>
+        {/* Celular: pabellón y técnica lado a lado, artista abajo a todo el ancho. */}
+        <Box
+          sx={{
+            display: "grid",
+            gap: 1.25,
+            mt: "-6px",
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(auto-fit, minmax(180px, 1fr))" },
+            "& > :nth-of-type(3)": { gridColumn: { xs: "1 / -1", sm: "auto" } },
+          }}
+        >
           <TextField
             select
             size="small"
@@ -173,15 +183,16 @@ export function ArtworkFinderPanel({
 
       {!finder.searching ? (
         // Estado inicial: no se carga ninguna obra hasta que escaneen o escriban.
-        <Box sx={{ border: "1.5px dashed", borderColor: "divider", borderRadius: "20px", py: { xs: 5, sm: 7 }, px: 3, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{ color: FDM.green }}><QrIcon size={44} /></Box>
-          <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 600, letterSpacing: "-.01em" }}>Escanea el QR de la etiqueta</Typography>
-          <Typography sx={{ color: "text.secondary", fontSize: 15, maxWidth: 380 }}>
-            o escribe el título o el código de la obra arriba. La lista sale cuando buscas: así la caja carga rápido aunque el internet esté lento.
+        <Box sx={{ border: "1.5px dashed", borderColor: "divider", borderRadius: { xs: "16px", sm: "20px" }, py: { xs: 3.5, sm: 7 }, px: { xs: 2, sm: 3 }, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ color: FDM.green }}><QrIcon size={40} /></Box>
+          <Typography sx={{ fontSize: { xs: 17, sm: 20 }, fontWeight: 600, letterSpacing: "-.01em" }}>Escanea el QR de la etiqueta</Typography>
+          <Typography sx={{ color: "text.secondary", fontSize: { xs: 14, sm: 15 }, maxWidth: 380 }}>
+            o escribe el título o el código de la obra arriba.
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}> La lista sale cuando buscas: así la caja carga rápido aunque el internet esté lento.</Box>
           </Typography>
           <ButtonBase
             onClick={() => setScanOpen(true)}
-            sx={(t) => ({ ...invSx(t), mt: 1, height: 52, px: 3.5, borderRadius: 999, gap: 1.25, fontSize: 15, fontWeight: 600 })}
+            sx={(t) => ({ ...invSx(t), mt: 1, height: 52, px: 3.5, borderRadius: 999, gap: 1.25, fontSize: 15, fontWeight: 600, width: { xs: "100%", sm: "auto" } })}
           >
             <QrIcon size={20} />
             Escanear QR
@@ -203,7 +214,8 @@ export function ArtworkFinderPanel({
             )}
           </Box>
 
-          <Box sx={{ display: "grid", gap: "14px", gridTemplateColumns: "repeat(auto-fill, minmax(min(220px, 100%), 1fr))" }}>
+          {/* Celular: dos tarjetas por fila (una sola quedaba enorme y obligaba a bajar mucho). */}
+          <Box sx={{ display: "grid", gap: { xs: "10px", sm: "14px" }, gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(auto-fill, minmax(min(220px, 100%), 1fr))" } }}>
             {finder.rows.map((a) => (
               <ArtworkCard key={artworkId(a)} artwork={a} selected={artworkId(a) === selectedId} onPick={onPick} />
             ))}

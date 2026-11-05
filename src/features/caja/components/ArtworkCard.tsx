@@ -69,7 +69,7 @@ export const ArtworkCard = memo(function ArtworkCard({
             const inv = t.palette.mode === "dark";
             const bg = soldOut ? FDM.terracotta : stock > 1 ? FDM.green : inv ? "#F5F4EF" : "#0B0B0A";
             const fg = soldOut ? "#fff" : stock > 1 ? "#0B0B0A" : inv ? "#0B0B0A" : "#F5F4EF";
-            return { position: "absolute", top: 10, left: 10, fontSize: 11, fontWeight: 600, px: 1, py: 0.5, borderRadius: 999, bgcolor: bg, color: fg };
+            return { position: "absolute", top: 8, left: 8, fontSize: { xs: 10, sm: 11 }, fontWeight: 600, px: 1, py: 0.5, borderRadius: 999, bgcolor: bg, color: fg };
           }}
         >
           {avail}
@@ -81,20 +81,21 @@ export const ArtworkCard = memo(function ArtworkCard({
           </Box>
         )}
       </Box>
-      <Box sx={{ p: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 0.5, minWidth: 0 }}>
-        <Typography title={artwork.title} sx={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25, ...ellipsis }}>
+      <Box sx={{ p: { xs: "8px 10px 10px", sm: "12px 14px 14px" }, display: "flex", flexDirection: "column", gap: 0.5, minWidth: 0 }}>
+        <Typography title={artwork.title} sx={{ fontSize: { xs: 14, sm: 15 }, fontWeight: 600, lineHeight: 1.25, ...ellipsis }}>
           {artwork.title || "Sin título"}
         </Typography>
-        <Typography sx={{ fontSize: 13, color: "text.secondary", ...ellipsis }}>
+        <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: "text.secondary", ...ellipsis }}>
           {artistName(artwork) || "—"}
           {artwork.techniqueInfo?.name ? ` · ${artwork.techniqueInfo.name}` : ""}
         </Typography>
-        <Box sx={{ mt: 0.75, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: 16, fontWeight: 600, letterSpacing: "-.01em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        {/* Celular: precio arriba y código debajo; lado a lado no cabían en media pantalla. */}
+        <Box sx={{ mt: 0.75, display: "flex", flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "baseline" }, justifyContent: "space-between", gap: { xs: 0.25, sm: 1 }, minWidth: 0 }}>
+          <Typography sx={{ fontSize: { xs: 15, sm: 16 }, fontWeight: 600, letterSpacing: "-.01em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
             {formatCOP(artwork.price, { currency: artwork.currency })}
           </Typography>
           {artwork.tagId && (
-            <Typography sx={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 10, color: "text.disabled", ...ellipsis }}>
+            <Typography sx={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 10, color: "text.disabled", maxWidth: "100%", ...ellipsis }}>
               {artwork.tagId}
             </Typography>
           )}

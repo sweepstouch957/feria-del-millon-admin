@@ -37,7 +37,7 @@ export function SelectedArtwork({
           disabled={!img}
           sx={{
             position: "relative",
-            width: { xs: 120, sm: 104 },
+            width: { xs: 96, sm: 104 },
             aspectRatio: "1",
             flexShrink: 0,
             bgcolor: "action.hover",

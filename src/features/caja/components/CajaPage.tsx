@@ -30,13 +30,13 @@ const STEPS = ["Elegir obra", "Datos del comprador", "Cobro"];
 /** 1 Elegir obra → 2 Datos → 3 Cobro. Con la obra elegida, datos y cobro van en el mismo formulario. */
 function Steps({ current }: { current: number }) {
   return (
-    <Box component="ol" aria-label="Pasos de la venta" sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.25, listStyle: "none", p: 0, m: "0 0 16px" }}>
+    <Box component="ol" aria-label="Pasos de la venta" sx={{ display: "flex", alignItems: "center", flexWrap: "nowrap", gap: { xs: 0.75, sm: 1.25 }, listStyle: "none", p: 0, m: "0 0 16px", minWidth: 0 }}>
       {STEPS.map((label, i) => {
         const n = i + 1;
         const active = current === n || (current === 2 && n === 3);
         const doneStep = current > n && !active;
         return (
-          <Box component="li" key={label} aria-current={active ? "step" : undefined} sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+          <Box component="li" key={label} aria-current={active ? "step" : undefined} sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1.25 }, minWidth: 0 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box
                 component="span"
@@ -52,11 +52,12 @@ function Steps({ current }: { current: number }) {
               >
                 {doneStep ? "✓" : n}
               </Box>
-              <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: active || doneStep ? "text.primary" : "text.secondary" }}>
+              {/* Celular: solo el nombre del paso activo; los demás, el número. */}
+              <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", color: active || doneStep ? "text.primary" : "text.secondary", display: { xs: active ? "inline" : "none", sm: "inline" } }}>
                 {label}
               </Typography>
             </Box>
-            {n < STEPS.length && <Box component="span" aria-hidden sx={{ width: 28, height: "1px", bgcolor: "divider" }} />}
+            {n < STEPS.length && <Box component="span" aria-hidden sx={{ width: { xs: 14, sm: 28 }, flex: "none", height: "1px", bgcolor: "divider" }} />}
           </Box>
         );
       })}
@@ -121,7 +122,7 @@ function Caja({ eventId }: { eventId: string }) {
       <PageHeader
         crumb="Caja"
         title="Vender obra"
-        description="Primero escanea el QR de la obra o búscala por su nombre. Después sigue los pasos 1, 2 y 3."
+        description={wide ? "Primero escanea el QR de la obra o búscala por su nombre. Después sigue los pasos 1, 2 y 3." : undefined}
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
       <PracticeBanner />
@@ -160,7 +161,7 @@ function Caja({ eventId }: { eventId: string }) {
               overscrollBehavior: "contain",
             }}
           >
-            <CardContent sx={{ p: 2, "&:last-child": { pb: 0 } }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: 0 } }}>
               {done ? (
                 <Box sx={{ pb: 2 }}>
                   <SaleDone result={done} onNext={next} />

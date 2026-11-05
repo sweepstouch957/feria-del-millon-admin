@@ -42,10 +42,10 @@ const cityKey = (c: CityDoc) => String(c._id ?? c.id);
 const Step = ({ n, title, children }: { n: number; title: string; children: ReactNode }) => (
   <Stack spacing={1.5} component="section" aria-label={`Paso ${n}: ${title}`}>
     <Stack direction="row" alignItems="center" spacing={1.25}>
-      <Box aria-hidden sx={{ flex: "none", width: { xs: 34, sm: 24 }, height: { xs: 34, sm: 24 }, borderRadius: "50%", bgcolor: "text.primary", color: "background.default", display: "grid", placeItems: "center", fontSize: { xs: 18, sm: 13 }, fontWeight: 600 }}>
+      <Box aria-hidden sx={{ flex: "none", width: { xs: 28, sm: 24 }, height: { xs: 28, sm: 24 }, borderRadius: "50%", bgcolor: "text.primary", color: "background.default", display: "grid", placeItems: "center", fontSize: { xs: 15, sm: 13 }, fontWeight: 600 }}>
         {n}
       </Box>
-      <Typography component="h3" sx={{ fontSize: { xs: 22, sm: 16 }, fontWeight: 500 }}>{title}</Typography>
+      <Typography component="h3" sx={{ fontSize: { xs: 18, sm: 16 }, fontWeight: 500 }}>{title}</Typography>
     </Stack>
     {children}
   </Stack>
@@ -132,19 +132,20 @@ export const SaleForm = memo(function SaleForm({
       onSubmit={handleSubmit(onSubmit, onInvalid)}
       sx={{
         // Celular: grande para el dedo. Escritorio: compacto.
-        "& .MuiInputBase-input": { fontSize: { xs: 18, sm: 14.5 }, py: { xs: 1.75, sm: 0.75 } },
-        "& .MuiInputLabel-root": { fontSize: { xs: 17, sm: 12.5 } },
-        "& .MuiFormHelperText-root": { fontSize: { xs: 15, sm: 12 } },
+        // 16 px mínimo en el campo: con menos, el iPhone hace zoom al tocarlo.
+        "& .MuiInputBase-input": { fontSize: { xs: 16, sm: 14.5 }, py: { xs: 1.5, sm: 0.75 } },
+        "& .MuiInputLabel-root": { fontSize: { xs: 15, sm: 12.5 } },
+        "& .MuiFormHelperText-root": { fontSize: { xs: 13, sm: 12 } },
         // Tablet (pantalla táctil de cualquier ancho): campos y botones a la medida del dedo.
         "@media (pointer: coarse)": {
-          "& .MuiInputBase-input": { fontSize: 17, py: 1.5 },
-          "& .MuiInputLabel-root": { fontSize: 15.5 },
-          "& .MuiToggleButton-root": { py: 1.75, fontSize: 17 },
+          "& .MuiInputBase-input": { fontSize: 16, py: 1.5 },
+          "& .MuiInputLabel-root": { fontSize: 15 },
+          "& .MuiToggleButton-root": { py: 1.5, fontSize: 16 },
           "& .MuiButton-root": { minHeight: 48 },
         },
       }}
     >
-      <Stack spacing={{ xs: 3.5, sm: 2.5 }}>
+      <Stack spacing={{ xs: 3, sm: 2.5 }}>
         {stock > 1 && (
           <TextField
             label="¿Cuántas lleva?"
@@ -159,7 +160,7 @@ export const SaleForm = memo(function SaleForm({
         <Step n={1} title="¿Quién compra?">
           <CustomerPicker onPick={fillCustomer} />
           {picked && (
-            <Alert severity="info" sx={{ fontSize: { xs: 17, sm: 13.5 } }}>
+            <Alert severity="info" sx={{ fontSize: { xs: 14.5, sm: 13.5 } }}>
               Pregúntale a <strong>{picked}</strong> si estos datos están bien. Si algo cambió, corrígelo aquí.
             </Alert>
           )}
@@ -208,9 +209,9 @@ export const SaleForm = memo(function SaleForm({
                       key={m.value}
                       value={m.value}
                       sx={{
-                        py: { xs: 2, sm: 1 },
+                        py: { xs: 1.5, sm: 1 },
                         gap: 1.25,
-                        fontSize: { xs: 19, sm: 14.5 },
+                        fontSize: { xs: 16, sm: 14.5 },
                         textTransform: "none",
                         "&.Mui-selected, &.Mui-selected:hover": { bgcolor: "text.primary", color: "background.default" },
                       }}
@@ -243,7 +244,7 @@ export const SaleForm = memo(function SaleForm({
             aria-expanded={moreOpen}
             aria-controls={moreId}
             endIcon={<ChevronDown size={18} aria-hidden style={{ transform: moreOpen ? "rotate(180deg)" : undefined }} />}
-            sx={{ textTransform: "none", fontSize: { xs: 16, sm: 13.5 } }}
+            sx={{ textTransform: "none", fontSize: { xs: 15, sm: 13.5 } }}
           >
             {canLayaway ? "Descuento, apartar o indicaciones" : "Descuento o indicaciones"}
           </Button>
@@ -307,21 +308,22 @@ export const SaleForm = memo(function SaleForm({
           sx={{
             position: "sticky",
             bottom: 0,
-            mx: -2,
-            px: 2,
-            py: 1.5,
+            // Igual al padding de la tarjeta (CajaPage): el borde llega de lado a lado.
+            mx: { xs: -1.5, sm: -2 },
+            px: { xs: 1.5, sm: 2 },
+            py: { xs: 1.25, sm: 1.5 },
             bgcolor: "background.paper",
             borderTop: "1px solid",
             borderColor: "divider",
           }}
         >
-          <Typography sx={{ fontSize: { xs: 16, sm: 13 } }} color="text.secondary">
+          <Typography sx={{ fontSize: { xs: 14, sm: 13 } }} color="text.secondary">
             {apartar ? `Total ${formatCOP(total)} · abona hoy` : pctOff ? `Total con ${pctOff}% de descuento` : "Total a cobrar"}
           </Typography>
-          <Typography aria-live="polite" sx={{ fontSize: { xs: 34, sm: 24 }, fontWeight: 400, fontVariantNumeric: "tabular-nums", lineHeight: 1.2, mb: 1 }}>
+          <Typography aria-live="polite" sx={{ fontSize: { xs: 28, sm: 24 }, fontWeight: 400, fontVariantNumeric: "tabular-nums", lineHeight: 1.2, mb: 1 }}>
             {formatCOP(apartar ? Number(abono) || 0 : total)}
           </Typography>
-          <Button type="submit" fullWidth variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: { xs: 64, sm: 46 }, fontSize: { xs: 20, sm: 15 } }}>
+          <Button type="submit" fullWidth variant="contained" color="secondary" size="large" disabled={blocked} sx={{ minHeight: { xs: 54, sm: 46 }, fontSize: { xs: 17, sm: 15 } }}>
             {isPending ? "Registrando…" : uploading ? "Subiendo foto…" : apartar ? "Apartar" : "Cobrar"}
           </Button>
         </Box>
