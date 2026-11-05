@@ -63,7 +63,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const isArtist = !!roles.artista;
   const isCashier = !!(roles.cajero || roles.jefeCaja);
   const { canLayaway } = useCajaAccess();
-  const isBoxOffice = !!(roles as { taquilla?: boolean }).taquilla;
+  // Las cajeras también venden entradas: ven "Vender entradas" junto a su caja.
+  const isBoxOffice = !!(roles as { taquilla?: boolean }).taquilla || isCashier;
   const isEditor = !!(roles as { editor?: boolean }).editor;
 
   const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));

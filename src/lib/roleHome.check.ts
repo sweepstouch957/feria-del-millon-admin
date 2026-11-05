@@ -6,6 +6,8 @@ const cajera = { cajero: true };
 assert.equal(canOpen(cajera, "/caja"), true);
 assert.equal(canOpen(cajera, "/caja/cierre"), true);
 assert.equal(canOpen(cajera, "/tickets/validator"), true);
+assert.equal(canOpen(cajera, "/tickets/taquilla"), true);
+assert.equal(canOpen(cajera, "/tickets/asistentes"), false);
 assert.equal(canOpen(cajera, "/orders"), false);
 assert.equal(canOpen(cajera, "/reportes/ventas"), false);
 assert.equal(canOpen(cajera, "/orders/cartera"), false);

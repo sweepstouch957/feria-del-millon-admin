@@ -12,8 +12,9 @@ export function homeFor(roles: Roles = {}): string {
    panel (pedidos de todos, reportes, asistentes, ferias) no se abre aunque
    escriban la dirección. El backend lo exige igual; esto evita pantallas rotas. */
 const PATHS: Record<string, string[]> = {
-  cajero: ["/caja", "/tickets/validator"],
-  jefeCaja: ["/caja", "/tickets/validator", "/orders/cartera"],
+  // Desde el 5-nov las cajeras también venden entradas en taquilla.
+  cajero: ["/caja", "/tickets/validator", "/tickets/taquilla"],
+  jefeCaja: ["/caja", "/tickets/validator", "/tickets/taquilla", "/orders/cartera"],
   taquilla: ["/tickets/taquilla", "/tickets/validator", "/caja/guia"],
   artista: ["/", "/my"],
   editor: ["/personalizacion", "/comunicaciones", "/qr"],
