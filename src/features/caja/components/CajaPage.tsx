@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { Box, Card, CardContent, Typography, useMediaQuery } from "@mui/material";
 import { toast } from "sonner";
-import { headerHeight } from "@/components/layout/layoutConfig";
 import PageHeader from "@/components/ui/PageHeader";
 import { eyebrow } from "@/app/theme";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -143,22 +142,18 @@ function Caja({ eventId }: { eventId: string }) {
         )}
 
         {showCheckout && (
-          // Con scroll propio y debajo de la cabecera: si mide más que la pantalla,
-          // enfocar un campo movía toda la página y lo dejaba tapado arriba.
+          // Sin scroll propio: en tablets el scroll interno (sticky + overflow +
+          // overscroll contain) se trababa con el dedo y no se llegaba a apartar
+          // ni a cobrar. Ahora baja toda la página; total y botón quedan pegados
+          // abajo (overflow visible para que ese sticky funcione).
           <Card
             variant="outlined"
             sx={{
               borderRadius: 0,
+              overflow: "visible",
               // El formulario se acomoda al ancho de esta caja, no al de la pantalla.
               containerType: "inline-size",
               containerName: "cobro",
-              [`@media ${WIDE}`]: {
-                position: "sticky",
-                top: headerHeight + 12,
-                maxHeight: `calc(100dvh - ${headerHeight + 24}px)`,
-                overflowY: "auto",
-              },
-              overscrollBehavior: "contain",
             }}
           >
             <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: 0 } }}>
