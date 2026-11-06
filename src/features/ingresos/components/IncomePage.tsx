@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Table, TableBody,
+  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
 } from "@mui/material";
 import { Download, RefreshCw } from "lucide-react";
@@ -18,7 +18,7 @@ import { TICKET_TYPE_LABEL, type TicketSale } from "@services/ticket.service";
 import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
 import { formatCOP } from "@/utils/money";
 import { useIncome } from "../hooks/useIncome";
-import { appAmount, byMethod, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, type Customer, type MethodRow, type MethodTotal } from "../model/income";
+import { appAmount, buildCustomers, byMethod, dayOf, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, type Customer, type MethodRow, type MethodTotal } from "../model/income";
 
 const money = (n?: number) => formatCOP(n || 0, { code: true });
 const when = (d?: string) => (d ? new Date(d).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" }) : "");
@@ -241,8 +241,31 @@ export function IncomePage({ initialPanel }: { initialPanel?: string }) {
 function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: string }) {
   const router = useRouter();
   const [panel, setPanel] = useState<Panel>(PANELS.find((p) => p === initialPanel) ?? "boletos");
-  const { tickets, orders, apps, customers, ticketsTotal, ordersTotal, appsTotal, total, pending, applications, loading, failed, refetch } = useIncome(eventId);
+  const all = useIncome(eventId);
+  const { pending, applications, loading, failed, refetch } = all;
   const ticketAmount = (t: TicketSale) => Number(t.price || 0);
+
+  // Filtro por día (hora Colombia). Obras: cuenta cada pago/abono el día en que entró.
+  const [dayF, setDayF] = useState("");
+  const days = useMemo(() => {
+    const s = new Set<string>();
+    all.tickets.forEach((t) => s.add(dayOf(t.createdAt)));
+    all.orders.forEach((o) => orderPayments(o).forEach((p) => s.add(dayOf(p.at))));
+    all.apps.forEach((a) => s.add(dayOf(a.paidAt)));
+    s.delete("");
+    return [...s].sort().reverse();
+  }, [all.tickets, all.orders, all.apps]);
+  const onDay = (d?: string) => !dayF || dayOf(d) === dayF;
+  const tickets = dayF ? all.tickets.filter((t) => onDay(t.createdAt)) : all.tickets;
+  const orders = dayF ? all.orders.filter((o) => orderPayments(o).some((p) => onDay(p.at))) : all.orders;
+  const apps = dayF ? all.apps.filter((a) => onDay(a.paidAt)) : all.apps;
+  const customers = dayF ? buildCustomers(tickets, orders) : all.customers;
+  const orderPaysOnDay = (o: OrderDoc) => orderPayments(o).filter((p) => onDay(p.at));
+  const ticketsTotal = tickets.reduce((s, t) => s + ticketAmount(t), 0);
+  const ordersTotal = orders.reduce((s, o) => s + orderPaysOnDay(o).reduce((a, p) => a + p.amount, 0), 0);
+  const appsTotal = apps.reduce((s, a) => s + appAmount(a), 0);
+  const total = ticketsTotal + ordersTotal + appsTotal;
+  const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "short" });
 
   return (
     <Box>
@@ -257,6 +280,11 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
       <ReportTabs />
       {failed && <Alert severity="error" sx={{ mb: 2 }}>Una parte del reporte no cargó: las cifras pueden estar incompletas. Pulsa Actualizar.</Alert>}
 
+      <TextField select size="small" label="Día" value={dayF} onChange={(e) => setDayF(e.target.value)} sx={{ minWidth: 240, mb: 2 }}>
+        <MenuItem value="">Todos los días</MenuItem>
+        {days.map((d) => <MenuItem key={d} value={d} sx={{ textTransform: "capitalize" }}>{dayLabel(d)}</MenuItem>)}
+      </TextField>
+
       <KpiStrip
         loading={loading}
         items={[
@@ -270,7 +298,7 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
         ]}
       />
 
-      {!loading && <MethodTable rows={methodMatrix(tickets, orders, apps.map(appAmount))} />}
+      {!loading && <MethodTable rows={methodMatrix(tickets, orders, apps.map(appAmount), dayF)} />}
 
       {panel === "boletos" && (
         <>
@@ -281,8 +309,8 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
       )}
       {panel === "obras" && (
         <>
-          <Breakdown title="Por tipo de pago (cada abono con su método)" unit="pago(s)" items={byMethod(orders.flatMap(orderPayments), (p) => p.method, (p) => p.amount)} />
-          <Breakdown title="Por cajera" unit="venta(s)" items={groupTotals(orders, (o) => o.cashierName || o.invoice?.issuedBy || "En línea", orderIncome)} />
+          <Breakdown title="Por tipo de pago (cada abono con su método)" unit="pago(s)" items={byMethod(orders.flatMap(orderPaysOnDay), (p) => p.method, (p) => p.amount)} />
+          <Breakdown title="Por cajera" unit="venta(s)" items={groupTotals(orders, (o) => o.cashierName || o.invoice?.issuedBy || "En línea", (o) => orderPaysOnDay(o).reduce((a, p) => a + p.amount, 0))} />
         </>
       )}
       {panel === "inscripciones" && (

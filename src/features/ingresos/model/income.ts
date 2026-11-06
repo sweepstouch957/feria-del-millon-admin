@@ -87,18 +87,28 @@ type TicketLike = {
 export const orderIncome = (o: OrderLike) =>
   o.status === "paid" ? Number(o.total || 0) : o.status === "partial" ? Number(o.layaway?.amountPaid || 0) : 0;
 
-type OrderPayLike = OrderLike & { payment?: { method?: string }; layaway?: { amountPaid?: number; installments?: { amount?: number; method?: string }[] } };
+type OrderPayLike = OrderLike & {
+  paidAt?: string;
+  createdAt?: string;
+  payment?: { method?: string };
+  layaway?: { amountPaid?: number; installments?: { amount?: number; method?: string; at?: string }[] };
+};
+
+/** Día (YYYY-MM-DD) en hora Colombia. */
+export const dayOf = (d?: string | Date) => (d ? new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" }) : "");
 
 /**
- * Cada peso de una orden con su método: los abonos de una apartada van cada uno
- * con su método; lo que no esté en abonos va con el método de la orden.
+ * Cada peso de una orden con su método y su fecha: los abonos de una apartada van
+ * cada uno con su método y día; lo que no esté en abonos va con el método de la orden.
  */
-export function orderPayments(o: OrderPayLike): { method?: string; amount: number }[] {
+export function orderPayments(o: OrderPayLike): { method?: string; amount: number; at?: string }[] {
   const income = orderIncome(o);
   if (!income) return [];
-  const inst = (o.layaway?.installments || []).filter((i) => Number(i.amount) > 0).map((i) => ({ method: i.method || o.payment?.method, amount: Number(i.amount) }));
+  const inst = (o.layaway?.installments || [])
+    .filter((i) => Number(i.amount) > 0)
+    .map((i) => ({ method: i.method || o.payment?.method, amount: Number(i.amount), at: i.at }));
   const rest = income - inst.reduce((s, i) => s + i.amount, 0);
-  return rest > 0 ? [...inst, { method: o.payment?.method, amount: rest }] : inst;
+  return rest > 0 ? [...inst, { method: o.payment?.method, amount: rest, at: o.paidAt || o.createdAt }] : inst;
 }
 
 export type MethodRow = { label: string; tickets: number; orders: number; apps: number; total: number; count: number };
@@ -108,6 +118,8 @@ export function methodMatrix(
   tickets: { paymentMethod?: string; price?: number }[],
   orders: OrderPayLike[],
   appsAmounts: number[],
+  /** Solo los pagos de obras de ese día (YYYY-MM-DD); entradas e inscripciones llegan ya filtradas. */
+  day = "",
 ): MethodRow[] {
   const map = new Map<string, MethodRow>();
   const add = (method: string | undefined, col: "tickets" | "orders" | "apps", amount: number) => {
@@ -119,7 +131,7 @@ export function methodMatrix(
     map.set(label, r);
   };
   for (const t of tickets) add(t.paymentMethod, "tickets", Number(t.price || 0));
-  for (const o of orders) for (const p of orderPayments(o)) add(p.method, "orders", p.amount);
+  for (const o of orders) for (const p of orderPayments(o)) if (!day || dayOf(p.at) === day) add(p.method, "orders", p.amount);
   for (const a of appsAmounts) add("mercadopago", "apps", a);
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
