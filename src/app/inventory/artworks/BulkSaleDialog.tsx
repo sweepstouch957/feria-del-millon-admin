@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { toast } from "sonner";
 import { claimOrderStock, createOrder, markOrderPaid } from "@services/orders.service";
 import { CAJA_METHODS, type CajaMethod } from "@/features/caja/model/sale";
@@ -83,7 +83,7 @@ export default function BulkSaleDialog({
         invoice: { channel: "event_pos", issuedBy: cashier },
       });
       if (paid.fulfillmentError) toast.warning(`Pagada, pero revisar stock: ${paid.fulfillmentError}`);
-      toast.success(`${artworks.length} obras vendidas por ${formatCOP(order.total)}`);
+      toast.success(`${units} ${units === 1 ? "unidad vendida" : "unidades vendidas"} por ${formatCOP(order.total)}`);
       onDone();
     } catch (e: any) {
       const code = e?.response?.data?.error;
@@ -111,6 +111,9 @@ export default function BulkSaleDialog({
               }))
             }
           />
+          <Button size="small" variant="outlined" color="inherit" onClick={fillPending} sx={{ alignSelf: "flex-start", textTransform: "none" }}>
+            Aún no tengo los datos: poner «Por validar»
+          </Button>
           <TextField label="Nombre del comprador" value={f.name} onChange={set("name")} size="small" required />
           <Stack direction="row" spacing={1.5}>
             <TextField label="Correo" value={f.email} onChange={set("email")} size="small" required fullWidth />
@@ -122,7 +125,7 @@ export default function BulkSaleDialog({
           </Stack>
           <Stack direction="row" spacing={1.5}>
             <TextField
-              label="Precio por obra"
+              label="Precio por unidad"
               value={f.price}
               onChange={set("price")}
               size="small"
@@ -141,10 +144,19 @@ export default function BulkSaleDialog({
             <TextField label="¿Quién autorizó el descuento?" value={f.note} onChange={set("note")} size="small" required />
           )}
           <TextField label="Enlace del comprobante (opcional)" value={f.receipt} onChange={set("receipt")} size="small" />
+          <FormControlLabel
+            control={<Checkbox checked={allStock} onChange={(e) => setAllStock(e.target.checked)} size="small" />}
+            label="Vender todo el stock de cada obra (si tiene varias copias, todas)"
+          />
           <Typography variant="body2">
-            Total: <b>{formatCOP(total)}</b>
-            {discounted && ` · precio de lista ${formatCOP(artworks.reduce((s, a) => s + Number(a.price || 0), 0))}`}
+            {units} {units === 1 ? "unidad" : "unidades"} · Total: <b>{formatCOP(total)}</b>
+            {discounted && ` · precio de lista ${formatCOP(listTotal)}`}
           </Typography>
+          {lines.length < artworks.length && (
+            <Typography variant="caption" color="warning.main">
+              {artworks.length - lines.length} sin stock: no entran en la venta.
+            </Typography>
+          )}
           <Typography variant="caption" color="text.secondary">
             Queda como una sola venta pagada: las obras salen vendidas en el QR, suma en reportes y la artista la ve en su panel.
           </Typography>
