@@ -1,6 +1,6 @@
 // node --experimental-strip-types src/features/ingresos/model/income.check.ts
 import assert from "node:assert/strict";
-import { appAmount, buildCustomers, byMethod, fairConvocatorias, isCollected, methodLabel, monthlyIncome, orderIncome } from "./income.ts";
+import { appAmount, buildCustomers, byMethod, fairConvocatorias, isCollected, methodLabel, methodMatrix, monthlyIncome, orderIncome, orderPayments } from "./income.ts";
 
 assert.equal(appAmount({ paymentDetails: { transaction_amount: 40000 }, convocatoria: { fee: 1 } }), 40000);
 assert.equal(appAmount({ convocatoria: { fee: 50000 } }), 50000);
@@ -66,4 +66,15 @@ const months = monthlyIncome([
 assert.deepEqual(months.map((m) => m.month), ["2026-05", "2026-06", "2026-07"]);
 assert.equal(months[2].orders, 100);
 assert.deepEqual(monthlyIncome([]), []);
+// Apartada: 2 abonos con métodos distintos; pagada: todo a su método.
+const apartada = { status: "partial", total: 1000, payment: { method: "cash" }, layaway: { amountPaid: 500, installments: [{ amount: 200, method: "cash" }, { amount: 300, method: "transfer" }] } };
+assert.deepEqual(orderPayments(apartada), [{ method: "cash", amount: 200 }, { method: "transfer", amount: 300 }]);
+assert.deepEqual(orderPayments({ status: "paid", total: 900, payment: { method: "card_offline" } }), [{ method: "card_offline", amount: 900 }]);
+// Abonos que no cubren lo pagado: el resto va al método de la orden.
+assert.deepEqual(orderPayments({ status: "paid", total: 900, payment: { method: "cash" }, layaway: { installments: [{ amount: 400, method: "transfer" }] } }), [{ method: "transfer", amount: 400 }, { method: "cash", amount: 500 }]);
+const matrix = methodMatrix([{ paymentMethod: "cash", price: 35000 }], [apartada], [40000]);
+assert.deepEqual(matrix.find((r) => r.label === "Efectivo"), { label: "Efectivo", tickets: 35000, orders: 200, apps: 0, total: 35200, count: 2 });
+assert.equal(matrix.find((r) => r.label === "En línea")?.apps, 40000);
+assert.equal(matrix.find((r) => r.label === "Transferencia")?.orders, 300);
+
 console.log("income ok");

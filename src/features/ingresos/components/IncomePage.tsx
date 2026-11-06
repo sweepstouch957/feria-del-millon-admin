@@ -18,7 +18,7 @@ import { TICKET_TYPE_LABEL, type TicketSale } from "@services/ticket.service";
 import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
 import { formatCOP } from "@/utils/money";
 import { useIncome } from "../hooks/useIncome";
-import { appAmount, byMethod, groupTotals, methodLabel, orderIncome, type Customer, type MethodTotal } from "../model/income";
+import { appAmount, byMethod, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, type Customer, type MethodRow, type MethodTotal } from "../model/income";
 
 const money = (n?: number) => formatCOP(n || 0, { code: true });
 const when = (d?: string) => (d ? new Date(d).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" }) : "");
@@ -48,7 +48,13 @@ const ORDER_COLS: CsvCol<OrderDoc>[] = [
   { header: "Fecha", value: (o) => when(o.paidAt || o.createdAt) },
   { header: "Comprador", value: (o) => o.buyer?.name },
   { header: "Obras", value: (o) => o.items?.map((i) => i.title).filter(Boolean).join(", ") },
-  { header: "Tipo de pago", value: (o) => (o.status === "partial" ? "Apartada" : methodLabel(o.payment?.method)) },
+  {
+    header: "Tipo de pago",
+    value: (o) => {
+      const methods = [...new Set(orderPayments(o).map((p) => methodLabel(p.method)))].join(" + ");
+      return o.status === "partial" ? `Apartada · ${methods}` : methods;
+    },
+  },
   { header: "Cajera", value: (o) => o.cashierName || o.invoice?.issuedBy || "En línea" },
   { header: "Recibido", value: (o) => orderIncome(o) },
   { header: "Correo", value: (o) => o.buyer?.email },
@@ -98,6 +104,66 @@ function Breakdown({ title, items, unit }: { title: string; items: MethodTotal[]
     </Box>
   );
 }
+const METHOD_COLS: CsvCol<MethodRow>[] = [
+  { header: "Tipo de pago", value: (r) => r.label },
+  { header: "Entradas", value: (r) => r.tickets },
+  { header: "Obras", value: (r) => r.orders },
+  { header: "Inscripciones", value: (r) => r.apps },
+  { header: "Total", value: (r) => r.total },
+  { header: "Pagos", value: (r) => r.count },
+];
+
+/** Todo junto por tipo de pago: cuánto entró en efectivo, datáfono, transferencia y en línea. */
+function MethodTable({ rows }: { rows: MethodRow[] }) {
+  if (!rows.length) return null;
+  const sum = (k: "tickets" | "orders" | "apps" | "total" | "count") => rows.reduce((s, r) => s + r[k], 0);
+  const cell = { fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" } as const;
+  return (
+    <Box sx={{ my: 2 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+        <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>Todo por tipo de pago</Typography>
+        <Button size="small" startIcon={<Download size={14} />} onClick={() => downloadCsv(`tipos_de_pago_${stamp()}.csv`, toCsv(rows, METHOD_COLS))}>
+          Descargar Excel
+        </Button>
+      </Stack>
+      <TableContainer sx={{ border: "1px solid", borderColor: "divider" }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Tipo de pago</TableCell>
+              <TableCell align="right">Entradas</TableCell>
+              <TableCell align="right">Obras</TableCell>
+              <TableCell align="right">Inscripciones</TableCell>
+              <TableCell align="right">Total</TableCell>
+              <TableCell align="right">Pagos</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.label}>
+                <TableCell sx={{ fontWeight: 600 }}>{r.label}</TableCell>
+                <TableCell align="right" sx={cell}>{money(r.tickets)}</TableCell>
+                <TableCell align="right" sx={cell}>{money(r.orders)}</TableCell>
+                <TableCell align="right" sx={cell}>{money(r.apps)}</TableCell>
+                <TableCell align="right" sx={{ ...cell, fontWeight: 700 }}>{money(r.total)}</TableCell>
+                <TableCell align="right" sx={cell}>{r.count}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow sx={{ "& td": { fontWeight: 700, borderTop: "2px solid", borderColor: "divider" } }}>
+              <TableCell>Total</TableCell>
+              <TableCell align="right" sx={cell}>{money(sum("tickets"))}</TableCell>
+              <TableCell align="right" sx={cell}>{money(sum("orders"))}</TableCell>
+              <TableCell align="right" sx={cell}>{money(sum("apps"))}</TableCell>
+              <TableCell align="right" sx={cell}>{money(sum("total"))}</TableCell>
+              <TableCell align="right" sx={cell}>{sum("count")}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+}
+
 const MONEY_HEADERS = new Set(["Valor", "Total de la orden", "Recibido", "Saldo", "En entradas", "En obras", "Total"]);
 const SHOW = (h: string, v: unknown) => (MONEY_HEADERS.has(h) ? money(Number(v)) : String(v ?? "") || "—");
 
@@ -204,6 +270,8 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
         ]}
       />
 
+      {!loading && <MethodTable rows={methodMatrix(tickets, orders, apps.map(appAmount))} />}
+
       {panel === "boletos" && (
         <>
           <Breakdown title="Por tipo de pago" unit="entrada(s)" items={byMethod(tickets, (t) => t.paymentMethod, ticketAmount)} />
@@ -213,7 +281,7 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
       )}
       {panel === "obras" && (
         <>
-          <Breakdown title="Por tipo de pago" unit="venta(s)" items={byMethod(orders, (o) => (o.status === "partial" ? "Apartadas (abonos)" : o.payment?.method), orderIncome)} />
+          <Breakdown title="Por tipo de pago (cada abono con su método)" unit="pago(s)" items={byMethod(orders.flatMap(orderPayments), (p) => p.method, (p) => p.amount)} />
           <Breakdown title="Por cajera" unit="venta(s)" items={groupTotals(orders, (o) => o.cashierName || o.invoice?.issuedBy || "En línea", orderIncome)} />
         </>
       )}

@@ -87,6 +87,43 @@ type TicketLike = {
 export const orderIncome = (o: OrderLike) =>
   o.status === "paid" ? Number(o.total || 0) : o.status === "partial" ? Number(o.layaway?.amountPaid || 0) : 0;
 
+type OrderPayLike = OrderLike & { payment?: { method?: string }; layaway?: { amountPaid?: number; installments?: { amount?: number; method?: string }[] } };
+
+/**
+ * Cada peso de una orden con su método: los abonos de una apartada van cada uno
+ * con su método; lo que no esté en abonos va con el método de la orden.
+ */
+export function orderPayments(o: OrderPayLike): { method?: string; amount: number }[] {
+  const income = orderIncome(o);
+  if (!income) return [];
+  const inst = (o.layaway?.installments || []).filter((i) => Number(i.amount) > 0).map((i) => ({ method: i.method || o.payment?.method, amount: Number(i.amount) }));
+  const rest = income - inst.reduce((s, i) => s + i.amount, 0);
+  return rest > 0 ? [...inst, { method: o.payment?.method, amount: rest }] : inst;
+}
+
+export type MethodRow = { label: string; tickets: number; orders: number; apps: number; total: number; count: number };
+
+/** Todo por tipo de pago: entradas, obras (abono por abono) e inscripciones (en línea). */
+export function methodMatrix(
+  tickets: { paymentMethod?: string; price?: number }[],
+  orders: OrderPayLike[],
+  appsAmounts: number[],
+): MethodRow[] {
+  const map = new Map<string, MethodRow>();
+  const add = (method: string | undefined, col: "tickets" | "orders" | "apps", amount: number) => {
+    const label = methodLabel(method);
+    const r = map.get(label) ?? { label, tickets: 0, orders: 0, apps: 0, total: 0, count: 0 };
+    r[col] += amount;
+    r.total += amount;
+    r.count += 1;
+    map.set(label, r);
+  };
+  for (const t of tickets) add(t.paymentMethod, "tickets", Number(t.price || 0));
+  for (const o of orders) for (const p of orderPayments(o)) add(p.method, "orders", p.amount);
+  for (const a of appsAmounts) add("mercadopago", "apps", a);
+  return [...map.values()].sort((a, b) => b.total - a.total);
+}
+
 export type Customer = {
   email: string;
   name: string;
