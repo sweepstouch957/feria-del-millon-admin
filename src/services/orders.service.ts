@@ -169,6 +169,56 @@ export const createOrder = async (
     return normalizeId(data);
 };
 
+// ─── Reclamos de venta perdida (/reclamo en la tienda) ───────────────
+export type ClaimMethod = "efectivo" | "datafono" | "transferencia" | "en_linea" | "otro";
+export const CLAIM_METHOD_LABEL: Record<ClaimMethod, string> = {
+    efectivo: "Efectivo", datafono: "Datáfono", transferencia: "Transferencia", en_linea: "En línea", otro: "Otro",
+};
+export interface SaleClaim {
+    id: string;
+    status: "pending" | "resolved" | "rejected";
+    artworkId: string | null;
+    artworkText: string;
+    artworkTitle: string;
+    artistId: string;
+    artistName?: string;
+    event: string | null;
+    buyer: { name: string; email: string; phone: string; document: string; address: string };
+    purchasedOn: string;
+    method: ClaimMethod;
+    amount: number;
+    voucher: string;
+    seller: string;
+    note: string;
+    existingOrderId: string | null;
+    orderId?: string | null;
+    adminNote?: string;
+    artist: { decision: "confirmed" | "denied" | null; note: string; at: string | null };
+    artwork: { id: string; title: string; price: number; currency: string; stock: number; artist: string } | null;
+    createdAt: string;
+}
+export const listSaleClaims = async (status?: SaleClaim["status"]): Promise<SaleClaim[]> => {
+    const { data } = await apiClient.get<SaleClaim[]>("/order/orders/claims", { params: status ? { status } : {}, withCredentials: true });
+    return data;
+};
+export const updateSaleClaim = async (id: string, body: { status: SaleClaim["status"]; orderId?: string; note?: string }) => {
+    const { data } = await apiClient.patch(`/order/orders/claims/${id}`, body, { withCredentials: true });
+    return data;
+};
+export interface ArtistClaim {
+    id: string; status: SaleClaim["status"]; artworkTitle: string; buyerName: string; purchasedOn: string;
+    method: ClaimMethod; amount: number; voucher: string; seller: string; note: string;
+    decision: "confirmed" | "denied" | null; decisionNote: string; createdAt: string;
+}
+export const listMyArtistClaims = async (): Promise<ArtistClaim[]> => {
+    const { data } = await apiClient.get<ArtistClaim[]>("/order/orders/claims/mine/artist", { withCredentials: true });
+    return data;
+};
+export const decideArtistClaim = async (id: string, decision: "confirmed" | "denied", note?: string) => {
+    const { data } = await apiClient.patch(`/order/orders/claims/mine/artist/${id}`, { decision, note }, { withCredentials: true });
+    return data;
+};
+
 /** GET /order/orders (filtros por event, status, buyerEmail, buyerPhone) */
 export const listOrders = async (params?: {
     event?: string;

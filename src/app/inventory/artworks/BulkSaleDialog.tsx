@@ -21,20 +21,25 @@ export default function BulkSaleDialog({
   onDone,
   eventId,
   artworks,
+  initial,
+  title,
 }: {
   open: boolean;
   onClose: () => void;
-  onDone: () => void;
+  onDone: (orderId: string) => void;
   eventId: string;
   artworks: any[];
+  /** Datos ya conocidos (reclamo de venta perdida): llegan llenos y se vende 1 unidad. */
+  initial?: Partial<{ name: string; email: string; phone: string; document: string; address: string; price: string; method: CajaMethod; note: string; receipt: string }>;
+  title?: string;
 }) {
   const { user } = useAuth();
-  const [f, setF] = useState({ name: "", email: "", phone: "", document: "", address: "", price: "", method: "whatsapp" as CajaMethod, note: "", receipt: "" });
+  const [f, setF] = useState({ name: "", email: "", phone: "", document: "", address: "", price: "", method: "whatsapp" as CajaMethod, note: "", receipt: "", ...initial });
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: any) => setF((s) => ({ ...s, [k]: e.target.value }));
 
   // Todo el stock: cada obra se vende con todas sus copias disponibles (una edición de 5 = 5 unidades).
-  const [allStock, setAllStock] = useState(true);
+  const [allStock, setAllStock] = useState(!initial);
   const lines = artworks
     .map((a) => ({ a, qty: allStock ? Math.max(0, Number(a.stock ?? 0)) : 1 }))
     .filter((l) => l.qty > 0);
@@ -84,7 +89,7 @@ export default function BulkSaleDialog({
       });
       if (paid.fulfillmentError) toast.warning(`Pagada, pero revisar stock: ${paid.fulfillmentError}`);
       toast.success(`${units} ${units === 1 ? "unidad vendida" : "unidades vendidas"} por ${formatCOP(order.total)}`);
-      onDone();
+      onDone(order.id);
     } catch (e: any) {
       const code = e?.response?.data?.error;
       toast.error(code === "sin_stock" ? "Alguna obra ya estaba vendida. No se cobró nada." : code || e?.message || "No se pudo registrar la venta.");
@@ -95,7 +100,7 @@ export default function BulkSaleDialog({
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Vender {artworks.length} {artworks.length === 1 ? "obra" : "obras"} juntas</DialogTitle>
+      <DialogTitle>{title || `Vender ${artworks.length} ${artworks.length === 1 ? "obra" : "obras"} juntas`}</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
           {/* Si ya compró o tiene entrada/invitación, sus datos se llenan de un toque. */}
