@@ -61,6 +61,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import PublishArtworksDialog from "@components/views/events/PublishArtworksDialog";
+import BulkSaleDialog from "./BulkSaleDialog";
 import { useDialogs } from "@/components/ui/DialogsProvider";
 import { toast } from "sonner";
 
@@ -108,6 +109,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
   // Eliminadas con ventas quedan archivadas: fuera de la tienda y de esta lista.
   const [archived, setArchived] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [saleOpen, setSaleOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // Pabellones con sus artistas: de aquí salen los dos selectores (y el
@@ -688,6 +690,11 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                   Publicar {selHidden.length}
                 </Button>
               )}
+              {!archived && (
+                <Button size="small" variant="contained" color="primary" disabled={busyIds.size > 0} onClick={() => setSaleOpen(true)}>
+                  Vender {selected.size} juntas
+                </Button>
+              )}
               <Button size="small" color="inherit" onClick={() => setSelected(new Set())} sx={{ textTransform: "none" }}>
                 Quitar selección
               </Button>
@@ -872,6 +879,16 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
         </TableContainer>
         </ResponsiveRows>
       </Card>
+
+      {saleOpen && (
+        <BulkSaleDialog
+          open
+          eventId={event}
+          artworks={selectedRows}
+          onClose={() => setSaleOpen(false)}
+          onDone={() => { setSaleOpen(false); setSelected(new Set()); refreshAll(); }}
+        />
+      )}
 
       <PublishArtworksDialog
         open={publishOpen}
