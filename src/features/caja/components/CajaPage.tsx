@@ -72,7 +72,7 @@ function UnsavedPracticeAlert() {
   if (!n) return null;
   return (
     <Alert severity="error" sx={{ mb: 2 }} action={<Button color="inherit" size="small" href="/caja/cierre">Ver</Button>}>
-      {n} venta(s) hechas en modo práctica NO se guardaron. Ábrelas en "Mi cierre del día" y vuelve a registrarlas.
+      {n} venta(s) hechas en modo práctica NO se guardaron. Ábrelas en «Mi cierre del día» y vuelve a registrarlas.
     </Alert>
   );
 }

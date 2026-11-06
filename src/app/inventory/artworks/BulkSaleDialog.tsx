@@ -5,6 +5,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, St
 import { toast } from "sonner";
 import { claimOrderStock, createOrder, markOrderPaid } from "@services/orders.service";
 import { CAJA_METHODS, type CajaMethod } from "@/features/caja/model/sale";
+import { CustomerPicker } from "@/features/caja/components/CustomerPicker";
 import { useAuth } from "@/provider/authProvider";
 import { formatCOP } from "@/utils/money";
 
@@ -37,7 +38,7 @@ export default function BulkSaleDialog({
   const discounted = unit > 0 && artworks.some((a) => unit < Number(a.price));
   const tooHigh = unit > 0 && artworks.some((a) => unit > Number(a.price));
   const invalid =
-    !artworks.length || f.name.trim().length < 3 || !/^\S+@\S+\.\S+$/.test(f.email.trim()) || f.phone.trim().length < 7 ||
+    !artworks.length || f.name.trim().length < 3 || !/^\S+@\S+\.\S+$/.test(f.email.trim()) ||
     tooHigh || (discounted && f.note.trim().length < 3);
 
   const submit = async () => {
@@ -53,7 +54,7 @@ export default function BulkSaleDialog({
           currency: a.currency ?? "COP",
         })),
         discountNote: discounted ? f.note.trim() : undefined,
-        buyer: { name: f.name.trim(), email: f.email.trim(), phone: f.phone.trim(), document: f.document.trim() || undefined },
+        buyer: { name: f.name.trim(), email: f.email.trim(), phone: f.phone.trim() || undefined, document: f.document.trim() || undefined },
         userId: user?.id,
       });
       // El servidor rehace el total; si el descuento no pasó, no se cobra a ciegas.
@@ -86,10 +87,23 @@ export default function BulkSaleDialog({
       <DialogTitle>Vender {artworks.length} {artworks.length === 1 ? "obra" : "obras"} juntas</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
+          {/* Si ya compró o tiene entrada/invitación, sus datos se llenan de un toque. */}
+          <CustomerPicker
+            onPick={(c) =>
+              setF((s) => ({
+                ...s,
+                name: c.name || s.name,
+                email: c.email || s.email,
+                phone: c.phone || s.phone,
+                document: c.document || s.document,
+                address: [c.address?.line1, (c as any).cityName].filter(Boolean).join(", ") || s.address,
+              }))
+            }
+          />
           <TextField label="Nombre del comprador" value={f.name} onChange={set("name")} size="small" required />
           <Stack direction="row" spacing={1.5}>
             <TextField label="Correo" value={f.email} onChange={set("email")} size="small" required fullWidth />
-            <TextField label="Teléfono" value={f.phone} onChange={set("phone")} size="small" required fullWidth />
+            <TextField label="Teléfono" value={f.phone} onChange={set("phone")} size="small" fullWidth />
           </Stack>
           <Stack direction="row" spacing={1.5}>
             <TextField label="Cédula / NIT" value={f.document} onChange={set("document")} size="small" fullWidth />
