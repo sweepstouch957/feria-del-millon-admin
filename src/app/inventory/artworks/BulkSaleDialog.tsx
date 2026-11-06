@@ -33,12 +33,23 @@ export default function BulkSaleDialog({
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: any) => setF((s) => ({ ...s, [k]: e.target.value }));
 
+  // Todo el stock: cada obra se vende con todas sus copias disponibles (una edición de 5 = 5 unidades).
+  const [allStock, setAllStock] = useState(true);
+  const lines = artworks
+    .map((a) => ({ a, qty: allStock ? Math.max(0, Number(a.stock ?? 0)) : 1 }))
+    .filter((l) => l.qty > 0);
+  const units = lines.reduce((s, l) => s + l.qty, 0);
   const unit = Number(f.price.replace(/\D/g, "")) || 0;
-  const total = unit ? unit * artworks.length : artworks.reduce((s, a) => s + Number(a.price || 0), 0);
+  const total = lines.reduce((s, l) => s + l.qty * (unit || Number(l.a.price || 0)), 0);
+  const listTotal = lines.reduce((s, l) => s + l.qty * Number(l.a.price || 0), 0);
+  // Sin datos del comprador aún: se registra la venta y luego se corrigen en la orden.
+  // ponytail: correo @invitado.invalid (dominio reservado) = no le llega nada a nadie.
+  const fillPending = () =>
+    setF((s) => ({ ...s, name: "Por validar", email: "porvalidar@invitado.invalid", phone: "", document: "", address: "Por validar", note: s.note || "Por validar" }));
   const discounted = unit > 0 && artworks.some((a) => unit < Number(a.price));
   const tooHigh = unit > 0 && artworks.some((a) => unit > Number(a.price));
   const invalid =
-    !artworks.length || f.name.trim().length < 3 || !/^\S+@\S+\.\S+$/.test(f.email.trim()) ||
+    !units || f.name.trim().length < 3 || !/^\S+@\S+\.\S+$/.test(f.email.trim()) ||
     tooHigh || (discounted && f.note.trim().length < 3);
 
   const submit = async () => {
@@ -46,10 +57,10 @@ export default function BulkSaleDialog({
     try {
       const order = await createOrder({
         event: eventId,
-        items: artworks.map((a) => ({
+        items: lines.map(({ a, qty }) => ({
           artworkId: String(a.id ?? a._id),
           artistId: String(a.artist?._id ?? a.artist ?? ""),
-          qty: 1,
+          qty,
           unitPrice: unit || Number(a.price),
           currency: a.currency ?? "COP",
         })),
