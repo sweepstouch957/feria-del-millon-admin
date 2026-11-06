@@ -168,6 +168,7 @@ export default function ArtworkDetailPage() {
   const [form, setForm] = useState({
     title: "",
     price: "",
+    stock: "",
     status: "",
     description: "",
     image: "",
@@ -180,6 +181,7 @@ export default function ArtworkDetailPage() {
     setForm({
       title: art.title ?? "",
       price: art.price != null ? String(art.price) : "",
+      stock: art.stock != null ? String(art.stock) : "",
       status: art.status ?? "",
       description: art.description ?? "",
       image: art.image ?? "",
@@ -199,6 +201,8 @@ export default function ArtworkDetailPage() {
         image: form.image || art?.image,
         hiddenUntilEvent: form.hiddenUntilEvent,
       };
+      // Solo si cambió: el backend reconcilia las copias disponibles con el stock.
+      if (form.stock !== "" && Number(form.stock) !== art?.stock) payload.stock = Number(form.stock);
       const res = await patchArtwork(id, payload);
       return res;
     },
@@ -604,6 +608,17 @@ export default function ArtworkDetailPage() {
                         ),
                       }}
                       sx={{ flex: 1 }}
+                    />
+
+                    <TextField
+                      label="Stock (copias disponibles)"
+                      type="number"
+                      value={form.stock}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, stock: e.target.value }))
+                      }
+                      inputProps={{ min: 0 }}
+                      sx={{ width: { xs: "100%", sm: 200 } }}
                     />
 
                     <TextField
