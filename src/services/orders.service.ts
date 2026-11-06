@@ -200,6 +200,12 @@ export const refundOrder = async (
     return data;
 };
 
+/** POST /order/orders/:id/payment-method — corrige efectivo/datáfono/transferencia de una venta de caja. */
+export const changeOrderPaymentMethod = async (orderId: string, method: string): Promise<{ ok: boolean; method: string }> => {
+    const { data } = await apiClient.post(`/order/orders/${orderId}/payment-method`, { method }, { withCredentials: true });
+    return data;
+};
+
 export const markOrderPaid = async (
     orderId: string,
     payload: MarkOrderPaidInput

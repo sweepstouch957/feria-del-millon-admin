@@ -13,6 +13,7 @@ import { clearPracticeSales, listPracticeSales } from "../model/practice";
 import type { SalesLine } from "@services/orders.service";
 import { useCajaAccess } from "../hooks/useCajaAccess";
 import { PracticeBanner } from "./PracticeBanner";
+import { MethodSelect } from "./MethodSelect";
 
 /** Cierre de caja: lo que cobró la cajera en sesión, para cuadrar al final del día. */
 export function MySalesPage() {
@@ -100,13 +101,15 @@ export function MySalesPage() {
 
       <Stack divider={<Box sx={{ borderTop: "1px solid", borderColor: "divider" }} />}>
         {lines.map((l, i) => (
-          <Box key={`${l.orderId}-${i}`} sx={{ py: 1.25, display: "flex", gap: 2, alignItems: "baseline" }}>
+          <Box key={`${l.orderId}-${i}`} sx={{ py: 1.25, display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography noWrap>{l.artwork}</Typography>
               <Typography variant="body2" color="text.secondary" noWrap>
-                {[l.artist, l.buyer, METHOD_LABEL[l.method] ?? l.method].filter(Boolean).join(" · ")}
+                {[l.artist, l.buyer, l.method in METHOD_LABEL ? "" : l.method].filter(Boolean).join(" · ")}
               </Typography>
             </Box>
+            {/* Venta en lote: cambiar una línea cambia todo el pedido. */}
+            <MethodSelect orderId={l.orderId} method={l.method} />
             <Typography sx={{ fontVariantNumeric: "tabular-nums" }}>{formatCOP(l.amount)}</Typography>
           </Box>
         ))}
