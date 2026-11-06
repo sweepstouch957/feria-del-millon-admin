@@ -200,6 +200,19 @@ export const refundOrder = async (
     return data;
 };
 
+/** Correo "confirme su dirección de entrega" (también confirma la compra). */
+export const getDeliveryConfirmSummary = async (event: string): Promise<{ buyers: number; pending: number; confirmed: number }> => {
+    const { data } = await apiClient.get("/order/orders/delivery-confirm/summary", { params: { event }, withCredentials: true });
+    return data;
+};
+export const sendDeliveryConfirm = async (
+    event: string,
+    mode: "test" | "pending"
+): Promise<{ ok: boolean; to?: string; sample?: string; queued?: number }> => {
+    const { data } = await apiClient.post("/order/orders/delivery-confirm/send", { event, mode }, { withCredentials: true });
+    return data;
+};
+
 /** POST /order/orders/:id/payment-method — corrige efectivo/datáfono/transferencia de una venta de caja. */
 export const changeOrderPaymentMethod = async (orderId: string, method: string): Promise<{ ok: boolean; method: string }> => {
     const { data } = await apiClient.post(`/order/orders/${orderId}/payment-method`, { method }, { withCredentials: true });

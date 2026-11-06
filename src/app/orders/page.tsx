@@ -6,7 +6,8 @@ import {
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   CircularProgress, LinearProgress, IconButton, Tooltip, Button,
 } from "@mui/material";
-import { RefreshCw, FileSpreadsheet, Plus, Eye } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, Plus, Eye, Mail } from "lucide-react";
+import { DeliveryConfirmDialog } from "./DeliveryConfirmDialog";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
 import { useQuery } from "@tanstack/react-query";
 import { listOrders, listCustomers, type OrderDoc } from "@services/orders.service";
@@ -30,6 +31,7 @@ export default function OrdersPage() {
   const [status, setStatus] = React.useState<OrderDoc["status"] | "">("");
   const [q, setQ] = React.useState("");
   const [detail, setDetail] = React.useState<OrderDoc | null>(null);
+  const [mailOpen, setMailOpen] = React.useState(false);
 
   const { data: orders = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: ["orders", "list", status],
@@ -93,6 +95,7 @@ export default function OrdersPage() {
         description="Todas las ventas de obras, en línea y en caja."
         actions={[
           { label: "Vender obra", kind: "pri", icon: <Plus size={14} />, href: "/caja" },
+          { label: "Correo de dirección", kind: "sec", icon: <Mail size={14} />, onClick: () => setMailOpen(true) },
           {
             label: exporting ? "Exportando…" : "Exportar compradores",
             kind: "sec",
@@ -214,6 +217,7 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
       <OrderDetailDialog order={detail} all={orders} onClose={() => setDetail(null)} />
+      <DeliveryConfirmDialog open={mailOpen} onClose={() => setMailOpen(false)} />
     </Box>
   );
 }
