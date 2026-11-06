@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  Alert, Avatar, Box, Button, Chip, Divider, Drawer, IconButton, LinearProgress, Skeleton, Stack, Tab, Tabs, TextField, Typography,
+  Alert, Avatar, Box, Button, Chip, Divider, Drawer, IconButton, LinearProgress, Skeleton, Slider, Stack, Tab, Tabs, TextField, Typography,
 } from "@mui/material";
 import { AlertTriangle, ImageOff, Images, Mail, MessageCircle, Pencil, Plus, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -76,6 +76,8 @@ export default function ArtistLoadDrawer({
   const [draftReview, setDraftReview] = React.useState("");
   const [draftBio, setDraftBio] = React.useState("");
   const [draftPhoto, setDraftPhoto] = React.useState("");
+  // Encuadre vertical en el círculo de su página (0 arriba, 100 abajo). Igual que la tienda.
+  const [draftPhotoY, setDraftPhotoY] = React.useState(25);
   const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
   const pickPhoto = async (file?: File) => {
     if (!file) return;
@@ -111,6 +113,7 @@ export default function ArtistLoadDrawer({
         projectReview: draftReview.trim(),
         bio: draftBio.trim(),
         profilePhotoUrl: draftPhoto,
+        profilePhotoY: draftPhotoY,
       }),
     onSuccess: () => {
       toast.success("Perfil actualizado");
@@ -275,12 +278,27 @@ export default function ArtistLoadDrawer({
               {tab === 1 && data && editing && (
                 <Box sx={{ maxWidth: 620, display: "grid", gap: 2 }}>
                   <Stack direction="row" alignItems="center" gap={2} flexWrap="wrap">
-                    <Avatar src={draftPhoto || undefined} sx={{ width: 72, height: 72 }}>{initials(row?.name || "")}</Avatar>
-                    <Button component="label" variant="outlined" size="small" disabled={uploadingPhoto} sx={{ textTransform: "none" }}>
-                      {uploadingPhoto ? "Subiendo…" : "Cambiar foto de perfil"}
-                      <input hidden type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} />
-                    </Button>
-                    {draftPhoto && <Button size="small" color="inherit" onClick={() => setDraftPhoto("")} sx={{ textTransform: "none" }}>Quitar</Button>}
+                    <Avatar
+                      src={draftPhoto || undefined}
+                      sx={{ width: 110, height: 110, "& img": { objectPosition: `50% ${draftPhotoY}%` } }}
+                    >
+                      {initials(row?.name || "")}
+                    </Avatar>
+                    <Stack gap={1}>
+                      <Stack direction="row" gap={1}>
+                        <Button component="label" variant="outlined" size="small" disabled={uploadingPhoto} sx={{ textTransform: "none" }}>
+                          {uploadingPhoto ? "Subiendo…" : "Cambiar foto de perfil"}
+                          <input hidden type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} />
+                        </Button>
+                        {draftPhoto && <Button size="small" color="inherit" onClick={() => setDraftPhoto("")} sx={{ textTransform: "none" }}>Quitar</Button>}
+                      </Stack>
+                      {draftPhoto && (
+                        <Box sx={{ width: 240 }}>
+                          <Typography variant="caption" color="text.secondary">Mover la foto arriba / abajo (que se vea la cara)</Typography>
+                          <Slider size="small" min={0} max={100} value={draftPhotoY} onChange={(_, v) => setDraftPhotoY(v as number)} />
+                        </Box>
+                      )}
+                    </Stack>
                   </Stack>
                   <TextField
                     label="Bio del artista" value={draftBio} onChange={(e) => setDraftBio(e.target.value)}
@@ -310,6 +328,7 @@ export default function ArtistLoadDrawer({
                         setDraftReview(data.application?.projectReview || "");
                         setDraftBio(data.application?.bio || "");
                         setDraftPhoto(data.application?.profilePhotoUrl || "");
+                        setDraftPhotoY(data.application?.profilePhotoY ?? 25);
                         setEditing(true);
                       }}>
                       Editar
