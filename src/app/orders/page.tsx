@@ -6,7 +6,8 @@ import {
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   CircularProgress, LinearProgress, IconButton, Tooltip, Button,
 } from "@mui/material";
-import { RefreshCw, FileSpreadsheet, Plus, Eye, Mail } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, Plus, Eye, Mail, ExternalLink } from "lucide-react";
+import { SHOP_URL } from "@core/constants";
 import { DeliveryConfirmDialog } from "./DeliveryConfirmDialog";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
 import { useQuery } from "@tanstack/react-query";
@@ -75,8 +76,18 @@ export default function OrdersPage() {
   const pendingTotal = rows
     .filter((o) => o.status === "partial")
     .reduce((a, o) => a + Number(o.total || 0), 0);
-  const items = (o: OrderDoc) =>
-    (o.items || []).map((it) => (it.title ? `${it.title}${it.artistName ? ` — ${it.artistName}` : ""}` : it.artworkId)).join(", ");
+  // Cada obra abre su página de la tienda en otra pestaña (reintentar la compra o mandar el link).
+  const itemLinks = (o: OrderDoc) => (o.items || []).map((it, i) => (
+    <React.Fragment key={i}>
+      {i > 0 && ", "}
+      <a href={`${SHOP_URL.replace(/\/+$/, "")}/obra/${it.artworkId}`} target="_blank" rel="noreferrer"
+        title="Abrir la obra en la tienda" onClick={(e) => e.stopPropagation()}
+        style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}>
+        {it.title || it.artworkId}<ExternalLink size={11} style={{ marginLeft: 3, verticalAlign: "-1px" }} />
+      </a>
+      {it.artistName ? ` — ${it.artistName}` : ""}
+    </React.Fragment>
+  ));
   const place = (o: OrderDoc) => [o.cityName, o.buyer?.address?.line1].filter(Boolean).join(" · ");
   const eye = (o: OrderDoc) => (
     <Tooltip title="Ver todo el detalle">
@@ -149,7 +160,7 @@ export default function OrdersPage() {
                   ...(o.buyer?.phone && o.buyer?.email ? [{ label: "Teléfono", value: o.buyer.phone }] : []),
                   ...(o.buyer?.document ? [{ label: "Documento", value: o.buyer.document }] : []),
                   ...(place(o) ? [{ label: "Dirección", value: place(o) }] : []),
-                  { label: "Obras", value: items(o) },
+                  { label: "Obras", value: itemLinks(o) },
                   { label: "Total", value: money(o.total) },
                   { label: "Tipo de pago", value: o.payment?.method ? methodLabel(o.payment.method) : "—" },
                   { label: "Cajera", value: o.cashierName || o.invoice?.issuedBy || "En línea" },
@@ -186,7 +197,7 @@ export default function OrdersPage() {
                             .filter(Boolean)
                             .map((v) => <Typography key={v} variant="caption" color="text.secondary" display="block">{v}</Typography>)}
                         </TableCell>
-                        <TableCell><Typography variant="caption">{items(o)}</Typography></TableCell>
+                        <TableCell><Typography variant="caption">{itemLinks(o)}</Typography></TableCell>
                         <TableCell>
                           {o.payment?.method ? methodLabel(o.payment.method) : "—"}
                           {receiptOf(o) && (
