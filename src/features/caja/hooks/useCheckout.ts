@@ -126,7 +126,8 @@ export function useCheckout(eventId: string | undefined, cities: CityDoc[] = [])
           dueDate: values.dueDate || undefined,
           receiptUrl: values.receiptUrl || undefined,
         });
-        return { order: r.order ?? order, artwork, values, kind: r.settled ? "paid" : "layaway" };
+        // /abono devuelve el doc lean de Mongo (_id, sin id): sin esto SaleDone revienta en order.id.slice.
+        return { order: { ...order, ...r.order, id: order.id }, artwork, values, kind: r.settled ? "paid" : "layaway" };
       }
 
       await claimOrderStock(order.id);
