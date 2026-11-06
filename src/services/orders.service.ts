@@ -251,15 +251,18 @@ export const refundOrder = async (
 };
 
 /** Correo "confirme su dirección de entrega" (también confirma la compra). */
-export const getDeliveryConfirmSummary = async (event: string): Promise<{ buyers: number; pending: number; confirmed: number }> => {
+export const getDeliveryConfirmSummary = async (event: string): Promise<{
+    buyers: number; pending: number; confirmed: number; layaway?: { buyers: number; pending: number };
+}> => {
     const { data } = await apiClient.get("/order/orders/delivery-confirm/summary", { params: { event }, withCredentials: true });
     return data;
 };
 export const sendDeliveryConfirm = async (
     event: string,
-    mode: "test" | "pending"
+    mode: "test" | "pending",
+    kind: "paid" | "layaway" = "paid"
 ): Promise<{ ok: boolean; to?: string; sample?: string; queued?: number }> => {
-    const { data } = await apiClient.post("/order/orders/delivery-confirm/send", { event, mode }, { withCredentials: true });
+    const { data } = await apiClient.post("/order/orders/delivery-confirm/send", { event, mode, kind }, { withCredentials: true });
     return data;
 };
 
