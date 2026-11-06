@@ -49,8 +49,7 @@ export const saleSchemaFor = (listPrice: number) =>
     if (v.price < listPrice && v.discountNote.length < 3) {
       ctx.addIssue({ code: "custom", path: ["discountNote"], message: "Escribe quién autorizó el descuento" });
     }
-    // El servidor no aparta sin plata: el abono tiene que ser mayor a cero.
-    if (v.apartar && !(v.abono > 0)) ctx.addIssue({ code: "custom", path: ["abono"], message: "Escribe cuánto abona hoy" });
+    // Apartar sin abono ($0) está permitido: la obra queda reservada con todo el saldo pendiente.
   });
 
 export const SALE_DEFAULTS: SaleValues = {

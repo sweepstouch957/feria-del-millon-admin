@@ -277,7 +277,7 @@ export const SaleForm = memo(function SaleForm({
                   render={({ field }) => (
                     <FormControlLabel
                       control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
-                      label="Apartar con abono (paga el resto después)"
+                      label="Apartar (abona hoy o nada; paga el resto después)"
                     />
                   )}
                 />
@@ -293,7 +293,9 @@ export const SaleForm = memo(function SaleForm({
                     }}
                     {...register("abono", { valueAsNumber: true })}
                     error={!!errors.abono}
-                    helperText={errors.abono?.message ?? (Number(abono) > 0 ? `${formatCOP(abono)} · queda ${formatCOP(Math.max(0, total - Number(abono)))}` : undefined)}
+                    helperText={errors.abono?.message ?? (Number(abono) > 0
+                      ? `${formatCOP(abono)} · queda ${formatCOP(Math.max(0, total - Number(abono)))}`
+                      : `Sin abono: la obra queda apartada y debe ${formatCOP(total)}`)}
                   />
                   <TextField label="Paga el resto antes de" type="date" slotProps={{ inputLabel: { shrink: true } }} {...register("dueDate")} />
                 </Stack>
