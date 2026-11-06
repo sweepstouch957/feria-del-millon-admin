@@ -102,7 +102,7 @@ export interface LandingConfig {
   priceLabel: string;
   /** Congelamiento de la venta en línea (días de feria). Fechas YYYY-MM-DD inclusive, hora Bogotá. */
   /** fairMode: tienda sin catálogo ni carrito; solo se compra desde el QR de cada obra. */
-  catalogSales: { pausedFrom: string; pausedTo: string; message: string; fairMode?: boolean };
+  catalogSales: { pausedFrom: string; pausedTo: string; message: string; fairMode?: boolean; claimLink?: boolean };
   /** Remitente por tipo de correo. Vacío = el general. El dominio tiene que estar verificado en Mandrill. */
   mailSenders: Record<MailFlow, { email: string; name: string }>;
   convocatoriaPage: ConvocatoriaPage;

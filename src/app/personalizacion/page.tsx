@@ -1047,6 +1047,14 @@ export default function PersonalizacionPage() {
               </span>
             }
           />
+          <FormControlLabel
+            control={<Switch checked={!!landing.catalogSales.claimLink} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, claimLink: e.target.checked } }))} />}
+            label={
+              <span>
+                <b>Enlace “¿Ya compró esta obra y no tiene confirmación?”</b> — en la ficha de cada obra, lleva al formulario de reclamo de venta perdida. Apagado no se muestra.
+              </span>
+            }
+          />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField size="small" type="date" label="Pausar desde" InputLabelProps={{ shrink: true }} value={landing.catalogSales.pausedFrom} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, pausedFrom: e.target.value } }))} />
             <TextField size="small" type="date" label="Hasta" InputLabelProps={{ shrink: true }} value={landing.catalogSales.pausedTo} onChange={(e) => setL((l) => ({ ...l, catalogSales: { ...l.catalogSales, pausedTo: e.target.value } }))} />
