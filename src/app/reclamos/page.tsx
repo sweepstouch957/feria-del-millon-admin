@@ -37,7 +37,7 @@ export default function ReclamosPage() {
       <PageHeader
         crumb="Ventas"
         title="Reclamos de compra"
-        description={`Compradores que dicen haber comprado una obra sin confirmación. Comparta el enlace ${STORE}/reclamo. Verifique con el artista y el datáfono antes de registrar.`}
+        description={`Ventas sin confirmación: las que reporta el comprador en ${STORE}/reclamo y las que reporta el artista desde "Mis pedidos" con el comprobante. Verifique el pago (banco o datáfono) antes de registrar.`}
       />
       <KpiStrip
         loading={q.isLoading}
@@ -115,14 +115,14 @@ function ClaimCard({ c }: { c: SaleClaim }) {
           <Typography variant="body2" color="text.secondary">
             Compró el {c.purchasedOn} · {CLAIM_METHOD_LABEL[c.method] || c.method}
             {c.amount ? ` · pagó ${formatCOP(c.amount)}` : ""}
-            {c.voucher && ` · comprobante ${c.voucher}`}
+            {(c.voucher || c.bank) && ` · comprobante ${[c.bank, c.voucher].filter(Boolean).join(" ")}`}
             {c.seller && ` · le vendió ${c.seller}`}
           </Typography>
           {c.note && <Typography variant="body2" sx={{ mt: 0.5, fontStyle: "italic" }}>“{c.note}”</Typography>}
         </Box>
         <Stack spacing={0.75} alignItems={{ xs: "flex-start", md: "flex-end" }} sx={{ flexShrink: 0 }}>
           <StatusPill
-            label={d === "confirmed" ? "Artista confirma" : d === "denied" ? "Artista niega" : c.artistId ? "Artista sin responder" : "Sin artista identificado"}
+            label={c.source === "artist" ? "Reportado por el artista" : d === "confirmed" ? "Artista confirma" : d === "denied" ? "Artista niega" : c.artistId ? "Artista sin responder" : "Sin artista identificado"}
             tone={d === "confirmed" ? "ok" : d === "denied" ? "bad" : "mid"}
           />
           {c.artist?.note && <Typography variant="caption" color="text.secondary">Artista: {c.artist.note}</Typography>}

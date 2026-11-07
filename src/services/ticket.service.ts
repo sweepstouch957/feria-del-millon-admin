@@ -407,6 +407,8 @@ export interface TicketSale {
   type: TicketType;
   price: number;
   paymentMethod?: string;
+  /** Pago mixto (ej. parte efectivo, parte datáfono); paymentMethod es el de más plata. */
+  paymentSplit?: { method: string; amount: number }[];
   saleChannel?: TicketChannel;
   eventDay: string;
   allDays?: boolean;

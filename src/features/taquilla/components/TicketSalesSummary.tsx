@@ -1,11 +1,13 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
-import { Box, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Box, Button, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { CorrectionDialog, type CorrectionTarget } from "@features/correcciones/components/CorrectionDialog";
+import { ticketPayments, ticketsByMethod } from "@features/ingresos/model/income";
+import type { TicketSale } from "@services/ticket.service";
 import { useQuery } from "@tanstack/react-query";
 import KpiStrip from "@/components/ui/KpiStrip";
 import { eyebrow } from "@/app/theme";
-import { byMethod } from "@features/ingresos/model/income";
 import { getTicketSales } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
 import { useAuth } from "@/provider/authProvider";
@@ -32,6 +34,18 @@ export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: 
     return range === "all" ? data : data.filter((t) => colombiaDay(t.createdAt) === today);
   }, [data, range]);
   const total = rows.reduce((s, t) => s + Number(t.price || 0), 0);
+  const [fix, setFix] = useState<CorrectionTarget | null>(null);
+  // Una compra = entradas del mismo comprador en el mismo momento (como las registra la taquilla).
+  const purchases = useMemo(() => {
+    if (!mine) return [];
+    const map = new Map<string, TicketSale[]>();
+    for (const t of rows) {
+      if (t.saleChannel !== "onsite") continue;
+      const k = `${t.createdAt}|${t.buyer?.email}`;
+      map.set(k, [...(map.get(k) ?? []), t]);
+    }
+    return [...map.values()];
+  }, [rows, mine]);
 
   return (
     <Box sx={{ mt: 3 }}>
@@ -46,13 +60,55 @@ export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: 
         loading={isLoading}
         items={[
           { label: "Total", value: formatCOP(total, { code: true }), sub: `${rows.length} entrada(s)`, accent: true },
-          ...byMethod(rows, (t) => t.paymentMethod, (t) => Number(t.price || 0)).map((m) => ({
+          ...ticketsByMethod(rows).map((m) => ({
             label: m.label,
             value: formatCOP(m.amount, { code: true }),
-            sub: `${m.count} entrada(s)`,
+            sub: `${m.count} pago(s)`,
           })),
         ]}
       />
+      {purchases.length > 0 && (
+        <Stack sx={{ mt: 2 }} divider={<Box sx={{ borderTop: "1px solid", borderColor: "divider" }} />}>
+          {purchases.map((g) => {
+            const t = g[0];
+            const split = ticketsByMethod(g); // etiquetas, para mostrar
+            const parts = g.flatMap(ticketPayments).reduce<Record<string, number>>((m, p) => {
+              if (p.method && p.amount > 0) m[p.method] = (m[p.method] ?? 0) + p.amount;
+              return m;
+            }, {});
+            const time = new Date(t.createdAt).toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" });
+            return (
+              <Box key={t.id} sx={{ py: 1, display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography noWrap>{t.buyer?.name || t.buyer?.email}</Typography>
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {time} · {g.length} entrada(s) · {split.map((m) => (split.length > 1 ? `${m.label} ${formatCOP(m.amount)}` : m.label)).join(" + ")}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {formatCOP(g.reduce((s, x) => s + Number(x.price || 0), 0))}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    setFix({
+                      kind: "ticket",
+                      id: t.id,
+                      title: `${g.length} entrada(s) · ${t.buyer?.name || t.buyer?.email} · ${time}`,
+                      split: Object.entries(parts).map(([method, amount]) => ({ method, amount })),
+                      email: t.buyer?.email || "",
+                      price: Number(g.find((x) => Number(x.price) > 0)?.price ?? t.price ?? 0),
+                    })
+                  }
+                >
+                  Corregir
+                </Button>
+              </Box>
+            );
+          })}
+        </Stack>
+      )}
+      <CorrectionDialog target={fix} onClose={() => setFix(null)} />
     </Box>
   );
 });

@@ -188,6 +188,10 @@ export interface SaleClaim {
     method: ClaimMethod;
     amount: number;
     voucher: string;
+    /** Banco / entidad del comprobante (lo pone el artista). */
+    bank?: string;
+    /** "artist" = lo reportó el artista desde su panel; si no, el comprador en /reclamo. */
+    source?: "artist" | "buyer";
     seller: string;
     note: string;
     existingOrderId: string | null;
@@ -206,17 +210,30 @@ export const updateSaleClaim = async (id: string, body: { status: SaleClaim["sta
     return data;
 };
 export interface ArtistClaim {
-    id: string; status: SaleClaim["status"]; artworkTitle: string; buyerName: string; purchasedOn: string;
-    method: ClaimMethod; amount: number; voucher: string; seller: string; note: string;
+    id: string; status: SaleClaim["status"]; source: "artist" | "buyer"; artworkTitle: string; buyerName: string; address: string;
+    purchasedOn: string; method: ClaimMethod; amount: number; voucher: string; bank: string; seller: string; note: string;
     decision: "confirmed" | "denied" | null; decisionNote: string; createdAt: string;
 }
 export const listMyArtistClaims = async (): Promise<ArtistClaim[]> => {
     const { data } = await apiClient.get<ArtistClaim[]>("/order/orders/claims/mine/artist", { withCredentials: true });
     return data;
 };
-export const decideArtistClaim = async (id: string, decision: "confirmed" | "denied", note?: string) => {
-    const { data } = await apiClient.patch(`/order/orders/claims/mine/artist/${id}`, { decision, note }, { withCredentials: true });
+export const decideArtistClaim = async (id: string, decision: "confirmed" | "denied", note?: string, address?: string) => {
+    const { data } = await apiClient.patch(`/order/orders/claims/mine/artist/${id}`, { decision, note, address }, { withCredentials: true });
     return data;
+};
+export type MyArtwork = { id: string; title: string; stock: number; price: number; tagId: string };
+export const listMyClaimArtworks = async (): Promise<MyArtwork[]> => {
+    const { data } = await apiClient.get<MyArtwork[]>("/order/orders/claims/mine/artworks", { withCredentials: true });
+    return data;
+};
+/** El artista reporta una venta con comprobante; la feria la registra. */
+export const reportArtistSale = async (body: {
+    artwork: string; name: string; email?: string; phone?: string; document?: string; address?: string;
+    purchasedOn: string; method: ClaimMethod; amount: number; voucher: string; bank?: string; note?: string;
+}) => {
+    const { data } = await apiClient.post("/order/orders/claims/mine/artist", body, { withCredentials: true });
+    return data as { ok: boolean; id: string; alreadyRegistered: boolean };
 };
 
 /** GET /order/orders (filtros por event, status, buyerEmail, buyerPhone) */

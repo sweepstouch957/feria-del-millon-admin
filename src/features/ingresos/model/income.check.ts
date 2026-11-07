@@ -88,4 +88,10 @@ const jueves = methodMatrix([], [dos], [], "2026-11-05");
 assert.deepEqual(jueves.map((r) => [r.label, r.orders]), [["Efectivo", 200]]);
 assert.equal(methodMatrix([], [{ status: "paid", total: 900, paidAt: "2026-11-06T03:00:00Z", payment: { method: "card_offline" } }], [], "2026-11-05")[0]?.orders, 900);
 
+// Pago mixto: obra y entrada reparten la plata entre métodos.
+assert.deepEqual(noAt(orderPayments({ status: "paid", total: 900, payment: { method: "card_offline", details: { split: [{ method: "cash", amount: 400 }, { method: "card_offline", amount: 500 }] } } })), [{ method: "cash", amount: 400 }, { method: "card_offline", amount: 500 }]);
+const mixta = methodMatrix([{ paymentMethod: "cash", price: 30000, paymentSplit: [{ method: "cash", amount: 20000 }, { method: "card_offline", amount: 10000 }] }], [], []);
+assert.equal(mixta.find((r) => r.label === "Datáfono")?.tickets, 10000);
+assert.equal(mixta.find((r) => r.label === "Efectivo")?.tickets, 20000);
+
 console.log("income ok");

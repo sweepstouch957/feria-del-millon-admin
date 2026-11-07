@@ -111,8 +111,8 @@ export function ArtworkFinderPanel({
                 void resolveAndPick(finder.text);
               }
             }}
-            placeholder="Título, código de etiqueta o QR"
-            inputProps={{ "aria-label": "Buscar obra por título, código de etiqueta o QR", enterKeyHint: "search" }}
+            placeholder="Título, artista, código o QR"
+            inputProps={{ "aria-label": "Buscar obra por título, artista, código de etiqueta o QR", enterKeyHint: "search" }}
             sx={{ flex: 1, minWidth: 0, fontSize: { xs: 16, sm: 17 } }}
           />
           {finder.text && (

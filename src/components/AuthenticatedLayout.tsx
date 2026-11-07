@@ -6,6 +6,7 @@ import { useAuth } from "@/provider/authProvider";
 import LoadingScreen from "@/components/common/LoadingScreen";
 import { useTranslation } from "react-i18next";
 import MergedLayout from "./layout/MergedLayout";
+import { CorrectionsPopup } from "@features/correcciones/components/CorrectionsPopup";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
@@ -31,7 +32,13 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
   }
 
   //Sesión válida
-  return <MergedLayout>{children}</MergedLayout>;
+  return (
+    <MergedLayout>
+      {children}
+      {/* Solo administración: cambios de precio/correo que piden las cajeras. */}
+      <CorrectionsPopup />
+    </MergedLayout>
+  );
 };
 
 export default AuthenticatedLayout;

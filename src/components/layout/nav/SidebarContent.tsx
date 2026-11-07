@@ -247,6 +247,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             {ordersItem}
             {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
             {item("/reclamos", "Reclamos de compra", <FileText {...ICON} />)}
+            {item("/correcciones", "Correcciones de venta", <ClipboardCheck {...ICON} />)}
             {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
             {ticketsGroup}
 

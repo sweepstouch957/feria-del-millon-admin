@@ -20,6 +20,8 @@ import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import { RefundButton } from "@features/caja/components/RefundButton";
 import { methodLabel } from "@features/ingresos/model/income";
+import { getInventoryStatus } from "@services/applications.service";
+import { useActiveEvent } from "@hooks/events/useActiveEvent";
 import { OrderDetailDialog, STATUS } from "./OrderDetailDialog";
 
 const money = (n?: number) => formatCOP(n, { code: true });
@@ -42,6 +44,28 @@ export default function OrdersPage() {
     // stock tiene que verse sin recargar.
     refetchInterval: 60_000,
   });
+
+  // Avance del inventario: copias que quedan (inventory-status) vs. vendidas
+  // (pagadas + apartadas, que ya descontaron stock) en la feria activa.
+  const { eventId } = useActiveEvent();
+  const stockQ = useQuery({
+    queryKey: ["orders", "stock", eventId],
+    queryFn: () => getInventoryStatus(eventId!),
+    enabled: !!eventId,
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  });
+  const allQ = useQuery({
+    queryKey: ["orders", "list", ""],
+    queryFn: () => listOrders(),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const available = (stockQ.data ?? []).reduce((s, r) => s + (r.copies || 0), 0);
+  const sold = (allQ.data ?? [])
+    .filter((o) => (o.status === "paid" || o.status === "partial") && (!eventId || String((o.event as any)?._id ?? o.event) === String(eventId)))
+    .reduce((s, o) => s + (o.items || []).reduce((a, it) => a + Number(it.qty || 1), 0), 0);
+  const soldPct = sold + available ? Math.round((sold / (sold + available)) * 100) : 0;
 
   // ponytail: filtro de texto en cliente; mover al backend si las órdenes pasan de unos miles.
   const needle = q.trim().toLowerCase();
@@ -132,6 +156,14 @@ export default function OrdersPage() {
           { label: "Rechazados", value: rows.filter((o) => o.status === "failed").length },
           { label: "En cartera", value: money(pendingTotal) },
           { label: "Total pagado", value: money(paidTotal), accent: true },
+        ]}
+      />
+      <KpiStrip
+        loading={stockQ.isLoading || allQ.isLoading}
+        items={[
+          { label: "Obras vendidas", value: sold.toLocaleString("es-CO"), sub: "copias pagadas o apartadas", accent: true },
+          { label: "Disponibles", value: available.toLocaleString("es-CO"), sub: `faltan ${available.toLocaleString("es-CO")} para agotar` },
+          { label: "Avance", value: `${soldPct} %`, sub: `${sold.toLocaleString("es-CO")} de ${(sold + available).toLocaleString("es-CO")} copias` },
         ]}
       />
 

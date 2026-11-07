@@ -27,6 +27,16 @@ export function groupTotals<T>(rows: T[], group: (r: T) => string, amount: (r: T
 export const byMethod = <T,>(rows: T[], method: (r: T) => string | undefined, amount: (r: T) => number) =>
   groupTotals(rows, (r) => methodLabel(method(r)), amount);
 
+type Part = { method?: string; amount: number };
+
+/** Lo que pagó una entrada, por método (las de pago mixto traen paymentSplit). */
+export const ticketPayments = (t: { paymentMethod?: string; price?: number; paymentSplit?: Part[] }): Part[] =>
+  t.paymentSplit?.length ? t.paymentSplit : [{ method: t.paymentMethod, amount: Number(t.price || 0) }];
+
+/** Entradas por método, repartiendo las de pago mixto. */
+export const ticketsByMethod = (tickets: Parameters<typeof ticketPayments>[0][]) =>
+  byMethod(tickets.flatMap(ticketPayments), (p) => p.method, (p) => p.amount);
+
 /** Lo cobrado por una inscripción; si no quedó guardado, el valor de su convocatoria. */
 export const appAmount = (a: { paymentDetails?: { transaction_amount?: number }; convocatoria?: unknown }) =>
   Number(a.paymentDetails?.transaction_amount ?? (a.convocatoria as { fee?: number } | undefined)?.fee ?? 0);
@@ -90,7 +100,7 @@ export const orderIncome = (o: OrderLike) =>
 type OrderPayLike = OrderLike & {
   paidAt?: string;
   createdAt?: string;
-  payment?: { method?: string };
+  payment?: { method?: string; details?: unknown };
   layaway?: { amountPaid?: number; installments?: { amount?: number; method?: string; at?: string }[] };
 };
 
@@ -108,14 +118,19 @@ export function orderPayments(o: OrderPayLike): { method?: string; amount: numbe
     .filter((i) => Number(i.amount) > 0)
     .map((i) => ({ method: i.method || o.payment?.method, amount: Number(i.amount), at: i.at }));
   const rest = income - inst.reduce((s, i) => s + i.amount, 0);
-  return rest > 0 ? [...inst, { method: o.payment?.method, amount: rest, at: o.paidAt || o.createdAt }] : inst;
+  if (rest <= 0) return inst;
+  const at = o.paidAt || o.createdAt;
+  // Pago mixto en caja (sin abonos): parte en un método, parte en otro.
+  const split = (o.payment?.details as { split?: { method: string; amount: number }[] } | undefined)?.split;
+  if (!inst.length && split?.length) return split.map((p) => ({ method: p.method, amount: Number(p.amount), at }));
+  return [...inst, { method: o.payment?.method, amount: rest, at }];
 }
 
 export type MethodRow = { label: string; tickets: number; orders: number; apps: number; total: number; count: number };
 
 /** Todo por tipo de pago: entradas, obras (abono por abono) e inscripciones (en línea). */
 export function methodMatrix(
-  tickets: { paymentMethod?: string; price?: number }[],
+  tickets: Parameters<typeof ticketPayments>[0][],
   orders: OrderPayLike[],
   appsAmounts: number[],
   /** Solo los pagos de obras de ese día (YYYY-MM-DD); entradas e inscripciones llegan ya filtradas. */
@@ -130,7 +145,7 @@ export function methodMatrix(
     r.count += 1;
     map.set(label, r);
   };
-  for (const t of tickets) add(t.paymentMethod, "tickets", Number(t.price || 0));
+  for (const t of tickets) for (const p of ticketPayments(t)) add(p.method, "tickets", p.amount);
   for (const o of orders) for (const p of orderPayments(o)) if (!day || dayOf(p.at) === day) add(p.method, "orders", p.amount);
   for (const a of appsAmounts) add("mercadopago", "apps", a);
   return [...map.values()].sort((a, b) => b.total - a.total);

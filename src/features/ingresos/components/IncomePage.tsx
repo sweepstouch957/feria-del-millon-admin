@@ -18,7 +18,7 @@ import { TICKET_TYPE_LABEL, type TicketSale } from "@services/ticket.service";
 import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
 import { formatCOP } from "@/utils/money";
 import { useIncome } from "../hooks/useIncome";
-import { appAmount, buildCustomers, byMethod, dayOf, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, type Customer, type MethodRow, type MethodTotal } from "../model/income";
+import { appAmount, buildCustomers, byMethod, dayOf, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, ticketsByMethod, type Customer, type MethodRow, type MethodTotal } from "../model/income";
 
 const money = (n?: number) => formatCOP(n || 0, { code: true });
 const when = (d?: string) => (d ? new Date(d).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" }) : "");
@@ -302,7 +302,7 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
 
       {panel === "boletos" && (
         <>
-          <Breakdown title="Por tipo de pago" unit="entrada(s)" items={byMethod(tickets, (t) => t.paymentMethod, ticketAmount)} />
+          <Breakdown title="Por tipo de pago" unit="entrada(s)" items={ticketsByMethod(tickets)} />
           <Breakdown title="Por tipo de entrada" unit="entrada(s)" items={groupTotals(tickets, (t) => TICKET_TYPE_LABEL[t.type] || t.type, ticketAmount)} />
           <Breakdown title="Por quién vendió" unit="entrada(s)" items={groupTotals(tickets, (t) => t.sellerName || "En línea", ticketAmount)} />
         </>

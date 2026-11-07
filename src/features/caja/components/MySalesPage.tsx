@@ -13,7 +13,15 @@ import { clearPracticeSales, listPracticeSales } from "../model/practice";
 import type { SalesLine } from "@services/orders.service";
 import { useCajaAccess } from "../hooks/useCajaAccess";
 import { PracticeBanner } from "./PracticeBanner";
-import { MethodSelect } from "./MethodSelect";
+import { CorrectionDialog, type CorrectionTarget } from "@features/correcciones/components/CorrectionDialog";
+
+/** Cómo se pagó un pedido: sus líneas (una por obra y método) sumadas por método. */
+const orderTarget = (lines: SalesLine[], orderId: string) => {
+  const map = new Map<string, number>();
+  for (const l of lines) if (l.orderId === orderId) map.set(l.method, (map.get(l.method) ?? 0) + l.amount);
+  const split = [...map].map(([method, amount]) => ({ method, amount }));
+  return { split, price: split.reduce((s, p) => s + p.amount, 0) };
+};
 
 /** Cierre de caja: lo que cobró la cajera en sesión, para cuadrar al final del día. */
 export function MySalesPage() {
@@ -22,6 +30,7 @@ export function MySalesPage() {
   const sales = useMySales(eventId ?? undefined, day);
   const { practice } = useCajaAccess();
   const [unsaved, setUnsaved] = useState<SalesLine[]>([]);
+  const [fix, setFix] = useState<CorrectionTarget | null>(null);
   useEffect(() => setUnsaved(listPracticeSales()), []);
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
 
@@ -108,15 +117,24 @@ export function MySalesPage() {
                 {[l.artist, l.buyer, l.method in METHOD_LABEL ? "" : l.method].filter(Boolean).join(" · ")}
               </Typography>
             </Box>
-            {/* Venta en lote: cambiar una línea cambia todo el pedido. */}
-            <MethodSelect orderId={l.orderId} method={l.method} />
+            <Typography variant="body2" color="text.secondary">{METHOD_LABEL[l.method] ?? ""}</Typography>
             <Typography sx={{ fontVariantNumeric: "tabular-nums" }}>{formatCOP(l.amount)}</Typography>
+            {/* Venta en lote: corregir una línea corrige todo el pedido. Pagos en línea no se corrigen. */}
+            {l.method in METHOD_LABEL && (
+              <Button
+                size="small"
+                onClick={() => setFix({ kind: "order", id: l.orderId, title: `${l.artwork} · ${l.buyer}`, email: l.buyerEmail, ...orderTarget(lines, l.orderId) })}
+              >
+                Corregir
+              </Button>
+            )}
           </Box>
         ))}
       </Stack>
       {!sales.isLoading && !lines.length && (
         <Typography color="text.secondary" sx={{ py: 3 }}>No registraste ventas este día.</Typography>
       )}
+      <CorrectionDialog target={fix} onClose={() => setFix(null)} />
     </Box>
   );
 }
