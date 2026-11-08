@@ -19,7 +19,6 @@ import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import { RefundButton } from "@features/caja/components/RefundButton";
-import { MarkBoldPaidButton, isBoldLink } from "@features/caja/components/MarkBoldPaidButton";
 import { methodLabel } from "@features/ingresos/model/income";
 import { getInventoryStatus } from "@services/applications.service";
 import { useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -113,14 +112,6 @@ export default function OrdersPage() {
       {it.artistName ? ` — ${it.artistName}` : ""}
     </React.Fragment>
   ));
-  const payLabel = (o: OrderDoc) => (isBoldLink(o) ? "Link de pago Bold" : o.payment?.method ? methodLabel(o.payment.method) : "—");
-  // Mismo comprador + misma obra ya pagada: aviso para no registrar dos veces un reintento.
-  const twinPaid = (o: OrderDoc) => {
-    const email = (o.buyer?.email || "").toLowerCase();
-    const arts = new Set((o.items || []).map((i) => i.artworkId));
-    return (allQ.data ?? orders).some((x) => x.id !== o.id && x.status === "paid" &&
-      (x.buyer?.email || "").toLowerCase() === email && (x.items || []).some((i) => arts.has(i.artworkId)));
-  };
   const place = (o: OrderDoc) => [o.cityName, o.buyer?.address?.line1].filter(Boolean).join(" · ");
   const eye = (o: OrderDoc) => (
     <Tooltip title="Ver todo el detalle">
@@ -203,13 +194,13 @@ export default function OrdersPage() {
                   ...(place(o) ? [{ label: "Dirección", value: place(o) }] : []),
                   { label: "Obras", value: itemLinks(o) },
                   { label: "Total", value: money(o.total) },
-                  { label: "Tipo de pago", value: payLabel(o) },
+                  { label: "Tipo de pago", value: o.payment?.method ? methodLabel(o.payment.method) : "—" },
                   { label: "Cajera", value: o.cashierName || o.invoice?.issuedBy || "En línea" },
                   { label: "Fecha", value: formatDate(o.createdAt) },
                   ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
                   ...(receiptOf(o) ? [{ label: "Comprobante", value: <a href={receiptOf(o)} target="_blank" rel="noreferrer">Ver foto</a> }] : []),
                 ],
-                actions: <><Button size="small" startIcon={<Eye size={14} />} onClick={() => setDetail(o)}>Ver detalle</Button><RefundButton order={o} /><MarkBoldPaidButton order={o} twinPaid={twinPaid(o)} /></>,
+                actions: <><Button size="small" startIcon={<Eye size={14} />} onClick={() => setDetail(o)}>Ver detalle</Button><RefundButton order={o} /></>,
               }))}
             >
               <TableContainer component={Paper} elevation={0}>
@@ -240,7 +231,7 @@ export default function OrdersPage() {
                         </TableCell>
                         <TableCell><Typography variant="caption">{itemLinks(o)}</Typography></TableCell>
                         <TableCell>
-                          {payLabel(o)}
+                          {o.payment?.method ? methodLabel(o.payment.method) : "—"}
                           {receiptOf(o) && (
                             <Typography component="a" href={receiptOf(o)} target="_blank" rel="noreferrer" variant="caption" display="block" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               Comprobante
@@ -258,7 +249,6 @@ export default function OrdersPage() {
                         <TableCell align="right" onClick={(e) => e.stopPropagation()} sx={{ whiteSpace: "nowrap" }}>
                           {eye(o)}
                           <RefundButton order={o} />
-                          <MarkBoldPaidButton order={o} twinPaid={twinPaid(o)} />
                         </TableCell>
                       </TableRow>
                     ))}
