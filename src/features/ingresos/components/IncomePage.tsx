@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
+  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, Tab, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Typography,
 } from "@mui/material";
+import IncomeOverview from "./IncomeOverview";
 import { Download, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -240,7 +241,10 @@ export function IncomePage({ initialPanel }: { initialPanel?: string }) {
 /** Cuánta plata ha generado la feria y de quién: boletos, obras e inscripciones. */
 function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: string }) {
   const router = useRouter();
-  const [panel, setPanel] = useState<Panel>(PANELS.find((p) => p === initialPanel) ?? "boletos");
+  const [panel, setPanelState] = useState<Panel>(PANELS.find((p) => p === initialPanel) ?? "boletos");
+  // Panorama = gráficos; Detalle = desgloses y listas. Tocar una cifra lleva a su detalle.
+  const [view, setView] = useState<"panorama" | "detalle">(initialPanel ? "detalle" : "panorama");
+  const setPanel = (p: Panel) => { setPanelState(p); setView("detalle"); };
   const all = useIncome(eventId);
   const { pending, applications, loading, failed, refetch } = all;
   const ticketAmount = (t: TicketSale) => Number(t.price || 0);
@@ -289,15 +293,24 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
         loading={loading}
         items={[
           { label: "Total", value: money(total), accent: true, sub: "boletos + obras + inscripciones" },
-          { label: "Boletos", value: money(ticketsTotal), sub: `${tickets.length} entrada(s)`, onClick: () => setPanel("boletos"), selected: panel === "boletos" },
-          { label: "Obras", value: money(ordersTotal), sub: `${orders.length} venta(s)`, onClick: () => setPanel("obras"), selected: panel === "obras" },
-          { label: "Inscripciones", value: money(appsTotal), sub: `${apps.length} pagada(s)`, onClick: () => setPanel("inscripciones"), selected: panel === "inscripciones" },
-          { label: "Clientes", value: customers.length, sub: "compraron entradas u obras", onClick: () => setPanel("clientes"), selected: panel === "clientes" },
+          { label: "Boletos", value: money(ticketsTotal), sub: `${tickets.length} entrada(s)`, onClick: () => setPanel("boletos"), selected: view === "detalle" && panel === "boletos" },
+          { label: "Obras", value: money(ordersTotal), sub: `${orders.length} venta(s)`, onClick: () => setPanel("obras"), selected: view === "detalle" && panel === "obras" },
+          { label: "Inscripciones", value: money(appsTotal), sub: `${apps.length} pagada(s)`, onClick: () => setPanel("inscripciones"), selected: view === "detalle" && panel === "inscripciones" },
+          { label: "Clientes", value: customers.length, sub: "compraron entradas u obras", onClick: () => setPanel("clientes"), selected: view === "detalle" && panel === "clientes" },
           { label: "Por cobrar", value: money(pending), sub: "saldo de obras apartadas", onClick: () => router.push("/orders/cartera") },
           { label: "Solicitudes", value: applications.total, sub: `${applications.accepted} aceptadas`, onClick: () => router.push("/solicitudes") },
         ]}
       />
 
+      <Tabs value={view} onChange={(_, v) => setView(v)} sx={{ mb: 2.5 }}>
+        <Tab value="panorama" label="Panorama" />
+        <Tab value="detalle" label="Detalle" />
+      </Tabs>
+
+      {view === "panorama" ? (
+        <IncomeOverview eventId={eventId} tickets={all.tickets} orders={all.orders} appsTotal={appsTotal} dayF={dayF} loading={loading} />
+      ) : (
+      <>
       {!loading && <MethodTable rows={methodMatrix(tickets, orders, apps.map(appAmount), dayF)} />}
 
       {panel === "boletos" && (
@@ -327,6 +340,8 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
         <Rows key="inscripciones" rows={apps} cols={APP_COLS} name="inscripciones" screen="/solicitudes" screenLabel="Abrir solicitudes" />
       ) : (
         <Rows key="clientes" rows={customers} cols={CUSTOMER_COLS} name="clientes" />
+      )}
+      </>
       )}
     </Box>
   );
