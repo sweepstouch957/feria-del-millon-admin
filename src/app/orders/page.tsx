@@ -118,6 +118,16 @@ export default function OrdersPage() {
       {it.artistName ? ` — ${it.artistName}` : ""}
     </React.Fragment>
   ));
+  // Apartados: aún no hay pago, así que la cajera y el método salen del primer abono
+  // (antes caían en "En línea" aunque los registró la caja).
+  const firstAbono = (o: OrderDoc) => o.layaway?.enabled ? o.layaway.installments?.[0] : undefined;
+  const cashierOf = (o: OrderDoc) =>
+    o.cashierName || o.invoice?.issuedBy || firstAbono(o)?.byName || (o.layaway?.enabled ? "Caja" : "En línea");
+  const payOf = (o: OrderDoc) => {
+    if (o.payment?.method) return methodLabel(o.payment.method);
+    const ab = firstAbono(o);
+    return ab ? `Abono${ab.method ? ` · ${methodLabel(ab.method)}` : ""}` : "—";
+  };
   const place = (o: OrderDoc) => [o.cityName, o.buyer?.address?.line1].filter(Boolean).join(" · ");
   const eye = (o: OrderDoc) => (
     <Tooltip title="Ver todo el detalle">
@@ -200,8 +210,8 @@ export default function OrdersPage() {
                   ...(place(o) ? [{ label: "Dirección", value: place(o) }] : []),
                   { label: "Obras", value: itemLinks(o) },
                   { label: "Total", value: money(o.total) },
-                  { label: "Tipo de pago", value: o.payment?.method ? methodLabel(o.payment.method) : "—" },
-                  { label: "Cajera", value: o.cashierName || o.invoice?.issuedBy || "En línea" },
+                  { label: "Tipo de pago", value: payOf(o) },
+                  { label: "Cajera", value: cashierOf(o) },
                   { label: "Fecha", value: formatDate(o.createdAt) },
                   ...(o.fulfillmentError ? [{ label: "Stock", value: `Pagada sin descontar stock: ${o.fulfillmentError}` }] : []),
                   ...(receiptOf(o) ? [{ label: "Comprobante", value: <a href={receiptOf(o)} target="_blank" rel="noreferrer">Ver foto</a> }] : []),
@@ -237,14 +247,14 @@ export default function OrdersPage() {
                         </TableCell>
                         <TableCell><Typography variant="caption">{itemLinks(o)}</Typography></TableCell>
                         <TableCell>
-                          {o.payment?.method ? methodLabel(o.payment.method) : "—"}
+                          {payOf(o)}
                           {receiptOf(o) && (
                             <Typography component="a" href={receiptOf(o)} target="_blank" rel="noreferrer" variant="caption" display="block" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               Comprobante
                             </Typography>
                           )}
                         </TableCell>
-                        <TableCell>{o.cashierName || o.invoice?.issuedBy || "En línea"}</TableCell>
+                        <TableCell>{cashierOf(o)}</TableCell>
                         <TableCell align="right">{money(o.total)}</TableCell>
                         <TableCell>
                           {chip(o.status)}
