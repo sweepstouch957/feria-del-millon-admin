@@ -9,7 +9,8 @@ import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import BulkSaleDialog from "@/app/inventory/artworks/BulkSaleDialog";
 import { getArtworkById } from "@services/artworks.service";
-import { CLAIM_METHOD_LABEL, listSaleClaims, updateSaleClaim, type SaleClaim } from "@services/orders.service";
+import { CLAIM_METHOD_LABEL, listAdminTestSales, listSaleClaims, updateSaleClaim, type SaleClaim } from "@services/orders.service";
+import AdminTestSales from "./AdminTestSales";
 import type { CajaMethod } from "@/features/caja/model/sale";
 import { formatCOP } from "@/utils/money";
 
@@ -27,8 +28,9 @@ const TABS: { key: SaleClaim["status"]; label: string }[] = [
 ];
 
 export default function ReclamosPage() {
-  const [tab, setTab] = useState<SaleClaim["status"]>("pending");
+  const [tab, setTab] = useState<SaleClaim["status"] | "admintest">("pending");
   const q = useQuery({ queryKey: ["saleClaims"], queryFn: () => listSaleClaims(), refetchInterval: 60_000 });
+  const at = useQuery({ queryKey: ["adminTestSales"], queryFn: listAdminTestSales });
   const all = q.data ?? [];
   const rows = all.filter((c) => c.status === tab);
 
@@ -41,10 +43,16 @@ export default function ReclamosPage() {
       />
       <KpiStrip
         loading={q.isLoading}
-        items={TABS.map((t) => ({ label: t.label, value: all.filter((c) => c.status === t.key).length, onClick: () => setTab(t.key), selected: tab === t.key }))}
+        items={[
+          ...TABS.map((t) => ({ label: t.label, value: all.filter((c) => c.status === t.key).length, onClick: () => setTab(t.key), selected: tab === t.key })),
+          { label: "Admin Test sin cuadrar", value: (at.data ?? []).filter((o) => !o.review?.done).length, onClick: () => setTab("admintest"), selected: tab === "admintest" },
+        ]}
       />
-      {q.isError && <Alert severity="error" sx={{ my: 2 }}>No cargaron los reclamos.</Alert>}
-      {q.isLoading ? (
+      {tab === "admintest" ? (
+        <AdminTestSales />
+      ) : q.isError ? (
+        <Alert severity="error" sx={{ my: 2 }}>No cargaron los reclamos.</Alert>
+      ) : q.isLoading ? (
         <Box sx={{ p: 6, textAlign: "center" }}><CircularProgress /></Box>
       ) : !rows.length ? (
         <Card sx={{ p: 4, mt: 2, textAlign: "center" }}>

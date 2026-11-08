@@ -209,6 +209,21 @@ export const updateSaleClaim = async (id: string, body: { status: SaleClaim["sta
     const { data } = await apiClient.patch(`/order/orders/claims/${id}`, body, { withCredentials: true });
     return data;
 };
+/** Ventas pagadas registradas con la cuenta Admin Test (sin apartados), para cuadrar con cada artista. */
+export interface AdminTestSale {
+    id: string; paidAt: string; total: number; method: string; authCode: string;
+    buyer: { name: string; email: string; phone: string };
+    review: { done: boolean; note: string; at: string } | null;
+    items: { artworkId: string; title: string; stock: number | null; price: number; artistId: string; artistName: string; artistEmail: string }[];
+}
+export const listAdminTestSales = async (): Promise<AdminTestSale[]> => {
+    const { data } = await apiClient.get<AdminTestSale[]>("/order/orders/claims/admin-test", { withCredentials: true });
+    return data;
+};
+export const reviewAdminTestSale = async (orderId: string, body: { name?: string; email?: string; phone?: string; done: boolean; note?: string }) => {
+    const { data } = await apiClient.patch(`/order/orders/claims/admin-test/${orderId}`, body, { withCredentials: true });
+    return data;
+};
 export interface ArtistClaim {
     id: string; status: SaleClaim["status"]; source: "artist" | "buyer"; artworkTitle: string; buyerName: string; address: string;
     purchasedOn: string; method: ClaimMethod; amount: number; voucher: string; bank: string; seller: string; note: string;
