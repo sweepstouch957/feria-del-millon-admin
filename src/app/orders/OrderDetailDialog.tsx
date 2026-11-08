@@ -113,7 +113,7 @@ export function OrderDetailDialog({ order, all, onClose }: { order: OrderDoc | n
 
         <Section title="Pago">
           <Row k="Estado" v={STATUS[order.status]?.label || order.status} />
-          <Row k="Método" v={p?.method} />
+          <Row k="Método" v={d.provider === "bold_link" ? "Link de pago Bold" : p?.method} />
           <Row k="Estado pasarela" v={p?.state} />
           <Row k="Transacción" v={p?.gateway?.transactionId} />
           <Row k="Referencia" v={p?.reference} />
