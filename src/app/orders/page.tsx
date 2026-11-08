@@ -4,7 +4,7 @@ import * as React from "react";
 import {
   Box, Card, CardContent, Typography, Stack, TextField, MenuItem,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
-  CircularProgress, LinearProgress, IconButton, Tooltip, Button,
+  CircularProgress, LinearProgress, IconButton, Tooltip, Button, TablePagination,
 } from "@mui/material";
 import { RefreshCw, FileSpreadsheet, Plus, Eye, Mail, ExternalLink } from "lucide-react";
 import { SHOP_URL } from "@core/constants";
@@ -74,6 +74,12 @@ export default function OrdersPage() {
         [o.buyer?.name, o.buyer?.email, o.buyer?.phone, o.buyer?.document, ...(o.items || []).flatMap((it) => [it.title, it.artistName])]
           .some((v) => String(v || "").toLowerCase().includes(needle)))
     : orders;
+
+  // ponytail: paginación en cliente (el back devuelve todo); pasar a skip/limit en GET /orders tras la feria.
+  const [page, setPage] = React.useState(0);
+  const [perPage, setPerPage] = React.useState(50);
+  React.useEffect(() => setPage(0), [needle, status]);
+  const pageRows = rows.slice(page * perPage, page * perPage + perPage);
 
   const [exporting, setExporting] = React.useState(false);
   const exportBuyers = async () => {
@@ -183,7 +189,7 @@ export default function OrdersPage() {
           ) : (
             <ResponsiveRows
               emptyText="No hay pedidos con estos filtros."
-              cards={rows.map((o) => ({
+              cards={pageRows.map((o) => ({
                 id: String(o.id),
                 title: o.buyer?.name || "—",
                 subtitle: o.buyer?.email || o.buyer?.phone || "",
@@ -220,7 +226,7 @@ export default function OrdersPage() {
                   <TableBody>
                     {rows.length === 0 ? (
                       <TableRow><TableCell colSpan={8} align="center" sx={{ color: "text.secondary", py: 3 }}>No hay pedidos con estos filtros.</TableCell></TableRow>
-                    ) : rows.map((o) => (
+                    ) : pageRows.map((o) => (
                       <TableRow key={o.id} hover onClick={() => setDetail(o)} sx={{ cursor: "pointer" }}>
                         <TableCell>{formatDate(o.createdAt)}</TableCell>
                         <TableCell>
@@ -256,6 +262,19 @@ export default function OrdersPage() {
                 </Table>
               </TableContainer>
             </ResponsiveRows>
+          )}
+          {!isLoading && rows.length > 0 && (
+            <TablePagination
+              component="div"
+              count={rows.length}
+              page={Math.min(page, Math.max(0, Math.ceil(rows.length / perPage) - 1))}
+              onPageChange={(_, p) => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              rowsPerPage={perPage}
+              onRowsPerPageChange={(e) => { setPerPage(Number(e.target.value)); setPage(0); }}
+              rowsPerPageOptions={[25, 50, 100, 200]}
+              labelRowsPerPage="Por página"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            />
           )}
         </CardContent>
       </Card>
