@@ -151,6 +151,56 @@ export function methodMatrix(
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
 
+/** Bloques del "Reporte Ventas" de la feria: Taquilla y Cajas por medio de pago, Mercado Pago aparte. */
+export type FairDay = {
+  day: string;
+  taquilla: Record<string, number>;
+  cajas: Record<string, number>;
+  mercadopago: { Entradas: number; Obras: number };
+};
+const FAIR_LINES = ["Efectivo", "Datáfono", "Transferencia"];
+const fairLine = (m?: string) =>
+  m === "cash" ? "Efectivo" : m === "card_offline" ? "Datáfono" : m === "transfer" || m === "whatsapp" ? "Transferencia"
+  : m === "credit_card" ? "Link de pago Bold" : m === "mercadopago" || m === "pse" ? "MP" : "Otro";
+
+/**
+ * Por día (hora Colombia): entradas en sitio = Taquilla, obras de caja = Cajas, todo lo
+ * pagado en línea (entradas y obras) = Mercado Pago. Sin inscripciones ni barras/merch.
+ */
+export function fairDays(
+  tickets: (Parameters<typeof ticketPayments>[0] & { createdAt?: string; saleChannel?: string })[],
+  orders: OrderPayLike[],
+): FairDay[] {
+  const map = new Map<string, FairDay>();
+  const get = (day: string) => {
+    if (!map.has(day)) map.set(day, { day, taquilla: Object.fromEntries(FAIR_LINES.map((l) => [l, 0])), cajas: Object.fromEntries(FAIR_LINES.map((l) => [l, 0])), mercadopago: { Entradas: 0, Obras: 0 } });
+    return map.get(day)!;
+  };
+  for (const t of tickets) {
+    const day = dayOf(t.createdAt);
+    if (!day) continue;
+    for (const p of ticketPayments(t)) {
+      if (!p.amount) continue;
+      const line = fairLine(p.method);
+      if (line === "MP" || t.saleChannel === "online") get(day).mercadopago.Entradas += p.amount;
+      else get(day).taquilla[line] = (get(day).taquilla[line] || 0) + p.amount;
+    }
+  }
+  for (const o of orders) {
+    for (const p of orderPayments(o)) {
+      const day = dayOf(p.at);
+      if (!day || !p.amount) continue;
+      const line = fairLine(p.method);
+      if (line === "MP") get(day).mercadopago.Obras += p.amount;
+      else get(day).cajas[line] = (get(day).cajas[line] || 0) + p.amount;
+    }
+  }
+  return [...map.values()].sort((a, b) => a.day.localeCompare(b.day));
+}
+
+export const fairDayTotal = (d: FairDay) =>
+  Object.values(d.taquilla).reduce((s, v) => s + v, 0) + Object.values(d.cajas).reduce((s, v) => s + v, 0) + d.mercadopago.Entradas + d.mercadopago.Obras;
+
 export type Customer = {
   email: string;
   name: string;

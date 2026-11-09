@@ -19,7 +19,8 @@ import { TICKET_TYPE_LABEL, type TicketSale } from "@services/ticket.service";
 import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
 import { formatCOP } from "@/utils/money";
 import { useIncome } from "../hooks/useIncome";
-import { appAmount, buildCustomers, byMethod, dayOf, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, ticketsByMethod, type Customer, type MethodRow, type MethodTotal } from "../model/income";
+import { downloadFairSalesReport } from "@/utils/fairSalesReport";
+import { appAmount, buildCustomers, byMethod, dayOf, fairDays, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, ticketsByMethod, type Customer, type MethodRow, type MethodTotal } from "../model/income";
 
 const money = (n?: number) => formatCOP(n || 0, { code: true });
 const when = (d?: string) => (d ? new Date(d).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" }) : "");
@@ -284,10 +285,21 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
       <ReportTabs />
       {failed && <Alert severity="error" sx={{ mb: 2 }}>Una parte del reporte no cargó: las cifras pueden estar incompletas. Pulsa Actualizar.</Alert>}
 
-      <TextField select size="small" label="Día" value={dayF} onChange={(e) => setDayF(e.target.value)} sx={{ minWidth: 240, mb: 2 }}>
-        <MenuItem value="">Todos los días</MenuItem>
-        {days.map((d) => <MenuItem key={d} value={d} sx={{ textTransform: "capitalize" }}>{dayLabel(d)}</MenuItem>)}
-      </TextField>
+      <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} alignItems={{ sm: "center" }} sx={{ mb: 2 }}>
+        <TextField select size="small" label="Día" value={dayF} onChange={(e) => setDayF(e.target.value)} sx={{ minWidth: 240 }}>
+          <MenuItem value="">Todos los días</MenuItem>
+          {days.map((d) => <MenuItem key={d} value={d} sx={{ textTransform: "capitalize" }}>{dayLabel(d)}</MenuItem>)}
+        </TextField>
+        {/* Mismo formato que el "Reporte Ventas" de la feria: un bloque por día (o solo el día elegido). */}
+        <Button
+          variant="contained"
+          startIcon={<Download size={15} />}
+          disabled={loading}
+          onClick={() => downloadFairSalesReport(fairDays(all.tickets, all.orders).filter((d) => !dayF || d.day === dayF))}
+        >
+          Descargar reporte de ventas
+        </Button>
+      </Stack>
 
       <KpiStrip
         loading={loading}

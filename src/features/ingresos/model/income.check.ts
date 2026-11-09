@@ -1,6 +1,30 @@
 // node --experimental-strip-types src/features/ingresos/model/income.check.ts
 import assert from "node:assert/strict";
-import { appAmount, buildCustomers, byMethod, dayOf, fairConvocatorias, isCollected, methodLabel, methodMatrix, monthlyIncome, orderIncome, orderPayments } from "./income.ts";
+import { appAmount, buildCustomers, byMethod, dayOf, fairConvocatorias, fairDays, fairDayTotal, isCollected, methodLabel, methodMatrix, monthlyIncome, orderIncome, orderPayments } from "./income.ts";
+
+// Reporte de la feria: taquilla = entradas en sitio, cajas = obras, MP = todo lo en línea.
+{
+  const at = "2026-11-05T20:00:00Z"; // 3 p. m. en Bogotá
+  const [d] = fairDays(
+    [
+      { createdAt: at, saleChannel: "onsite", paymentMethod: "cash", price: 55000 },
+      { createdAt: at, saleChannel: "onsite", paymentMethod: "card_offline", price: 55000 },
+      { createdAt: at, saleChannel: "online", paymentMethod: "mercadopago", price: 55000 },
+    ],
+    [
+      { status: "paid", total: 1000, paidAt: at, payment: { method: "card_offline" } },
+      { status: "paid", total: 700, paidAt: at, payment: { method: "whatsapp" } },
+      { status: "paid", total: 500, paidAt: at, payment: { method: "mercadopago" } },
+      { status: "paid", total: 300, paidAt: at, payment: { method: "credit_card" } },
+      { status: "partial", total: 900, layaway: { amountPaid: 100, installments: [{ amount: 100, method: "cash", at }] } },
+    ],
+  );
+  assert.equal(d.day, "2026-11-05");
+  assert.deepEqual(d.taquilla, { Efectivo: 55000, Datáfono: 55000, Transferencia: 0 });
+  assert.deepEqual(d.cajas, { Efectivo: 100, Datáfono: 1000, Transferencia: 700, "Link de pago Bold": 300 });
+  assert.deepEqual(d.mercadopago, { Entradas: 55000, Obras: 500 });
+  assert.equal(fairDayTotal(d), 55000 * 3 + 100 + 1000 + 700 + 300 + 500);
+}
 
 assert.equal(appAmount({ paymentDetails: { transaction_amount: 40000 }, convocatoria: { fee: 1 } }), 40000);
 assert.equal(appAmount({ convocatoria: { fee: 50000 } }), 50000);
