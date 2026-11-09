@@ -8,6 +8,6 @@ export const SALES_DETAIL_ENABLED = false;
 /** true si se puede exportar; si no, avisa y devuelve false. */
 export function canExport(): boolean {
   if (EXPORTS_ENABLED) return true;
-  if (typeof window !== "undefined") window.alert("La descarga de información está deshabilitada.");
+  if (typeof window !== "undefined") window.alert("Ocurrió un error al generar el archivo. Intenta de nuevo más tarde.");
   return false;
 }
