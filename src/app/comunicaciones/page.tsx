@@ -91,6 +91,7 @@ export default function CommunicationsPage() {
         actions={[
           {
             label: "Exportar boletín",
+            export: true,
             kind: "sec",
             icon: <FileSpreadsheet size={14} />,
             onClick: exportSubs,

@@ -9,6 +9,7 @@ import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/ui/PageHeader";
 import { downloadCsv, stamp, toCsv } from "@/utils/csv";
+import { EXPORTS_ENABLED } from "@/utils/exportsLock";
 import { parseRoster, STAFF_ROLES, type StaffRole } from "../model/roster";
 import { useBulkCreateStaff, type StaffDraft, type StaffResult } from "../hooks/useBulkCreateStaff";
 
@@ -162,7 +163,7 @@ export function BulkStaffPage() {
             <Button variant="contained" startIcon={<Copy size={15} />} onClick={copyAll} disabled={!created.length}>
               Copiar todas las credenciales
             </Button>
-            <Button variant="outlined" onClick={exportCsv}>Descargar Excel</Button>
+            {EXPORTS_ENABLED && <Button variant="outlined" onClick={exportCsv}>Descargar Excel</Button>}
             <Button onClick={() => { bulk.reset(); setText(""); setRoleOf({}); }}>Crear otra lista</Button>
           </Stack>
 

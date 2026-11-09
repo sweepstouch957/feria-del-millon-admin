@@ -10,6 +10,8 @@ import { RefreshCw, FileSpreadsheet, Plus, Eye, Mail, ExternalLink } from "lucid
 import { SHOP_URL } from "@core/constants";
 import { DeliveryConfirmDialog } from "./DeliveryConfirmDialog";
 import { toCsv, downloadCsv, fmtDay, stamp } from "@/utils/csv";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import { useQuery } from "@tanstack/react-query";
 import { listOrders, listCustomers, type OrderDoc } from "@services/orders.service";
 import { formatCOP } from "@/utils/money";
@@ -30,7 +32,11 @@ const receiptOf = (o: OrderDoc): string | undefined =>
   o.payment?.details?.receiptUrl ||
   [...(o.layaway?.installments ?? [])].reverse().find((i) => i.receiptUrl)?.receiptUrl;
 
-export default function OrdersPage() {
+export default function Page() {
+  return SALES_DETAIL_ENABLED ? <OrdersPage /> : <LockedNotice title="Órdenes" />;
+}
+
+function OrdersPage() {
   const [status, setStatus] = React.useState<OrderDoc["status"] | "">("");
   const [q, setQ] = React.useState("");
   const [detail, setDetail] = React.useState<OrderDoc | null>(null);

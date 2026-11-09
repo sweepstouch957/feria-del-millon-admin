@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
+import { EXPORTS_ENABLED } from "@/utils/exportsLock";
 import { listInviteLinkRegistrations, type InviteLink, type InviteLinkPerson } from "@services/ticket.service";
 
 /* Quiénes se registraron por un enlace: una fila por persona (el titular y
@@ -112,7 +113,7 @@ export default function InviteLinkRegistrationsDialog({ link, onClose }: { link:
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cerrar</Button>
-        <Button variant="contained" onClick={exportCsv} disabled={!people.length}>Descargar Excel</Button>
+        {EXPORTS_ENABLED && <Button variant="contained" onClick={exportCsv} disabled={!people.length}>Descargar Excel</Button>}
       </DialogActions>
     </Dialog>
   );

@@ -92,7 +92,7 @@ export default function AuditPage() {
         title="Auditoría"
         description="Quién entró al panel, desde dónde y qué cambió: ventas, taquilla, puerta, obras, usuarios y configuración. Las consultas (solo mirar) no se registran."
         actions={[
-          { label: "Exportar", kind: "sec", icon: <FileSpreadsheet size={14} />, disabled: !rows.length, onClick: exportCsv },
+          { label: "Exportar", export: true, kind: "sec", icon: <FileSpreadsheet size={14} />, disabled: !rows.length, onClick: exportCsv },
           { label: "Actualizar", kind: "sec", icon: <RefreshCw size={14} />, disabled: query.isFetching, onClick: () => query.refetch() },
         ]}
       />

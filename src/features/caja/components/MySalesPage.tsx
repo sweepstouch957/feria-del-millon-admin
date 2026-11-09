@@ -7,6 +7,7 @@ import KpiStrip from "@/components/ui/KpiStrip";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { formatCOP } from "@/utils/money";
 import { downloadCsv, stamp, toCsv } from "@/utils/csv";
+import { EXPORTS_ENABLED } from "@/utils/exportsLock";
 import { todayBogota, useMySales } from "../hooks/useMySales";
 import { CAJA_METHODS, METHOD_LABEL } from "../model/sale";
 import { clearPracticeSales, listPracticeSales } from "../model/practice";
@@ -63,7 +64,7 @@ export function MySalesPage() {
         back="/caja"
         backLabel="Volver a la caja"
         actions={[
-          { label: "Descargar Excel", kind: "sec", onClick: exportCsv, disabled: !lines.length },
+          { label: "Descargar Excel", export: true, kind: "sec", onClick: exportCsv, disabled: !lines.length },
           ...(practice ? [{ label: "Borrar ventas de práctica", kind: "sec" as const, onClick: () => { clearPracticeSales(); void sales.refetch(); } }] : []),
         ]}
       >
@@ -92,10 +93,12 @@ export function MySalesPage() {
               </Box>
             ))}
           </Stack>
-          <Button size="small" variant="contained" color="error" sx={{ mt: 1.5 }}
-            onClick={() => toExcel(`ventas_NO_guardadas_${stamp()}.csv`, unsaved)}>
-            Descargar Excel
-          </Button>
+          {EXPORTS_ENABLED && (
+            <Button size="small" variant="contained" color="error" sx={{ mt: 1.5 }}
+              onClick={() => toExcel(`ventas_NO_guardadas_${stamp()}.csv`, unsaved)}>
+              Descargar Excel
+            </Button>
+          )}
         </Alert>
       )}
 

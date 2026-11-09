@@ -5,6 +5,7 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { eyebrow } from "@/app/theme";
+import { EXPORTS_ENABLED } from "@/utils/exportsLock";
 
 /* Encabezado de página del panel: versalita de sección, título liviano,
    insignia opcional, una línea de contexto y los botones de acción a la
@@ -18,6 +19,8 @@ export type PageAction = {
   kind?: "pri" | "acc" | "sec";
   disabled?: boolean;
   icon?: React.ReactNode;
+  /** Descarga datos (Excel/CSV): se oculta mientras las descargas estén bloqueadas. */
+  export?: boolean;
 };
 
 export default function PageHeader({
@@ -43,6 +46,7 @@ export default function PageHeader({
   children?: React.ReactNode;
 }) {
   const router = useRouter();
+  actions = actions.filter((a) => !a.export || EXPORTS_ENABLED);
 
   return (
     <Stack

@@ -20,6 +20,7 @@ import { downloadCsv, stamp, toCsv, type CsvCol } from "@/utils/csv";
 import { formatCOP } from "@/utils/money";
 import { useIncome } from "../hooks/useIncome";
 import { downloadFairSalesReport } from "@/utils/fairSalesReport";
+import { EXPORTS_ENABLED, SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import { appAmount, buildCustomers, byMethod, dayOf, fairDays, groupTotals, methodLabel, methodMatrix, orderIncome, orderPayments, ticketsByMethod, type Customer, type MethodRow, type MethodTotal } from "../model/income";
 
 const money = (n?: number) => formatCOP(n || 0, { code: true });
@@ -244,8 +245,10 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
   const router = useRouter();
   const [panel, setPanelState] = useState<Panel>(PANELS.find((p) => p === initialPanel) ?? "boletos");
   // Panorama = gráficos; Detalle = desgloses y listas. Tocar una cifra lleva a su detalle.
-  const [view, setView] = useState<"panorama" | "detalle">(initialPanel ? "detalle" : "panorama");
-  const setPanel = (p: Panel) => { setPanelState(p); setView("detalle"); };
+  // Con el detalle bloqueado (utils/exportsLock) solo queda Panorama: cifras generales.
+  const [viewState, setView] = useState<"panorama" | "detalle">(initialPanel && SALES_DETAIL_ENABLED ? "detalle" : "panorama");
+  const view = SALES_DETAIL_ENABLED ? viewState : "panorama";
+  const setPanel = (p: Panel) => { if (!SALES_DETAIL_ENABLED) return; setPanelState(p); setView("detalle"); };
   const all = useIncome(eventId);
   const { pending, applications, loading, failed, refetch } = all;
   const ticketAmount = (t: TicketSale) => Number(t.price || 0);
@@ -291,14 +294,14 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
           {days.map((d) => <MenuItem key={d} value={d} sx={{ textTransform: "capitalize" }}>{dayLabel(d)}</MenuItem>)}
         </TextField>
         {/* Mismo formato que el "Reporte Ventas" de la feria: un bloque por día (o solo el día elegido). */}
-        <Button
+        {EXPORTS_ENABLED && <Button
           variant="contained"
           startIcon={<Download size={15} />}
           disabled={loading}
           onClick={() => downloadFairSalesReport(fairDays(all.tickets, all.orders).filter((d) => !dayF || d.day === dayF))}
         >
           Descargar reporte de ventas
-        </Button>
+        </Button>}
       </Stack>
 
       <KpiStrip
@@ -314,10 +317,12 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
         ]}
       />
 
-      <Tabs value={view} onChange={(_, v) => setView(v)} sx={{ mb: 2.5 }}>
-        <Tab value="panorama" label="Panorama" />
-        <Tab value="detalle" label="Detalle" />
-      </Tabs>
+      {SALES_DETAIL_ENABLED && (
+        <Tabs value={view} onChange={(_, v) => setView(v)} sx={{ mb: 2.5 }}>
+          <Tab value="panorama" label="Panorama" />
+          <Tab value="detalle" label="Detalle" />
+        </Tabs>
+      )}
 
       {view === "panorama" ? (
         <IncomeOverview eventId={eventId} tickets={all.tickets} orders={all.orders} appsTotal={appsTotal} dayF={dayF} loading={loading} />

@@ -16,6 +16,8 @@ import { usePavilions } from "@/hooks/usePavilions";
 import { useTechniques } from "@/hooks/useTechniques";
 import { formatCOP } from "@/utils/money";
 import { toCsv, downloadCsv, stamp } from "@/utils/csv";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 
@@ -28,7 +30,11 @@ const VIEWS = [
   { key: "byTechnique", label: "Por técnica", col: "Técnica" },
 ] as const;
 
-export default function SalesReportPage() {
+export default function Page() {
+  return SALES_DETAIL_ENABLED ? <SalesReportPage /> : <LockedNotice title="Reporte de ventas" />;
+}
+
+function SalesReportPage() {
   const [f, setF] = React.useState({ event: "", from: "", to: "", pavilion: "", technique: "", artist: "" });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setF((p) => ({ ...p, [k]: e.target.value, ...(k === "event" ? { pavilion: "" } : {}) }));

@@ -34,6 +34,7 @@ import {
 } from "@services/applications.service";
 import {
   fetchAllApplications, countSegments, inSegment, applicationsToCsv, downloadCsv,
+  EXPORTS_ENABLED,
   type Segment,
 } from "@utils/exportApplications";
 import { getConvocatorias, type Convocatoria } from "@services/events.service";
@@ -1241,9 +1242,11 @@ export default function SolicitudesPage() {
               <Button onClick={openConfig} variant="outlined" size="small" startIcon={<SettingsIcon size={14} />}>
                 Convocatoria
               </Button>
-              <Button onClick={openExport} variant="contained" color="secondary" size="small" startIcon={<SheetIcon size={14} />}>
-                Exportar Excel
-              </Button>
+              {EXPORTS_ENABLED && (
+                <Button onClick={openExport} variant="contained" color="secondary" size="small" startIcon={<SheetIcon size={14} />}>
+                  Exportar Excel
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 color="info"

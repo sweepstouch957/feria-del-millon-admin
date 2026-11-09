@@ -485,6 +485,7 @@ function Invitations({ eventId }: { eventId: string }) {
           { label: "Nueva invitación", kind: "pri", icon: <UserPlus size={14} />, onClick: () => setNewOpen(true) },
           {
             label: exporting ? "Exportando…" : "Exportar Excel",
+            export: true,
             kind: "sec",
             disabled: exporting || !listData?.total,
             onClick: exportCsv,

@@ -9,6 +9,7 @@
 // aquí. Las hojas de detalle son Tablas de Excel, así que desde ahí se puede
 // insertar una tabla dinámica en un clic (Insertar → Tabla dinámica).
 import type { Ticket } from "@services/ticket.service";
+import { canExport } from "@/utils/exportsLock";
 
 type Row = Ticket & { inviteLink?: string; checkIns?: unknown[] };
 
@@ -123,6 +124,7 @@ function barsPng(title: string, labels: string[], values: number[], color: strin
 /* ── El libro ─────────────────────────────────────────────────────────── */
 
 export async function downloadInvitationsReport(rows: Row[], eventName = "Feria del Millón") {
+  if (!canExport()) return;
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "Panel Feria del Millón";

@@ -1014,6 +1014,7 @@ export default function UsersPage() {
           { label: "Cuentas de caja en lote", kind: "sec", href: "/users/equipo" },
           {
             label: exporting ? "Exportando…" : "Exportar Excel",
+            export: true,
             kind: "sec",
             icon: <FileSpreadsheet size={14} />,
             disabled: exporting,

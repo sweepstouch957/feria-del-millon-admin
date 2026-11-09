@@ -2,6 +2,7 @@
 // Taquilla y Cajas por medio de pago, Mercado Pago aparte y el total del día.
 // El sistema no distingue Bold de Credibanco: ambos van como "Datáfono".
 import { fairDayTotal, type FairDay } from "@features/ingresos/model/income";
+import { canExport } from "@/utils/exportsLock";
 
 const PEACH = "FFF8CBAD", BLUE = "FFBDD7EE", PINK = "FFE6CCF0";
 const MONEY = '"$" #,##0';
@@ -24,6 +25,7 @@ function sumDays(days: FairDay[]): FairDay {
 }
 
 export async function downloadFairSalesReport(days: FairDay[], year = new Date().getFullYear()) {
+  if (!canExport()) return;
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "Panel Feria del Millón";

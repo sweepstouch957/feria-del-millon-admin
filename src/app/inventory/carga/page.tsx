@@ -92,7 +92,7 @@ function InventoryStatus({ eventId }: { eventId: string }) {
             kind: "acc",
             onClick: () => setRemindOpen(true),
           },
-          { label: "Exportar Excel", kind: "sec", disabled: !shown.length, onClick: exportCsv },
+          { label: "Exportar Excel", export: true, kind: "sec", disabled: !shown.length, onClick: exportCsv },
         ]}
       />
       <UploadMoreDialog

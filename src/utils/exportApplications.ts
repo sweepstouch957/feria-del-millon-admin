@@ -5,6 +5,8 @@
  */
 import { listApplications, type ArtistApplication } from "@services/applications.service";
 import { formatDate } from "@/utils/date";
+import { canExport } from "@/utils/exportsLock";
+export { EXPORTS_ENABLED } from "@/utils/exportsLock";
 
 export type Segment = "paid_submitted" | "paid_not_submitted" | "not_paid" | "all";
 
@@ -134,6 +136,7 @@ export function applicationsToCsv(apps: ArtistApplication[]): string {
 }
 
 export function downloadCsv(filename: string, csv: string): void {
+  if (!canExport()) return;
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

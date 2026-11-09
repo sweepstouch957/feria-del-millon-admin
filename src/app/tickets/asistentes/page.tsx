@@ -10,6 +10,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getAttendanceReport, getTicketDays, type AttendanceBucket } from "@services/ticket.service";
 import { toCsv, downloadCsv } from "@/utils/csv";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import { methodLabel } from "@features/ingresos/model/income";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -46,7 +48,11 @@ function BucketTable({ title, rows }: { title: string; rows: AttendanceBucket[] 
   );
 }
 
-export default function AttendancePage() {
+export default function Page() {
+  return SALES_DETAIL_ENABLED ? <AttendancePage /> : <LockedNotice title="Asistentes" />;
+}
+
+function AttendancePage() {
   // La feria activa manda: sin ella no hay nada que pedir.
   const { eventId, isLoading, isError, refetch } = useActiveEvent();
   if (!eventId) return <ActiveEventGate isLoading={isLoading} isError={isError} onRetry={refetch} />;
@@ -92,6 +98,7 @@ function Attendance({ eventId }: { eventId: string }) {
         actions={[
           {
             label: "Exportar Excel",
+            export: true,
             kind: "sec",
             icon: <FileSpreadsheet size={14} />,
             disabled: !data?.rows.length,
