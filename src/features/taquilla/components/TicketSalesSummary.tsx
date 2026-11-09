@@ -11,6 +11,7 @@ import { eyebrow } from "@/app/theme";
 import { getTicketSales } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
 import { useAuth } from "@/provider/authProvider";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 
 const colombiaDay = (d: string | Date) => new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 
@@ -18,7 +19,20 @@ const colombiaDay = (d: string | Date) => new Date(d).toLocaleDateString("en-CA"
  * Cuántas entradas y cuánta plata van, por método de pago (taquilla y en línea).
  * memo: cambiar la cantidad o el tipo en el formulario no lo vuelve a pintar.
  */
-export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: { eventId: string }) {
+export const TicketSalesSummary = memo(function TicketSalesSummaryGate({ eventId }: { eventId: string }) {
+  // Bloqueo (utils/exportsLock): en vez del resumen, un error del sistema.
+  if (!SALES_DETAIL_ENABLED) {
+    return (
+      <Box sx={{ border: "1px solid", borderColor: "divider", p: 3, mt: 3, textAlign: "center" }}>
+        <Typography fontWeight={500}>No pudimos cargar el resumen de ventas</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Ocurrió un error en el sistema. Intenta de nuevo más tarde.</Typography>
+      </Box>
+    );
+  }
+  return <SalesSummary eventId={eventId} />;
+});
+
+function SalesSummary({ eventId }: { eventId: string }) {
   const [range, setRange] = useState<"today" | "all">("today");
   // Taquilla recibe solo sus ventas (lo filtra el servidor); administración, todas.
   const roles = (useAuth().user?.roles || {}) as Record<string, boolean | undefined>;
@@ -111,4 +125,4 @@ export const TicketSalesSummary = memo(function TicketSalesSummary({ eventId }: 
       <CorrectionDialog target={fix} onClose={() => setFix(null)} />
     </Box>
   );
-});
+}

@@ -1,6 +1,7 @@
 import { MySalesPage } from "@features/caja/components/MySalesPage";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 
-// Abierto aun con el bloqueo: cada cajera ve su propio cierre (sin descargar: EXPORTS_ENABLED).
 export default function Page() {
-  return <MySalesPage />;
+  return SALES_DETAIL_ENABLED ? <MySalesPage /> : <LockedNotice title="Cierre de caja" />;
 }
