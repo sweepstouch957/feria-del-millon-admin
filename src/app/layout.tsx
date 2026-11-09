@@ -11,6 +11,7 @@ import MuiLocalizationProvider from "@/provider/MuiLocalizationProvider";
 import I18nProvider from "./i18nProvider";
 import { ThemeModeProvider } from "@/provider/ThemeModeProvider";
 import DialogsProvider from "@/components/ui/DialogsProvider";
+import DownloadGuard from "@/components/common/DownloadGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,6 +56,7 @@ export default function RootLayout({
                 <ClientThemeProvider>
                   <DialogsProvider>
                     <AuthProvider>
+                      <DownloadGuard />
                       <AuthenticatedLayout>{children}</AuthenticatedLayout>
                     </AuthProvider>
                   </DialogsProvider>

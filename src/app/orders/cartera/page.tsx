@@ -9,6 +9,8 @@ import {
 } from "@mui/material";
 import { Plus, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import KpiStrip from "@/components/ui/KpiStrip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listOrders, registerAbono, type OrderDoc } from "@services/orders.service";
@@ -22,7 +24,11 @@ const money = (n?: number) => formatCOP(n, { code: true });
 const METHODS = CAJA_METHODS;
 type Method = CajaMethod;
 
-export default function CarteraPage() {
+export default function Page() {
+  return SALES_DETAIL_ENABLED ? <CarteraPage /> : <LockedNotice title="Cartera" />;
+}
+
+function CarteraPage() {
   const qc = useQueryClient();
   const [toast, setToast] = React.useState({ open: false, msg: "", sev: "success" as "success" | "error" });
 

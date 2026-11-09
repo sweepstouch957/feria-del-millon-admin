@@ -1,5 +1,5 @@
 // Bloqueo hasta nuevo aviso: solo métricas generales en pantalla.
-//  - EXPORTS_ENABLED: descargas de datos (Excel/CSV). QR, etiquetas PDF y pases no cuentan.
+//  - EXPORTS_ENABLED: cualquier archivo (Excel, CSV, PDF, QR, ZIP); DownloadGuard lo aplica en todo el panel.
 //  - SALES_DETAIL_ENABLED: listas y reportes de ventas al detalle (pedidos, compradores, líneas).
 // Para volver a permitirlo: true y redesplegar.
 export const EXPORTS_ENABLED = false;

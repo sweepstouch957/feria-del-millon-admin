@@ -14,6 +14,7 @@ import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
 import { getInvitationsAdmin, listInviteLinks } from "@/services/ticket.service";
 import { listUsers } from "@/services/user.service";
 import { formatCOP } from "@/utils/money";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 
 const money = (n: number) => formatCOP(n, { code: true });
 const percent = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)} %` : "0 %");
@@ -126,6 +127,8 @@ function Dashboard({ eventId }: { eventId: string }) {
         min={210}
       />
 
+      {/* Bloqueo (utils/exportsLock): solo los KPIs de arriba. */}
+      {SALES_DETAIL_ENABLED && (<>
       <Box sx={{ display: "grid", gap: { xs: 2, md: 3 }, gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "minmax(0, 2fr) minmax(0, 1fr)" }, mb: { xs: 2, md: 3 } }}>
         <Panel title="Ingresos por mes" sub="Según la fecha de cada pago" loading={income.loading}>
           <MonthlyIncomeChart data={months} totals={totals} />
@@ -146,6 +149,7 @@ function Dashboard({ eventId }: { eventId: string }) {
           <MeterList rows={linkRows} empty="Todavía no hay enlaces." />
         </Panel>
       </Box>
+      </>)}
     </Box>
   );
 }

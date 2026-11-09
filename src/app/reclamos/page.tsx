@@ -5,6 +5,8 @@ import { Alert, Box, Button, Card, CircularProgress, Stack, TextField, Typograph
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import PageHeader from "@/components/ui/PageHeader";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import BulkSaleDialog from "@/app/inventory/artworks/BulkSaleDialog";
@@ -27,7 +29,11 @@ const TABS: { key: SaleClaim["status"]; label: string }[] = [
   { key: "rejected", label: "Rechazados" },
 ];
 
-export default function ReclamosPage() {
+export default function Page() {
+  return SALES_DETAIL_ENABLED ? <ReclamosPage /> : <LockedNotice title="Reclamos" />;
+}
+
+function ReclamosPage() {
   const [tab, setTab] = useState<SaleClaim["status"] | "admintest">("pending");
   const q = useQuery({ queryKey: ["saleClaims"], queryFn: () => listSaleClaims(), refetchInterval: 60_000 });
   const at = useQuery({ queryKey: ["adminTestSales"], queryFn: listAdminTestSales });

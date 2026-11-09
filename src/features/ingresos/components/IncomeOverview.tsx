@@ -9,6 +9,7 @@ import { eyebrow } from "@/app/theme";
 import { getSalesReport, type OrderDoc } from "@services/orders.service";
 import type { TicketSale } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import history from "../model/fairHistory.json";
 import { yearIncome, type YearRow } from "../model/fairHistory";
 import { dayOf, methodMatrix, orderPayments } from "../model/income";
@@ -111,6 +112,17 @@ export default function IncomeOverview({ eventId, tickets, orders, appsTotal, da
     const total = all.reduce((s, r) => s + r.amount, 0);
     return all.slice(0, top).map((r) => ({ label: `${r.label} · ${r.units} obra${r.units === 1 ? "" : "s"}`, value: r.amount, of: total, text: compact(r.amount) }));
   };
+
+  // Bloqueo (utils/exportsLock): solo el reparto por pabellón, sin enlaces al detalle.
+  if (!SALES_DETAIL_ENABLED) {
+    return (
+      <Box sx={{ mb: 3 }}>
+        <Panel title="Obras por pabellón" sub={`Obras pagadas${rep ? ` · ${compact(rep.total)} en ${rep.units} obras` : ""}`} loading={sales.isLoading}>
+          <MeterList rows={share(rep?.byPavilion, 12)} empty="Sin ventas por pabellón todavía." />
+        </Panel>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, mb: 3 }}>

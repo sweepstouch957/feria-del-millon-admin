@@ -5,6 +5,8 @@ import { Alert, Box, Button, Card, CircularProgress, Stack, Typography } from "@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import PageHeader from "@/components/ui/PageHeader";
+import LockedNotice from "@/components/ui/LockedNotice";
+import { SALES_DETAIL_ENABLED } from "@/utils/exportsLock";
 import KpiStrip from "@/components/ui/KpiStrip";
 import StatusPill from "@/components/ui/StatusPill";
 import { Diff, when } from "@features/correcciones/components/CorrectionsPopup";
@@ -21,7 +23,11 @@ const TABS: { key: CorrectionStatus; label: string }[] = [
   { key: "rejected", label: "Rechazadas" },
 ];
 
-export default function CorreccionesPage() {
+export default function Page() {
+  return SALES_DETAIL_ENABLED ? <CorreccionesPage /> : <LockedNotice title="Correcciones" />;
+}
+
+function CorreccionesPage() {
   const [tab, setTab] = useState<CorrectionStatus>("pending");
   const lists = useQueries({
     queries: TABS.map((t) => ({ queryKey: ["corrections", t.key], queryFn: () => listCorrections(t.key), refetchInterval: 60_000 })),
