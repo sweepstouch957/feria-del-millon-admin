@@ -9,6 +9,7 @@ import KpiStrip from "@/components/ui/KpiStrip";
 import PageHeader from "@/components/ui/PageHeader";
 import StatusPill from "@/components/ui/StatusPill";
 import { MeterList, MonthlyIncomeChart, Panel, SourceSplit, type MeterRow } from "@features/ingresos/components/DashboardCharts";
+import ShopSalesCard from "@/components/views/events/ShopSalesCard";
 import { useIncome } from "@features/ingresos/hooks/useIncome";
 import { appAmount, monthlyIncome, orderIncome } from "@features/ingresos/model/income";
 import { ActiveEventGate, useActiveEvent } from "@hooks/events/useActiveEvent";
@@ -87,6 +88,7 @@ export default function HomeClient() {
 
 function Dashboard({ eventId }: { eventId: string }) {
   const router = useRouter();
+  const { event } = useActiveEvent();
   const income = useIncome(eventId);
   const { data: artists } = useQuery({
     queryKey: ["dash", "users", "artists"],
@@ -179,6 +181,11 @@ function Dashboard({ eventId }: { eventId: string }) {
       />
 
       <QuickActions />
+
+      {/* La tienda en línea se abre o se cierra desde aquí, en un clic. */}
+      <Box sx={{ mb: { xs: 2, md: 3 } }}>
+        <ShopSalesCard event={event} />
+      </Box>
 
       {/* Bloqueo (utils/exportsLock): solo los KPIs de arriba. */}
       {SALES_DETAIL_ENABLED && (<>

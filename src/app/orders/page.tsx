@@ -173,10 +173,10 @@ function OrdersPage() {
       <KpiStrip
         loading={isLoading}
         items={[
-          { label: "Pedidos", value: rows.length },
-          { label: "Pagados", value: paidRows.length },
-          { label: "Rechazados", value: rows.filter((o) => o.status === "failed").length },
-          { label: "En cartera", value: money(pendingTotal) },
+          { label: "Ventas en la lista", value: rows.length, sub: "incluye rechazadas y canceladas" },
+          { label: "Pagadas", value: paidRows.length },
+          { label: "Pagos rechazados", value: rows.filter((o) => o.status === "failed").length, sub: "no se cobró: se puede reintentar" },
+          { label: "Apartadas (deben)", value: money(pendingTotal), sub: "se cobran en Apartados / cartera" },
           { label: "Total pagado", value: money(paidTotal), accent: true },
         ]}
       />
@@ -190,7 +190,7 @@ function OrdersPage() {
       />
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
-        <TextField size="small" label="Buscar comprador u obra" value={q} onChange={(e) => setQ(e.target.value)} sx={{ flex: 1 }} />
+        <TextField size="small" label="Buscar por comprador, obra o artista" value={q} onChange={(e) => setQ(e.target.value)} sx={{ flex: 1 }} />
         <TextField size="small" select label="Estado" value={status} onChange={(e) => setStatus(e.target.value as any)} sx={{ minWidth: 200 }}>
           <MenuItem value="">Todos</MenuItem>
           {Object.entries(STATUS).map(([v, s]) => <MenuItem key={v} value={v}>{s.label}</MenuItem>)}

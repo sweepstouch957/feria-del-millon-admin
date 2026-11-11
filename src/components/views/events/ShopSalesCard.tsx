@@ -26,6 +26,9 @@ export default function ShopSalesCard({ event }: { event: EventDoc | null | unde
   const site = useQuery({ queryKey: ["site-config"], queryFn: getSiteConfig, staleTime: 30_000 });
   const sales = site.data?.landing.catalogSales;
   const fairMode = !!sales?.fairMode;
+  // Pausa por fechas (solo aplica con el modo feria apagado).
+  const today = new Date().toISOString().slice(0, 10);
+  const pausedNow = !fairMode && !!sales?.pausedFrom && !!sales?.pausedTo && sales.pausedFrom <= today && today <= sales.pausedTo;
 
   const reveal = useMutation({
     mutationFn: (on: boolean) => setCatalogReveal(eventId, on),
@@ -61,7 +64,11 @@ export default function ShopSalesCard({ event }: { event: EventDoc | null | unde
           <Typography variant="h6">Tienda en línea</Typography>
           <Stack direction="row" gap={1}>
             <StatusPill tone={revealed || started ? "ok" : "mid"} dot={revealed || started} label={revealed || started ? "Obras visibles" : "Obras ocultas"} />
-            <StatusPill tone={fairMode ? "ok" : "warn"} dot={fairMode} label={fairMode ? "Se puede comprar" : "Compra bloqueada"} />
+            <StatusPill
+              tone={fairMode ? "ok" : pausedNow ? "warn" : "ok"}
+              dot={fairMode || !pausedNow}
+              label={fairMode ? "Modo feria: se compra solo por QR" : pausedNow ? "Venta en línea pausada por fechas" : "Catálogo en línea abierto"}
+            />
           </Stack>
         </Stack>
 
@@ -74,18 +81,18 @@ export default function ShopSalesCard({ event }: { event: EventDoc | null | unde
         )}
 
         {row(
-          "Permitir comprar (modo feria)",
+          "Modo feria (vender solo por QR)",
           <>
-            Apagado: la obra disponible se ve con el botón «Venta en feria» deshabilitado.
-            Encendido: se compra desde el QR de cada obra (sin catálogo ni carrito).
-            {sales?.pausedFrom && !fairMode && ` Venta en línea pausada del ${ymd(sales.pausedFrom)} al ${ymd(sales.pausedTo)}.`}
+            Encendido: la página esconde el catálogo y el carrito; solo se compra escaneando el QR de cada obra en la
+            feria. Apagado: catálogo y carrito normales.
+            {sales?.pausedFrom && !fairMode && ` Ojo: hay pausa por fechas del ${ymd(sales.pausedFrom)} al ${ymd(sales.pausedTo)}.`}
           </>,
           <Switch color="success" checked={fairMode} disabled={site.isLoading || toggleFair.isPending} onChange={(e) => toggleFair.mutate(e.target.checked)} />,
         )}
 
         {(reveal.isError || toggleFair.isError) && <Alert severity="error" sx={{ mt: 1 }}>No se pudo guardar. Intenta de nuevo.</Alert>}
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          El mensaje y las fechas de la pausa se cambian en <Link href="/personalizacion">Personalización → Venta en línea del catálogo</Link>.
+          El mensaje y las fechas de la pausa se cambian en <Link href="/personalizacion">Sitio web → Venta en línea del catálogo</Link>.
         </Typography>
       </CardContent>
     </Card>

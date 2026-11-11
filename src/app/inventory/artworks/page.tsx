@@ -472,7 +472,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
           {
             label: "Ocultas",
             value: counts.data?.hidden ?? 0,
-            sub: revealed ? "se ven: el catálogo está revelado" : "cargadas, sin publicar",
+            sub: revealed ? "el público las ve igual (modo «ver todas» encendido)" : "cargadas, el público no las ve",
             onClick: () => changeView("hidden"),
             selected: view === "hidden" && !archived,
           },
@@ -483,14 +483,26 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
       <Accordion disableGutters sx={{ mb: 2, "&:before": { display: "none" } }}>
         <AccordionSummary expandIcon={<ChevronDownIcon size={16} />}>
           <Stack direction={{ xs: "column", sm: "row" }} gap={{ xs: 1, sm: 2 }} alignItems={{ sm: "center" }} sx={{ width: "100%", pr: 1 }}>
-            <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>Ajustes de la feria</Typography>
+            <Typography sx={{ ...eyebrow, fontSize: 10, color: "text.secondary" }}>Reglas de la feria</Typography>
             <Stack direction="row" gap={1} flexWrap="wrap">
-              <StatusPill tone={revealed ? "ok" : "mid"} dot={revealed} label={revealed ? "Ocultas reveladas" : "Ocultas no se ven"} />
+              <StatusPill
+                tone={revealed ? "ok" : "mid"}
+                dot={revealed}
+                label={revealed ? "El público ve TODAS las obras" : "El público solo ve las publicadas"}
+              />
               <StatusPill
                 tone={closed ? "bad" : closeAt ? "warn" : "mid"}
-                label={closeAt ? `Carga ${closed ? "cerró" : "cierra"} ${fmtDate(closeAt)}` : "Carga sin cierre"}
+                label={
+                  closeAt
+                    ? closed
+                      ? `Los artistas ya no pueden subir (cerró ${fmtDate(closeAt)})`
+                      : `Los artistas pueden subir hasta ${fmtDate(closeAt)}`
+                    : "Los artistas pueden subir obras (sin fecha límite)"
+                }
               />
-              {activeExt.length > 0 && <StatusPill tone="ok" label={`${activeExt.length} con plazo extra`} />}
+              {activeExt.length > 0 && (
+                <StatusPill tone="ok" label={`${activeExt.length} artista(s) con permiso de subir tarde`} />
+              )}
             </Stack>
           </Stack>
         </AccordionSummary>
@@ -499,10 +511,10 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
             {/* Revelar */}
             <Stack direction={{ xs: "column", md: "row" }} gap={2} justifyContent="space-between" alignItems={{ md: "center" }}>
               <Box>
-                <Typography variant="body2" fontWeight={500}>Revelar las obras ocultas</Typography>
+                <Typography variant="body2" fontWeight={500}>Mostrar también las obras ocultas al público</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Encendido, el catálogo público muestra también las ocultas (pasa solo el día de la feria). Apagado, solo
-                  las publicadas.
+                  Encendido: en la página se ven TODAS las obras, incluso las que no has publicado (se usa el día de la
+                  feria). Apagado: el público solo ve las publicadas.
                 </Typography>
               </Box>
               <Switch color="success" checked={revealed} disabled={revealBusy} onChange={(e) => toggleReveal(e.target.checked)} />
@@ -511,9 +523,10 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
             {/* Cierre de carga */}
             <Stack direction={{ xs: "column", md: "row" }} gap={2} justifyContent="space-between" alignItems={{ md: "center" }}>
               <Box>
-                <Typography variant="body2" fontWeight={500}>Cierre de carga para artistas</Typography>
+                <Typography variant="body2" fontWeight={500}>Fecha límite para que los artistas suban obras</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Después de esta fecha los artistas ya no crean ni editan obras. Vacío = sin cierre.
+                  Pasada esta fecha, los artistas ya no pueden crear ni editar obras. Si la dejas vacía, pueden subir
+                  siempre.
                 </Typography>
               </Box>
               <TextField
@@ -531,9 +544,10 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
 
             {/* Plazos extendidos */}
             <Box>
-              <Typography variant="body2" fontWeight={500}>Plazo extra para artistas</Typography>
+              <Typography variant="body2" fontWeight={500}>Permiso para que un artista suba tarde</Typography>
               <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 1.5 }}>
-                Estos artistas pueden seguir cargando y editando hasta su fecha, aunque la carga haya cerrado.
+                Si la fecha límite ya pasó pero a alguien le falta subir, dale permiso hasta una fecha: solo ese artista
+                podrá seguir subiendo y editando.
               </Typography>
               <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
                 <TextField select size="small" label="Artista" value={extArtist} onChange={(e) => setExtArtist(e.target.value)} sx={{ minWidth: 240 }}>
@@ -556,13 +570,13 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
                   disabled={revealBusy || !extArtist || !extUntil}
                   onClick={() => saveExtension(extArtist, new Date(extUntil).toISOString())}
                 >
-                  Dar plazo
+                  Dar permiso
                 </Button>
               </Stack>
 
               <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: 1.5 }}>
                 {activeExt.length === 0 && (
-                  <Typography variant="caption" color="text.secondary">Nadie tiene plazo extra vigente.</Typography>
+                  <Typography variant="caption" color="text.secondary">Nadie tiene permiso extra ahora.</Typography>
                 )}
                 {activeExt.map((x) => (
                   <Chip

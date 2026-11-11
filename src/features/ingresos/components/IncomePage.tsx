@@ -307,13 +307,13 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
       <KpiStrip
         loading={loading}
         items={[
-          { label: "Total", value: money(total), accent: true, sub: "boletos + obras + inscripciones" },
-          { label: "Boletos", value: money(ticketsTotal), sub: `${tickets.length} entrada(s)`, onClick: () => setPanel("boletos"), selected: view === "detalle" && panel === "boletos" },
+          { label: "Total", value: money(total), accent: true, sub: "entradas + obras + inscripciones" },
+          { label: "Entradas", value: money(ticketsTotal), sub: `${tickets.length} entrada(s)`, onClick: () => setPanel("boletos"), selected: view === "detalle" && panel === "boletos" },
           { label: "Obras", value: money(ordersTotal), sub: `${orders.length} venta(s)`, onClick: () => setPanel("obras"), selected: view === "detalle" && panel === "obras" },
           { label: "Inscripciones", value: money(appsTotal), sub: `${apps.length} pagada(s)`, onClick: () => setPanel("inscripciones"), selected: view === "detalle" && panel === "inscripciones" },
           { label: "Clientes", value: customers.length, sub: "compraron entradas u obras", onClick: () => setPanel("clientes"), selected: view === "detalle" && panel === "clientes" },
           { label: "Por cobrar", value: money(pending), sub: "saldo de obras apartadas", onClick: () => router.push("/orders/cartera") },
-          { label: "Solicitudes", value: applications.total, sub: `${applications.accepted} aceptadas`, onClick: () => router.push("/solicitudes") },
+          { label: "Postulaciones", value: applications.total, sub: `${applications.accepted} aceptadas`, onClick: () => router.push("/solicitudes") },
         ]}
       />
 
@@ -352,9 +352,9 @@ function Income({ eventId, initialPanel }: { eventId: string; initialPanel?: str
       ) : panel === "boletos" ? (
         <Rows key="boletos" rows={tickets} cols={TICKET_COLS} name="boletos" screen="/tickets/asistentes" screenLabel="Abrir asistentes" />
       ) : panel === "obras" ? (
-        <Rows key="obras" rows={orders} cols={ORDER_COLS} name="ventas_obras" screen="/orders" screenLabel="Abrir órdenes" />
+        <Rows key="obras" rows={orders} cols={ORDER_COLS} name="ventas_obras" screen="/orders" screenLabel="Abrir ventas de obras" />
       ) : panel === "inscripciones" ? (
-        <Rows key="inscripciones" rows={apps} cols={APP_COLS} name="inscripciones" screen="/solicitudes" screenLabel="Abrir solicitudes" />
+        <Rows key="inscripciones" rows={apps} cols={APP_COLS} name="inscripciones" screen="/solicitudes" screenLabel="Abrir postulaciones" />
       ) : (
         <Rows key="clientes" rows={customers} cols={CUSTOMER_COLS} name="clientes" />
       )}

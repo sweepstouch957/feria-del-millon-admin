@@ -10,13 +10,13 @@ import type { PillTone } from "@/components/ui/StatusPill";
 
 const money = (n?: number) => formatCOP(n, { code: true });
 export const STATUS: Record<OrderDoc["status"], { label: string; tone: PillTone }> = {
-  created: { label: "Creado", tone: "mid" },
-  payment_processing: { label: "Procesando pago", tone: "mid" },
-  partial: { label: "Abono / fiado", tone: "warn" },
-  paid: { label: "Pagado", tone: "ok" },
-  failed: { label: "Fallido", tone: "bad" },
-  canceled: { label: "Cancelado", tone: "mid" },
-  refunded: { label: "Reembolsado", tone: "mid" },
+  created: { label: "Sin pagar todavía", tone: "mid" },
+  payment_processing: { label: "Pagando en línea…", tone: "mid" },
+  partial: { label: "Apartada (debe saldo)", tone: "warn" },
+  paid: { label: "Pagada", tone: "ok" },
+  failed: { label: "Pago rechazado", tone: "bad" },
+  canceled: { label: "Cancelada", tone: "mid" },
+  refunded: { label: "Reembolsada", tone: "mid" },
 };
 const DELIVERY: Record<string, string> = { pending: "Por entregar", delivered: "Entregada", returned: "Devuelta" };
 

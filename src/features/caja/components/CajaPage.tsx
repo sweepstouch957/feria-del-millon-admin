@@ -120,7 +120,7 @@ function Caja({ eventId }: { eventId: string }) {
       <PageHeader
         crumb="Caja"
         title="Vender obra"
-        description={wide ? "Primero escanea el QR de la obra o búscala por su nombre. Después sigue los pasos 1, 2 y 3." : undefined}
+        description="Cobra una obra en 3 pasos: encuéntrala (QR o nombre), llena los datos del comprador y toca «Cobrar»."
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
       <Steps current={done ? 4 : selected ? 2 : 1} />
@@ -173,10 +173,24 @@ function Caja({ eventId }: { eventId: string }) {
                   />
                 </Box>
               ) : (
-                <Box sx={{ py: 4, textAlign: "center" }}>
-                  <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Sin obra</Typography>
-                  <Typography color="text.secondary" sx={{ mt: 1 }}>
-                    Escanea el QR o toca una obra de la lista para cobrarla.
+                <Box sx={{ py: 3, px: 1 }}>
+                  <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Cómo se vende</Typography>
+                  <Box component="ol" sx={{ m: "12px 0 0", pl: 2.5, color: "text.secondary", "& li": { mb: 1, lineHeight: 1.5 } }}>
+                    <Typography component="li">
+                      <strong>Encuentra la obra:</strong> toca el ícono de cámara del buscador y apunta al QR pegado en la
+                      obra, o escribe el título o el artista.
+                    </Typography>
+                    <Typography component="li">
+                      <strong>Tócala en la lista:</strong> aparece aquí con su foto, su precio y cuántas quedan.
+                    </Typography>
+                    <Typography component="li">
+                      <strong>Llena los datos y toca «Cobrar»:</strong> nombre, correo y dirección del comprador, y cómo
+                      pagó (efectivo, datáfono o transferencia).
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                    El comprador y el artista reciben su correo solos. Si algo sale mal, la respuesta está en la{" "}
+                    <a href="/caja/guia" style={{ color: "inherit" }}>Guía de caja</a>.
                   </Typography>
                 </Box>
               )}
