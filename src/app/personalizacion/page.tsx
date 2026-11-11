@@ -409,9 +409,9 @@ export default function PersonalizacionPage() {
   return (
     <Box sx={{ maxWidth: 940, mx: "auto" }}>
       <PageHeader
-        crumb="Contenido"
-        title="Personalización"
-        description="Textos, orden y visibilidad de la landing pública."
+        crumb="Sitio y difusión"
+        title="Sitio web"
+        description="Aquí se edita todo lo público: textos y portada de la página, menú, convocatoria, venta en línea del catálogo (Modo feria) y remitentes de correo. Nada se publica hasta tocar «Publicar cambios»."
         actions={[
           { label: "Restaurar", kind: "sec", icon: <ResetIcon size={14} />, onClick: () => setCfg(SITE_DEFAULTS) },
           {

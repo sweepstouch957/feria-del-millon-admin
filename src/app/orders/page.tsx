@@ -147,9 +147,9 @@ function OrdersPage() {
   return (
     <Box>
       <PageHeader
-        crumb="Pedidos"
-        title="Listado de pedidos"
-        description="Todas las ventas de obras, en línea y en caja."
+        crumb="Ventas"
+        title="Pedidos"
+        description="Todas las ventas de obras, en línea y en caja. Toca un pedido para ver comprador, pago y abonos."
         actions={[
           { label: "Vender obra", kind: "pri", icon: <Plus size={14} />, href: "/caja" },
           { label: "Correo de dirección", kind: "sec", icon: <Mail size={14} />, onClick: () => setMailOpen(true) },

@@ -67,9 +67,9 @@ function CarteraPage() {
   return (
     <Box>
       <PageHeader
-        crumb="Pedidos"
-        title="Cartera / Fiado"
-        description="Obras apartadas con saldo pendiente. Registra abonos hasta saldar."
+        crumb="Ventas"
+        title="Apartados / cartera"
+        description="Obras apartadas con saldo pendiente. Registra abonos hasta saldar; al saldar, la obra queda vendida y el comprador recibe su correo."
         actions={[
           {
             label: "Actualizar",

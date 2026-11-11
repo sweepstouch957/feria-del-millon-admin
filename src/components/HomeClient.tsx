@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Alert, Box } from "@mui/material";
+import { Alert, Box, ButtonBase, Typography } from "@mui/material";
+import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -29,6 +30,53 @@ const STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
   pending_payment: "Pago pendiente",
 };
+
+/* Lo que más se busca, con una línea que dice qué hay adentro: así nadie
+   tiene que adivinar en qué parte del menú vive cada cosa. */
+const SHORTCUTS: { title: string; hint: string; href: string }[] = [
+  { title: "Editar el sitio web", hint: "Portada, textos, menú, convocatoria y venta en línea del catálogo.", href: "/personalizacion" },
+  { title: "Revisar postulaciones", hint: "Califica, revisa el pago de inscripción y acepta artistas.", href: "/solicitudes" },
+  { title: "Obras y stock", hint: "Precio, stock, visibilidad en el catálogo y venta en lote.", href: "/inventory/artworks" },
+  { title: "¿Quién no ha cargado obras?", hint: "Artistas con el estudio en borrador o sin darle Enviar.", href: "/inventory/carga" },
+  { title: "Invitar a la feria", hint: "Invitados con pase QR, enlaces por empresa y recordatorios.", href: "/tickets/invitaciones" },
+  { title: "Crear cuentas", hint: "Cajeras, equipo y artistas invitados, con clave generada.", href: "/users" },
+  { title: "Etiquetas QR de obras", hint: "Hojas listas para imprimir y pegar en cada obra.", href: "/inventory/artworks/qr" },
+  { title: "Reportes y cierres", hint: "Ventas por día y método de pago, con Excel para contabilidad.", href: "/reportes" },
+];
+
+function QuickActions() {
+  const router = useRouter();
+  return (
+    <Box sx={{ mb: { xs: 2, md: 3 } }}>
+      <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
+        Accesos rápidos
+      </Typography>
+      <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(4, 1fr)" } }}>
+        {SHORTCUTS.map((s) => (
+          <ButtonBase
+            key={s.href}
+            onClick={() => router.push(s.href)}
+            sx={{
+              p: 1.5, textAlign: "left", alignItems: "flex-start", flexDirection: "column", gap: 0.5,
+              border: "1px solid", borderColor: "divider", bgcolor: "background.paper",
+              transition: "border-color .15s ease",
+              "&:hover": { borderColor: "text.primary" },
+              "&:hover .qa-arrow": { opacity: 1, transform: "none" },
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, width: "100%" }}>
+              <Typography sx={{ fontSize: 13.5, fontWeight: 600, flex: 1 }}>{s.title}</Typography>
+              <Box className="qa-arrow" sx={{ display: "flex", opacity: 0.35, transform: "translateX(-3px)", transition: "all .15s ease" }}>
+                <ArrowRight size={14} />
+              </Box>
+            </Box>
+            <Typography sx={{ fontSize: 12, color: "text.secondary", lineHeight: 1.45 }}>{s.hint}</Typography>
+          </ButtonBase>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 /** Tablero: las cifras de un vistazo. El detalle de cada una vive en Reportes. */
 export default function HomeClient() {
@@ -102,7 +150,10 @@ function Dashboard({ eventId }: { eventId: string }) {
         title="Tablero"
         badge={!income.loading ? <StatusPill label="En vivo" tone="ok" dot /> : undefined}
         description="Feria activa. Toca una cifra para ver todo su detalle."
-        actions={[{ label: "Ver todos los reportes", kind: "pri", href: "/reportes" }]}
+        actions={[
+          { label: "Guía del panel", kind: "sec", href: "/guia" },
+          { label: "Ver todos los reportes", kind: "pri", href: "/reportes" },
+        ]}
       />
       {(income.failed || invitesQ.isError || linksQ.isError) && (
         <Alert severity="error" sx={{ mb: 2 }}>Una parte no cargó: las cifras pueden estar incompletas.</Alert>
@@ -126,6 +177,8 @@ function Dashboard({ eventId }: { eventId: string }) {
         ]}
         min={210}
       />
+
+      <QuickActions />
 
       {/* Bloqueo (utils/exportsLock): solo los KPIs de arriba. */}
       {SALES_DETAIL_ENABLED && (<>

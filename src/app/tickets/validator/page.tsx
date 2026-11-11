@@ -10,8 +10,8 @@ export default function QrValidatorPage() {
     <Box sx={{ maxWidth: 820, mx: "auto" }}>
       <PageHeader
         crumb="Boletos"
-        title="Validador QR"
-        description="Escanea la boleta en la entrada del pabellón para permitir o rechazar el acceso."
+        title="Validar entradas"
+        description="Escanea el QR en la puerta: verde entra, rojo no. Si la cámara no lee, escribe el código corto que va debajo del QR."
       />
       <QrValidationPanel />
       <CheckinsPanel />

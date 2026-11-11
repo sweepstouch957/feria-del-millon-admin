@@ -68,7 +68,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const isEditor = !!(roles as { editor?: boolean }).editor;
 
   const [ticketsOpen, setTicketsOpen] = useState(pathname.startsWith("/tickets"));
-  const settingsActive = ["/inventory/cities", "/inventory/techniques", "/caja/guia"].includes(pathname);
+  const settingsActive = ["/inventory/cities", "/inventory/techniques", "/caja/guia", "/guia"].includes(pathname);
   const [settingsOpen, setSettingsOpen] = useState(settingsActive);
 
   const go = (href: string) => () => {
@@ -186,7 +186,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                 color: "rgba(245,244,239,0.6)",
               }}
             >
-              Panel
+              Panel · v2
             </Box>
           )}
         </Box>
@@ -269,7 +269,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             {item("/compradores", "Compradores", <Users {...ICON} />)}
 
             <SectionTitle label="Sitio y difusión" rail={rail} />
-            {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
+            {item("/personalizacion", "Sitio web", <Palette {...ICON} />)}
             {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
             {item("/qr", "QR de enlaces", <QrCode {...ICON} />)}
 
@@ -287,9 +287,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
               text="Catálogos y ayuda"
               active={settingsActive}
             >
+              {kid("/guia", "Guía del panel")}
+              {kid("/caja/guia", "Guía de caja")}
               {kid("/inventory/cities", "Ciudades")}
               {kid("/inventory/techniques", "Técnicas")}
-              {kid("/caja/guia", "Guía de caja")}
             </CollapsibleGroup>
           </>
         )}
@@ -316,7 +317,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
         {!isSuperUser && isEditor && (
           <>
             <SectionTitle label="Contenido" rail={rail} />
-            {item("/personalizacion", "Personalización", <Palette {...ICON} />)}
+            {item("/personalizacion", "Sitio web", <Palette {...ICON} />)}
             {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
             {item("/qr", "Códigos QR", <QrCode {...ICON} />)}
           </>
