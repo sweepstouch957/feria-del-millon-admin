@@ -26,8 +26,8 @@ const STAGES: Stage[] = [
     title: "Carga de obras",
     intro: "Cada artista aceptado sube su inventario desde «Mi estudio» en la tienda.",
     steps: [
-      { what: "Ver quién va atrasado", where: { label: "Estado de carga", href: "/inventory/carga" }, how: "Lista por artista: cuántas obras cargó, si llenó el proyecto y si ya le dio Enviar. A los que están en borrador, escríbeles." },
-      { what: "Corregir una obra (precio, foto, stock, visibilidad)", where: { label: "Obras", href: "/inventory/artworks" }, how: "Busca la obra y ábrela. Ahí mismo se cambia el stock, se esconde del catálogo o se vende en lote." },
+      { what: "Ver quién va atrasado", where: { label: "Avance de carga", href: "/inventory/carga" }, how: "Lista por artista: cuántas obras cargó, si llenó el proyecto y si ya le dio Enviar. A los que están en borrador, escríbeles." },
+      { what: "Corregir una obra (precio, foto, stock, visibilidad)", where: { label: "Inventario de obras", href: "/inventory/artworks" }, how: "Busca la obra y ábrela. Ahí mismo se cambia el stock, se esconde del catálogo o se vende en lote." },
       { what: "Imprimir las etiquetas QR", where: { label: "Etiquetas QR de obras", href: "/inventory/artworks/qr" }, how: "Genera las hojas y pégalas en cada obra: con ese QR la caja encuentra la obra en un segundo." },
     ],
   },
@@ -36,8 +36,8 @@ const STAGES: Stage[] = [
     title: "Antes de abrir la feria",
     intro: "Cuentas del equipo, invitaciones y el interruptor de venta.",
     steps: [
-      { what: "Crear las cuentas del equipo", where: { label: "Usuarios", href: "/users" }, how: "Una por una en «Nueva cuenta», o toda la lista de cajeras en Usuarios → equipo. La clave se genera sola; se envían por correo en «enviar accesos»." },
-      { what: "Asignar cada cajera a su pabellón", where: { label: "Ferias", href: "/events" }, how: "Abre la feria → pabellón → Cajeros. Sin pabellón asignado, la cajera cobra obras de todos los pabellones." },
+      { what: "Crear las cuentas del equipo", where: { label: "Equipo y cuentas", href: "/users" }, how: "Una por una en «Nueva cuenta», o toda la lista de cajeras de una vez. La clave se genera sola; se envían por correo en «enviar accesos»." },
+      { what: "Asignar cada cajera a su pabellón", where: { label: "Ferias y pabellones", href: "/events" }, how: "Abre la feria → pabellón → Cajeros. Sin pabellón asignado, la cajera cobra obras de todos los pabellones." },
       { what: "Invitar gente", where: { label: "Invitaciones", href: "/tickets/invitaciones" }, how: "Invitados con pase QR por correo, enlaces con cupo para empresas y recordatorios a los que no confirman." },
       { what: "Encender el Modo feria", where: { label: "Sitio web", href: "/personalizacion" }, how: "Sección «Venta en línea del catálogo»: con Modo feria encendido la tienda esconde catálogo y carrito, y solo se compra desde el QR de cada obra." },
     ],
@@ -67,10 +67,10 @@ const STAGES: Stage[] = [
 ];
 
 const FIXES: { problem: string; fix: string }[] = [
-  { problem: "A alguien no le llegó un correo (pase, confirmación de compra, acceso)", fix: "Casi todo tiene botón de reenvío: Invitaciones (reenviar pase), Pedidos (correo de dirección), Usuarios → equipo → enviar accesos. Revisa primero que el correo esté bien escrito: se puede corregir con el lápiz y reenviar." },
+  { problem: "A alguien no le llegó un correo (pase, confirmación de compra, acceso)", fix: "Casi todo tiene botón de reenvío: Invitaciones (reenviar pase), Ventas de obras (correo de dirección), Equipo y cuentas → enviar accesos. Revisa primero que el correo esté bien escrito: se puede corregir con el lápiz y reenviar." },
   { problem: "Un QR de entrada sale «ya usado» y es un error", fix: "En Validar entradas, quien tenga rol de taquilla o staff toca «Volver a habilitar este QR» y explica el motivo. Queda registrado en Auditoría." },
   { problem: "Una venta quedó con el método de pago, precio o correo equivocado", fix: "La cajera la corrige desde «Mi cierre del día» → Corregir. El método se aplica de una vez; precio y correo esperan aprobación en Correcciones." },
-  { problem: "Una obra no aparece en la caja o en el catálogo", fix: "En Obras: revisa que tenga stock, precio y que no esté oculta. Si dice «venta pausada», alguien la pausó a propósito desde ahí mismo." },
+  { problem: "Una obra no aparece en la caja o en el catálogo", fix: "En Inventario de obras: revisa que tenga stock, precio y que no esté oculta. Si dice «venta pausada», alguien la pausó a propósito desde ahí mismo." },
   { problem: "No se sabe quién hizo un cambio", fix: "Auditoría guarda quién entró y qué cambió: ventas, obras, usuarios y configuración." },
   { problem: "La página pública tiene un texto o foto vieja", fix: "Sitio web: edita la sección y toca «Publicar cambios». No hay que pedirle el cambio a nadie." },
 ];

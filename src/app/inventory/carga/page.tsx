@@ -84,7 +84,7 @@ function InventoryStatus({ eventId }: { eventId: string }) {
     <Box>
       <PageHeader
         crumb="Inventario"
-        title="Estado de carga"
+        title="Avance de carga"
         description="Por artista: obras cargadas, proyecto y si ya le dio Enviar. Para encontrar a quien se quedó en borrador."
         actions={[
           {

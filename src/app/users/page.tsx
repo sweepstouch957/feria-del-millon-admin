@@ -964,8 +964,8 @@ export default function UsersPage() {
 
       <PageHeader
         crumb="Comunidad"
-        title="Usuarios"
-        description="Cuentas registradas, roles y permisos del panel."
+        title="Equipo y cuentas"
+        description="Las cuentas del panel: cajeras, equipo de la feria y artistas, con sus roles y accesos."
         actions={[
           {
             label: "Nueva cuenta",

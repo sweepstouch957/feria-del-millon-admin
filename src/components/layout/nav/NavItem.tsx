@@ -11,6 +11,8 @@ type NavItemProps = {
   onClick?: () => void;
   icon?: React.ReactNode;
   text: string;
+  /** Una línea que dice para qué sirve: sale como tooltip al pasar el mouse. */
+  hint?: string;
   trailing?: React.ReactNode;
   /** Sub-ítem dentro de un grupo abierto. */
   inset?: boolean;
@@ -25,6 +27,7 @@ const NavItem = ({
   onClick,
   icon,
   text,
+  hint,
   trailing,
   inset = false,
   rail = false,
@@ -35,7 +38,6 @@ const NavItem = ({
       component="button"
       type="button"
       onClick={onClick}
-      title={rail ? undefined : text}
       sx={{
         width: "100%",
         height: inset ? 30 : 34,
@@ -72,8 +74,11 @@ const NavItem = ({
     </Box>
   );
 
-  return rail ? (
-    <Tooltip title={text} placement="right">
+  // Contraída: el tooltip es el nombre (+ la ayuda). Expandida: solo la ayuda,
+  // con una pausa para no estorbar al navegar rápido.
+  const tip = rail ? (hint ? `${text} — ${hint}` : text) : hint;
+  return tip ? (
+    <Tooltip title={tip} placement="right" enterDelay={rail ? 100 : 500} enterNextDelay={rail ? 100 : 500}>
       {button}
     </Tooltip>
   ) : (

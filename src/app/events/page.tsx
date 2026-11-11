@@ -154,7 +154,7 @@ export default function EventsListPage() {
     <Box>
       <PageHeader
         crumb="Operación"
-        title="Ferias"
+        title="Ferias y pabellones"
         description="Cada feria con sus pabellones. Abre una para editar su información, sus pabellones y los artistas de cada uno."
         actions={[
           {

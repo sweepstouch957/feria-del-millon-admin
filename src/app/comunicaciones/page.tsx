@@ -86,7 +86,7 @@ export default function CommunicationsPage() {
     <Box sx={{ maxWidth: 1040, mx: "auto" }}>
       <PageHeader
         crumb="Contenido"
-        title="Comunicaciones"
+        title="Correos y boletín"
         description="Boletín, catálogos y promociones a las bases. Cada correo lleva enlace para darse de baja."
         actions={[
           {

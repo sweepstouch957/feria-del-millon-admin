@@ -102,7 +102,7 @@ function BoxOffice({ eventId }: { eventId: string }) {
   return (
     <Box sx={{ maxWidth: 920, mx: "auto" }}>
       <PageHeader
-        crumb="Boletos"
+        crumb="Entradas"
         title="Taquilla"
         description="Venta de entradas en sitio. Varias personas = un solo correo con un QR por persona. Enter cobra y deja lista la siguiente venta."
         actions={[{ label: "Descargar QR para imprimir", kind: "sec", onClick: downloadQuickQr }]}

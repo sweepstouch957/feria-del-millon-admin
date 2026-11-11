@@ -92,8 +92,8 @@ function Attendance({ eventId }: { eventId: string }) {
   return (
     <Box>
       <PageHeader
-        crumb="Boletos"
-        title="Informe de asistentes"
+        crumb="Entradas"
+        title="Asistencia"
         description="Por día: invitación, preventa y taquilla. Se actualiza cada minuto."
         actions={[
           {

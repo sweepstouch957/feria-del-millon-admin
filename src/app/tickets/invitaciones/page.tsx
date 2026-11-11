@@ -478,7 +478,7 @@ function Invitations({ eventId }: { eventId: string }) {
   return (
     <Box>
       <PageHeader
-        crumb="Boletos"
+        crumb="Entradas"
         title="Invitaciones"
         description="Quién está invitado a la feria, quién confirmó y quién falta. Cada invitado recibe un correo para confirmar; al confirmar le llega su pase con QR."
         actions={[

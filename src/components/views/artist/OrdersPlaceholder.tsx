@@ -30,7 +30,7 @@ export default function OrdersPlaceholder() {
     <Box>
       <PageHeader
         crumb="Artista"
-        title="Mis pedidos"
+        title="Mis ventas"
         description="Las ventas de tus obras en la feria. La feria te informa cada venta por correo."
         actions={[{ label: "Reportar una venta", onClick: () => setReporting(true) }]}
       />

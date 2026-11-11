@@ -76,7 +76,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
     onNavigate?.();
   };
 
-  const item = (href: string, text: string, icon: React.ReactNode, exact = true) => (
+  const item = (href: string, text: string, icon: React.ReactNode, hint?: string, exact = true) => (
     <NavItem
       key={href}
       rail={rail}
@@ -84,11 +84,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       onClick={go(href)}
       icon={icon}
       text={text}
+      hint={hint}
     />
   );
 
-  const kid = (href: string, text: string) => (
-    <NavItem key={href} inset active={pathname === href} onClick={go(href)} text={text} />
+  const kid = (href: string, text: string, hint?: string) => (
+    <NavItem key={href} inset active={pathname === href} onClick={go(href)} text={text} hint={hint} />
   );
 
   const ticketsGroup = (
@@ -98,28 +99,29 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       rail={rail}
       onRailClick={go("/tickets")}
       icon={<Ticket {...ICON} />}
-      text="Boletos"
+      text="Entradas"
       active={pathname.startsWith("/tickets")}
     >
-      {kid("/tickets", "Ver boletos")}
-      {kid("/tickets/taquilla", "Taquilla")}
-      {kid("/tickets/validator", "Validar entradas")}
-      {kid("/tickets/asistentes", "Informe de asistentes")}
-      {kid("/tickets/invitaciones", "Invitaciones")}
+      {kid("/tickets", "Entradas de la feria", "Tipos de entrada, cupos por día y todas las entradas emitidas.")}
+      {kid("/tickets/taquilla", "Taquilla", "Vender entradas en la puerta: el QR llega al correo al instante.")}
+      {kid("/tickets/validator", "Validar entradas", "La puerta: escanear el QR para dejar entrar o no.")}
+      {kid("/tickets/asistentes", "Asistencia", "Cuánta gente entró cada día y a qué horas.")}
+      {kid("/tickets/invitaciones", "Invitaciones", "Invitados con pase QR, enlaces para empresas y recordatorios.")}
     </CollapsibleGroup>
   );
 
-  const ordersItem = item("/orders", "Pedidos", <FileText {...ICON} />);
+  const ordersItem = item("/orders", "Ventas de obras", <FileText {...ICON} />,
+    "Todas las ventas, en línea y en caja, con su comprador y su pago.");
 
   // Lo mismo que ve la cajera, para que el admin pueda cubrir una caja.
   const cajaSection = (
     <>
       <SectionTitle label="Caja" rail={rail} />
-      {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
-      {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
-      {item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
-      {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
-      {item("/caja/guia", "Guía de caja", <GraduationCap {...ICON} />)}
+      {item("/caja", "Vender obra", <ShoppingBag {...ICON} />, "La caja: escanea el QR de la obra y cobra.")}
+      {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />, "Lo que cobraste tú hoy, para cuadrar efectivo y vouchers.")}
+      {item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />, "La puerta: escanear el QR para dejar entrar o no.")}
+      {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />, "Obras separadas con abono: aquí se cobra el saldo.")}
+      {item("/caja/guia", "Guía de caja", <GraduationCap {...ICON} />, "Paso a paso de caja, taquilla y puerta, y qué hacer si algo falla.")}
     </>
   );
 
@@ -240,57 +242,57 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
         {isSuperUser && (
           <>
-            {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
+            {item("/", "Tablero", <LayoutDashboard {...ICON} />, "Las cifras de la feria de un vistazo y accesos rápidos a todo.")}
 
             {/* El menú sigue el ciclo de la feria: convocatoria → obras →
                 entradas → venta en la feria → tienda en línea → reportes. */}
             <SectionTitle label="Convocatoria" rail={rail} />
-            {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
-            {item("/solicitudes", "Postulaciones", <FileText {...ICON} />)}
+            {item("/events", "Ferias y pabellones", <CalendarDays {...ICON} />, "Fechas de cada feria, sus pabellones y qué cajera cobra en cada uno.", false)}
+            {item("/solicitudes", "Postulaciones", <FileText {...ICON} />, "Artistas que se postularon: calificar, ver el pago y aceptar o rechazar.")}
 
             <SectionTitle label="Obras" rail={rail} />
-            {item("/inventory/artworks", "Obras", <Paintbrush2 {...ICON} />)}
-            {item("/inventory/carga", "Estado de carga", <ClipboardCheck {...ICON} />)}
-            {item("/inventory/artworks/qr", "Etiquetas QR de obras", <QrCode {...ICON} />)}
+            {item("/inventory/artworks", "Inventario de obras", <Paintbrush2 {...ICON} />, "Todas las obras: precio, stock, fotos y si salen en el catálogo.")}
+            {item("/inventory/carga", "Avance de carga", <ClipboardCheck {...ICON} />, "Qué artistas ya subieron sus obras y quién va atrasado.")}
+            {item("/inventory/artworks/qr", "Etiquetas QR de obras", <QrCode {...ICON} />, "Hojas de etiquetas listas para imprimir y pegar en cada obra.")}
 
             <SectionTitle label="Entradas e invitaciones" rail={rail} />
             {ticketsGroup}
 
             <SectionTitle label="Ventas" rail={rail} />
-            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
-            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
+            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />, "La caja: escanea el QR de la obra y cobra.")}
+            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />, "Lo que cobraste tú hoy, para cuadrar efectivo y vouchers.")}
             {ordersItem}
-            {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
-            {item("/correcciones", "Correcciones de venta", <ClipboardCheck {...ICON} />)}
-            {item("/reclamos", "Reclamos de compra", <FileText {...ICON} />)}
+            {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />, "Obras separadas con abono: aquí se cobra el saldo.")}
+            {item("/correcciones", "Correcciones de venta", <ClipboardCheck {...ICON} />, "Cambios que piden las cajeras: método de pago, precio o correo.")}
+            {item("/reclamos", "Reclamos de artistas", <FileText {...ICON} />, "Ventas que un artista reporta y no aparecen en el sistema.")}
 
             <SectionTitle label="Personas" rail={rail} />
-            {item("/users", "Usuarios", <Users {...ICON} />)}
-            {item("/compradores", "Compradores", <Users {...ICON} />)}
+            {item("/users", "Equipo y cuentas", <Users {...ICON} />, "Crear y editar cuentas: cajeras, equipo y artistas, con sus roles.")}
+            {item("/compradores", "Compradores", <Users {...ICON} />, "Todos los que han comprado obras o entradas, o confirmado invitación.")}
 
             <SectionTitle label="Sitio y difusión" rail={rail} />
-            {item("/personalizacion", "Sitio web", <Palette {...ICON} />)}
-            {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
-            {item("/qr", "QR de enlaces", <QrCode {...ICON} />)}
+            {item("/personalizacion", "Sitio web", <Palette {...ICON} />, "La página pública: textos, portada, convocatoria y venta en línea.")}
+            {item("/comunicaciones", "Correos y boletín", <Megaphone {...ICON} />, "Envíos masivos: boletín, catálogos y promociones.")}
+            {item("/qr", "QR para impresos", <QrCode {...ICON} />, "Convierte cualquier enlace en QR para afiches y flyers.")}
 
             <SectionTitle label="Reportes" rail={rail} />
-            {item("/reportes", "Reportes", <BarChart3 {...ICON} />, false)}
-            {item("/auditoria", "Auditoría", <ShieldCheck {...ICON} />)}
+            {item("/reportes", "Reportes", <BarChart3 {...ICON} />, "Ventas por día y método de pago, con Excel para contabilidad.", false)}
+            {item("/auditoria", "Auditoría", <ShieldCheck {...ICON} />, "Quién entró al panel y qué cambió, con fecha y hora.")}
 
             <SectionTitle label="Ajustes" rail={rail} />
             <CollapsibleGroup
               open={settingsOpen}
               setOpen={setSettingsOpen}
               rail={rail}
-              onRailClick={go("/inventory/cities")}
+              onRailClick={go("/guia")}
               icon={<Layers {...ICON} />}
-              text="Catálogos y ayuda"
+              text="Ayuda y catálogos"
               active={settingsActive}
             >
-              {kid("/guia", "Guía del panel")}
-              {kid("/caja/guia", "Guía de caja")}
-              {kid("/inventory/cities", "Ciudades")}
-              {kid("/inventory/techniques", "Técnicas")}
+              {kid("/guia", "Guía del panel", "El ciclo completo de la feria: qué se hace, dónde y cómo.")}
+              {kid("/caja/guia", "Guía de caja", "Paso a paso de caja, taquilla y puerta, y qué hacer si algo falla.")}
+              {kid("/inventory/cities", "Ciudades", "Municipios disponibles para direcciones de entrega.")}
+              {kid("/inventory/techniques", "Técnicas", "Las técnicas con que se clasifican las obras.")}
             </CollapsibleGroup>
           </>
         )}
@@ -299,27 +301,27 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <>
             {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
             <SectionTitle label="Artista" rail={rail} />
-            {item("/my/artworks", "Mis obras", <Paintbrush2 {...ICON} />)}
-            {item("/my/orders", "Mis pedidos", <ShoppingBag {...ICON} />)}
+            {item("/my/artworks", "Mis obras", <Paintbrush2 {...ICON} />, "Tus obras en la feria: fotos, precios y cuántas quedan.")}
+            {item("/my/orders", "Mis ventas", <ShoppingBag {...ICON} />, "Las ventas de tus obras; cada una también te llega por correo.")}
           </>
         )}
 
         {!isSuperUser && isBoxOffice && (
           <>
             <SectionTitle label="Taquilla" rail={rail} />
-            {!isCashier && item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
+            {!isCashier && item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />, "La puerta: escanear el QR para dejar entrar o no.")}
             {/* Vende y ve sus ventas del día (en la misma pantalla). */}
-            {item("/tickets/taquilla", "Vender entradas", <Ticket {...ICON} />)}
-            {!isCashier && item("/caja/guia", "Guía de caja", <GraduationCap {...ICON} />)}
+            {item("/tickets/taquilla", "Vender entradas", <Ticket {...ICON} />, "Cobrar entradas en la puerta: el QR llega al correo al instante.")}
+            {!isCashier && item("/caja/guia", "Guía de caja", <GraduationCap {...ICON} />, "Paso a paso de taquilla y puerta, y qué hacer si algo falla.")}
           </>
         )}
 
         {!isSuperUser && isEditor && (
           <>
             <SectionTitle label="Contenido" rail={rail} />
-            {item("/personalizacion", "Sitio web", <Palette {...ICON} />)}
-            {item("/comunicaciones", "Comunicaciones", <Megaphone {...ICON} />)}
-            {item("/qr", "Códigos QR", <QrCode {...ICON} />)}
+            {item("/personalizacion", "Sitio web", <Palette {...ICON} />, "La página pública: textos, portada, convocatoria y venta en línea.")}
+            {item("/comunicaciones", "Correos y boletín", <Megaphone {...ICON} />, "Envíos masivos: boletín, catálogos y promociones.")}
+            {item("/qr", "QR para impresos", <QrCode {...ICON} />, "Convierte cualquier enlace en QR para afiches y flyers.")}
           </>
         )}
 

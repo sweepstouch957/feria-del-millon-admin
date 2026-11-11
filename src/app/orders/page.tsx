@@ -33,7 +33,7 @@ const receiptOf = (o: OrderDoc): string | undefined =>
   [...(o.layaway?.installments ?? [])].reverse().find((i) => i.receiptUrl)?.receiptUrl;
 
 export default function Page() {
-  return SALES_DETAIL_ENABLED ? <OrdersPage /> : <LockedNotice title="Órdenes" />;
+  return SALES_DETAIL_ENABLED ? <OrdersPage /> : <LockedNotice title="Ventas de obras" />;
 }
 
 function OrdersPage() {
@@ -148,7 +148,7 @@ function OrdersPage() {
     <Box>
       <PageHeader
         crumb="Ventas"
-        title="Pedidos"
+        title="Ventas de obras"
         description="Todas las ventas de obras, en línea y en caja. Toca un pedido para ver comprador, pago y abonos."
         actions={[
           { label: "Vender obra", kind: "pri", icon: <Plus size={14} />, href: "/caja" },

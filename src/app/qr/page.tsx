@@ -112,7 +112,7 @@ export default function QrToolPage() {
     <Box sx={{ maxWidth: 1040, mx: "auto" }}>
       <PageHeader
         crumb="Sitio y difusión"
-        title="QR de enlaces"
+        title="QR para impresos"
         description="Un QR para cualquier enlace de la feria: afiches, flyers de convocatoria o la mesa de inscripción. El PNG sirve para pantalla; el SVG es vectorial, para imprenta."
         actions={[
           {

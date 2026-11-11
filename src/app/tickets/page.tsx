@@ -20,8 +20,8 @@ export default function TicketsAdminPage() {
   return (
     <Box sx={{ px: { xs: 1.5, sm: 2, md: 3 }, py: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
       <Stack gap={0.75} sx={{ mb: { xs: 2.5, md: 3.5 } }}>
-        <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Boletería</Typography>
-        <Typography variant="h3" component="h1">Gestión de boletos</Typography>
+        <Typography sx={{ ...eyebrow, color: "text.secondary" }}>Entradas</Typography>
+        <Typography variant="h3" component="h1">Entradas de la feria</Typography>
         <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
           <Typography variant="body2" color="text.secondary">
             {event?.name} · {fmt(event?.validFrom)} – {fmt(event?.validTo)}

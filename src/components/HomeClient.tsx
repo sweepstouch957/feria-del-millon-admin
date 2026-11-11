@@ -36,7 +36,7 @@ const STATUS_LABELS: Record<string, string> = {
 const SHORTCUTS: { title: string; hint: string; href: string }[] = [
   { title: "Editar el sitio web", hint: "Portada, textos, menú, convocatoria y venta en línea del catálogo.", href: "/personalizacion" },
   { title: "Revisar postulaciones", hint: "Califica, revisa el pago de inscripción y acepta artistas.", href: "/solicitudes" },
-  { title: "Obras y stock", hint: "Precio, stock, visibilidad en el catálogo y venta en lote.", href: "/inventory/artworks" },
+  { title: "Inventario de obras", hint: "Precio, stock, visibilidad en el catálogo y venta en lote.", href: "/inventory/artworks" },
   { title: "¿Quién no ha cargado obras?", hint: "Artistas con el estudio en borrador o sin darle Enviar.", href: "/inventory/carga" },
   { title: "Invitar a la feria", hint: "Invitados con pase QR, enlaces por empresa y recordatorios.", href: "/tickets/invitaciones" },
   { title: "Crear cuentas", hint: "Cajeras, equipo y artistas invitados, con clave generada.", href: "/users" },

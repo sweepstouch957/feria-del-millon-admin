@@ -439,7 +439,7 @@ function ArtworksCursorPage({ eventId, activeEvent, refetchEvent }: { eventId: s
     <Box>
       <PageHeader
         crumb="Inventario"
-        title="Obras"
+        title="Inventario de obras"
         description={`${selectedEvent?.name ?? "Feria"} · lo que suben los artistas llega oculto. Publícalas cuando estén revisadas; puedes volver a ocultarlas cuando quieras.`}
         actions={[
           view === "visible"

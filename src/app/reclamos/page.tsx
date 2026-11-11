@@ -44,7 +44,7 @@ function ReclamosPage() {
     <Box>
       <PageHeader
         crumb="Ventas"
-        title="Reclamos de compra"
+        title="Reclamos de artistas"
         description={`Ventas sin confirmación: las que reporta el comprador en ${STORE}/reclamo y las que reporta el artista desde "Mis pedidos" con el comprobante. Verifique el pago (banco o datáfono) antes de registrar.`}
       />
       <KpiStrip
