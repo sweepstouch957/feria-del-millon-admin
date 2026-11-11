@@ -1,5 +1,4 @@
-// Contenido de la guía de caja: pasos por rol, QR de práctica y qué hacer con cada error.
-import { PRACTICE_QR_PREFIX } from "@features/taquilla/hooks/useBoxOfficeSale";
+// Contenido de la guía de caja: pasos por rol y qué hacer con cada error.
 
 export type GuideRole = "cajera" | "coordinadora" | "taquilla" | "puerta";
 
@@ -28,14 +27,13 @@ export const STEPS: Record<GuideRole, string[]> = {
     "Apartar: en la venta activa «Apartar con abono», recibe un abono (mayor a 0) y pon la fecha límite. La obra queda reservada.",
     "«Apartados / cartera»: ahí cobras los saldos de las obras apartadas, con foto del comprobante si es transferencia.",
     "Resuelves los casos de las cajeras: obra de otro pabellón, descuentos del artista, obra agotada, ventas que no cuadran en el cierre.",
-    "Si una cajera está en modo práctica y ya debe vender de verdad, pídele a administración que se lo apague.",
   ],
   taquilla: [
     "Entra a «Taquilla».",
     "Elige el tipo de entrada, el día (si aplica) y la cantidad.",
     "Datos del comprador: nombre y correo (ahí le llegan las entradas).",
     "Método: Efectivo, Datáfono o Transferencia.",
-    "«Cobrar y emitir»: salen los QR. Luego «Nueva venta» para el siguiente. Muéstralos o deja que les tomen foto; también llegan al correo.",
+    "«Cobrar y emitir»: los QR llegan al correo y el formulario queda listo para la siguiente venta. Si el correo no llega, toca «Ver QR» y deja que les tomen foto.",
     "Si dice «No hay cupo», ese día se agotó: ofrece otro día.",
     "También validas entradas en «Validar entradas».",
   ],
@@ -48,20 +46,6 @@ export const STEPS: Record<GuideRole, string[]> = {
   ],
 };
 
-export type DemoEntry = { key: string; title: string; expect: string; tone: "ok" | "warn" | "bad"; token: string };
-
-const demo = (code: string, name: string, kind: string) => `${PRACTICE_QR_PREFIX}${code}|${name}|general|${kind}`;
-
-/** QR de entrada para practicar en el validador (modo Práctica). */
-export const ENTRY_DEMOS: DemoEntry[] = [
-  { key: "ok", title: "Entrada válida", expect: "Verde: entra.", tone: "ok", token: demo("DEMO01", "Ana Pérez", "ok") },
-  { key: "used", title: "Ya se usó hoy", expect: "Rojo: «ya se usó». No entra.", tone: "bad", token: demo("DEMO02", "Luis Gómez", "used") },
-  { key: "wrong_day", title: "Pase de otro día", expect: "Rojo: «no es para hoy».", tone: "bad", token: demo("DEMO03", "Marta Ruiz", "wrong_day") },
-  { key: "annulled", title: "Entrada anulada", expect: "Rojo: anulada o reembolsada.", tone: "bad", token: demo("DEMO04", "Pedro Díaz", "annulled") },
-  { key: "invited", title: "Invitación sin confirmar", expect: "Rojo: debe confirmar en su correo.", tone: "bad", token: demo("DEMO05", "Invitado VIP", "invited") },
-  { key: "fake", title: "QR falso", expect: "Rojo: «QR inválido o manipulado».", tone: "bad", token: "FDM-QR-FALSO-123" },
-];
-
 export type ErrorCase = { message: string; what: string; todo: string };
 
 export const ERRORS: Record<"caja" | "taquilla" | "puerta", ErrorCase[]> = {
@@ -70,12 +54,10 @@ export const ERRORS: Record<"caja" | "taquilla" | "puerta", ErrorCase[]> = {
     { message: "Esta obra es de otro pabellón.", what: "Tu caja solo cobra las obras de tu pabellón.", todo: "Manda al cliente a la caja de ese pabellón o llama a la coordinadora." },
     { message: "Esta venta ya se está registrando en otra caja.", what: "Dos cajas cobrando la misma obra al tiempo.", todo: "Espera unos segundos y busca la obra de nuevo." },
     { message: "La venta está pausada para esta obra.", what: "La feria la retiró de la venta.", todo: "Llama a la coordinadora." },
-    { message: "Tu cuenta está en modo práctica.", what: "Tu cuenta sigue en capacitación: no cobra de verdad.", todo: "Pide a coordinación que te la active." },
     { message: "No se pudo registrar la venta. Intenta de nuevo.", what: "Se cayó el internet o el servidor no respondió.", todo: "Revisa la conexión y vuelve a «Cobrar»: no se cobra dos veces." },
   ],
   taquilla: [
     { message: "No hay cupo disponible ese día.", what: "Se agotaron las entradas de ese día.", todo: "Ofrece otro día." },
-    { message: "Tu cuenta está en modo práctica.", what: "Tu cuenta sigue en capacitación.", todo: "Pide a coordinación que te la active." },
   ],
   puerta: [
     { message: "El boleto ya fue escaneado hoy.", what: "Ya entró alguien con ese QR.", todo: "No entra. Si insiste, llama a coordinación." },
@@ -83,6 +65,5 @@ export const ERRORS: Record<"caja" | "taquilla" | "puerta", ErrorCase[]> = {
     { message: "Boleto anulado o reembolsado.", what: "Se devolvió el dinero o se anuló.", todo: "No entra. Puede comprar en taquilla." },
     { message: "Invitación sin confirmar.", what: "El invitado no confirmó desde su correo.", todo: "Que confirme en su correo y vuelva a escanear." },
     { message: "QR inválido o manipulado.", what: "No es un QR de la feria o está alterado.", todo: "Pide el código corto y escríbelo; si tampoco sirve, no entra." },
-    { message: "Boleta de práctica: no vale para entrar.", what: "Es un QR de capacitación.", todo: "No entra." },
   ],
 };

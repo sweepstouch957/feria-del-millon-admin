@@ -119,7 +119,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
       {item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
       {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
-      {item("/caja/guia", "Guía y práctica", <GraduationCap {...ICON} />)}
+      {item("/caja/guia", "Guía de caja", <GraduationCap {...ICON} />)}
     </>
   );
 
@@ -242,21 +242,27 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <>
             {item("/", "Tablero", <LayoutDashboard {...ICON} />)}
 
-            <SectionTitle label="Ventas" rail={rail} />
-            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
-            {ordersItem}
-            {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
-            {item("/reclamos", "Reclamos de compra", <FileText {...ICON} />)}
-            {item("/correcciones", "Correcciones de venta", <ClipboardCheck {...ICON} />)}
-            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
-            {ticketsGroup}
-
-            <SectionTitle label="Feria y obras" rail={rail} />
+            {/* El menú sigue el ciclo de la feria: convocatoria → obras →
+                entradas → venta en la feria → tienda en línea → reportes. */}
+            <SectionTitle label="Convocatoria" rail={rail} />
             {item("/events", "Ferias", <CalendarDays {...ICON} />, false)}
+            {item("/solicitudes", "Postulaciones", <FileText {...ICON} />)}
+
+            <SectionTitle label="Obras" rail={rail} />
             {item("/inventory/artworks", "Obras", <Paintbrush2 {...ICON} />)}
-            {item("/solicitudes", "Solicitudes", <FileText {...ICON} />)}
             {item("/inventory/carga", "Estado de carga", <ClipboardCheck {...ICON} />)}
             {item("/inventory/artworks/qr", "Etiquetas QR de obras", <QrCode {...ICON} />)}
+
+            <SectionTitle label="Entradas e invitaciones" rail={rail} />
+            {ticketsGroup}
+
+            <SectionTitle label="Ventas" rail={rail} />
+            {item("/caja", "Vender obra", <ShoppingBag {...ICON} />)}
+            {item("/caja/cierre", "Mi cierre del día", <ClipboardCheck {...ICON} />)}
+            {ordersItem}
+            {canLayaway && item("/orders/cartera", "Apartados / cartera", <Wallet {...ICON} />)}
+            {item("/correcciones", "Correcciones de venta", <ClipboardCheck {...ICON} />)}
+            {item("/reclamos", "Reclamos de compra", <FileText {...ICON} />)}
 
             <SectionTitle label="Personas" rail={rail} />
             {item("/users", "Usuarios", <Users {...ICON} />)}
@@ -283,7 +289,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             >
               {kid("/inventory/cities", "Ciudades")}
               {kid("/inventory/techniques", "Técnicas")}
-              {kid("/caja/guia", "Guía y práctica")}
+              {kid("/caja/guia", "Guía de caja")}
             </CollapsibleGroup>
           </>
         )}
@@ -303,7 +309,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             {!isCashier && item("/tickets/validator", "Validar entradas", <ScanLine {...ICON} />)}
             {/* Vende y ve sus ventas del día (en la misma pantalla). */}
             {item("/tickets/taquilla", "Vender entradas", <Ticket {...ICON} />)}
-            {!isCashier && item("/caja/guia", "Guía y práctica", <GraduationCap {...ICON} />)}
+            {!isCashier && item("/caja/guia", "Guía de caja", <GraduationCap {...ICON} />)}
           </>
         )}
 

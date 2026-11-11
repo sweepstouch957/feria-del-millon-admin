@@ -27,7 +27,7 @@ export function useBulkCreateStaff() {
   const [results, setResults] = useState<StaffResult[]>([]);
   const [running, setRunning] = useState(false);
 
-  const run = async (drafts: StaffDraft[], practiceMode: boolean) => {
+  const run = async (drafts: StaffDraft[]) => {
     setRunning(true);
     setResults([]);
     for (const d of drafts) {
@@ -35,7 +35,7 @@ export function useBulkCreateStaff() {
       let r: StaffResult;
       try {
         const password = makePassword();
-        await createUser({ email: d.email, password, firstName: d.firstName, lastName: d.lastName, roles, practiceMode });
+        await createUser({ email: d.email, password, firstName: d.firstName, lastName: d.lastName, roles });
         r = { ...d, status: "created", password };
       } catch (e: any) {
         if (!/already exists/i.test(errorText(e))) {
@@ -45,7 +45,7 @@ export function useBulkCreateStaff() {
             const { users } = await listUsers({ q: d.email, limit: 5 });
             const u = users.find((x) => x.email?.toLowerCase() === d.email);
             if (!u) throw new Error("No se encontró la cuenta existente");
-            await updateUser(u.id, { roles: { ...u.roles, ...roles }, practiceMode });
+            await updateUser(u.id, { roles: { ...u.roles, ...roles } });
             r = { ...d, status: "updated" };
           } catch (e2: any) {
             r = { ...d, status: "error", error: errorText(e2) };

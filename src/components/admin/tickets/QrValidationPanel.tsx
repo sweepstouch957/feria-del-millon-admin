@@ -31,7 +31,6 @@ import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
 import { PRACTICE_QR_PREFIX } from "@features/taquilla/hooks/useBoxOfficeSale";
 
 type ValidationResult = {
-  practice?: boolean;
   ok: boolean;
   status?: "checked_in" | "already_checked_in";
   sameDay?: boolean;
@@ -46,10 +45,7 @@ export function QrValidationPanel() {
   const [token, setToken] = useState("");
   const [lastResult, setLastResult] = useState<ValidationResult | null>(null);
   const [scannerOpen, setScannerOpen] = useState(true);
-  // Feria abierta (5-nov): sin interruptor de práctica, todo escaneo registra el ingreso.
-  // Solo una cuenta en capacitación sigue en práctica (el servidor también lo exige).
   const access = useCajaAccess();
-  const practice = access.practice;
   const queryClient = useQueryClient();
   const [reactivated, setReactivated] = useState<string | null>(null);
 
@@ -81,24 +77,14 @@ export function QrValidationPanel() {
     // Lo digitado a mano es el código corto impreso bajo el QR (8 caracteres);
     // lo leído por la cámara es el token completo.
     mutationFn: async ({ token }: { token: string }): Promise<ValidateQrResponse> => {
-      // Boleta emitida en la taquilla de práctica: no existe en la base.
+      // Boleta de capacitación vieja: no existe en la base, se rechaza de una.
       if (token.startsWith(PRACTICE_QR_PREFIX)) {
-        if (!practice) throw { response: { data: { error: "practice_ticket" } } };
-        // 4.º campo = caso de la guía de práctica (QR de error para entrenar).
-        const [code, name, type, demo] = token.slice(PRACTICE_QR_PREFIX.length).split("|");
-        if (demo === "wrong_day") throw { response: { data: { error: "wrong_day" } } };
-        if (demo === "annulled") throw { response: { data: { error: "ticket_not_valid", status: "refunded" } } };
-        if (demo === "invited") throw { response: { data: { error: "ticket_not_valid", status: "invited" } } };
-        return {
-          ok: demo !== "used", practice: true, status: demo === "used" ? "already_checked_in" : "checked_in", sameDay: true,
-          ticket: { shortCode: code, name, type, admits: 1 },
-        } as ValidateQrResponse;
+        throw { response: { data: { error: "practice_ticket" } } };
       }
-      return validateQr({ ...(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token }), practice });
+      return validateQr(/^[A-Za-z0-9]{4,12}$/.test(token) ? { code: token } : { token });
     },
     onSuccess: (data) => {
       const result: ValidationResult = {
-        practice: !!data.practice,
         ok: data.ok,
         status: data.status,
         sameDay: data.sameDay,
@@ -198,7 +184,7 @@ export function QrValidationPanel() {
 
   // Un QR ya usado se rechaza: rojo, aunque el servidor responda ok.
   const severity: "success" | "warning" | "error" =
-    lastResult?.status === "already_checked_in" && !lastResult.practice
+    lastResult?.status === "already_checked_in"
       ? "error"
       : lastResult?.ok && lastResult.sameDay
       ? "success"
@@ -209,11 +195,6 @@ export function QrValidationPanel() {
   const statusLabel = () => {
     if (!lastResult) return "";
     if (!lastResult.ok && lastResult.error) return lastResult.error;
-    if (lastResult.practice) {
-      return lastResult.status === "already_checked_in"
-        ? "PRÁCTICA · Este pase ya se usó: en la feria se rechazaría."
-        : "PRÁCTICA · Pase válido: en la feria entraría. No se registró el ingreso.";
-    }
 
     if (lastResult.status === "already_checked_in") {
       const when = lastResult.scannedAt
@@ -253,11 +234,6 @@ export function QrValidationPanel() {
         />
         <CardContent>
           <Stack spacing={1.5}>
-            {practice && (
-              <Alert severity="warning" sx={{ py: 0 }}>
-                Tu cuenta está en modo práctica: los QR NO quedan marcados como usados. Pide a coordinación que lo apague.
-              </Alert>
-            )}
             {/* Campo para pegar token manualmente */}
             <TextField
               label="Código de la boleta"
@@ -379,7 +355,7 @@ export function QrValidationPanel() {
                         </Typography>
                       )}
                     </Stack>
-                    {lastResult.status === "already_checked_in" && !lastResult.practice && lastResult.info?.id && (
+                    {lastResult.status === "already_checked_in" && lastResult.info?.id && (
                       access.canReactivateQr ? (
                         <Button
                           sx={{ mt: 1.5 }}
@@ -452,12 +428,10 @@ export function QrValidationPanel() {
                 sx={{ fontSize: 52, color: "#3FA46E", mb: 1 }}
               />
               <Typography variant="h5" fontWeight={500} gutterBottom>
-                {lastResult?.practice ? "Práctica: pase válido" : "Acceso permitido"}
+                Acceso permitido
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {lastResult?.practice
-                  ? "En la feria entraría. No se registró el ingreso."
-                  : "Boleto válido para hoy. Puede ingresar"}
+                Boleto válido para hoy. Puede ingresar
               </Typography>
               {lastResult?.info?.name && (
                 <Typography sx={{ mt: 1.5, fontSize: 18 }}>

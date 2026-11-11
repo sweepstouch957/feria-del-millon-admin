@@ -91,7 +91,7 @@ export function CheckinsPanel() {
                     <TableCell>{r.scannedBy || "—"}</TableCell>
                     {access.canReactivateQr && (
                       <TableCell align="right">
-                        <Button size="small" color="warning" disabled={reactivate.isPending || access.practice} onClick={() => ask(r.id, r.shortCode)}>
+                        <Button size="small" color="warning" disabled={reactivate.isPending} onClick={() => ask(r.id, r.shortCode)}>
                           Rehabilitar
                         </Button>
                       </TableCell>

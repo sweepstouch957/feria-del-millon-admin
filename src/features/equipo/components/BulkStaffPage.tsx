@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
-  Alert, Box, Button, Chip, FormControlLabel, LinearProgress, MenuItem, Stack, Switch, Table, TableBody,
+  Alert, Box, Button, Chip, LinearProgress, MenuItem, Stack, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
 } from "@mui/material";
 import { Copy } from "lucide-react";
@@ -29,7 +29,6 @@ export function BulkStaffPage() {
   const [text, setText] = useState("");
   const [defaultRole, setDefaultRole] = useState<StaffRole>("cajera");
   const [roleOf, setRoleOf] = useState<Record<string, StaffRole>>({});
-  const [practice, setPractice] = useState(true);
   const bulk = useBulkCreateStaff();
 
   const { rows, skipped } = useMemo(() => parseRoster(text), [text]);
@@ -84,10 +83,6 @@ export function BulkStaffPage() {
             >
               {STAFF_ROLES.map((r) => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
             </TextField>
-            <FormControlLabel
-              control={<Switch color="warning" checked={practice} onChange={(e) => setPractice(e.target.checked)} />}
-              label="Empiezan en modo práctica (no cobran ni guardan nada hasta que lo apagues)"
-            />
           </Stack>
 
           {drafts.length > 0 && (
@@ -143,7 +138,7 @@ export function BulkStaffPage() {
             <Button
               variant="contained" size="large"
               disabled={!drafts.length || bulk.running}
-              onClick={() => bulk.run(drafts, practice)}
+              onClick={() => bulk.run(drafts)}
             >
               {bulk.running ? "Creando…" : `Crear ${drafts.length} cuenta(s)`}
             </Button>
@@ -206,7 +201,7 @@ export function BulkStaffPage() {
           </TableContainer>
           <Typography variant="caption" color="text.secondary">
             Siguiente paso: en Ferias → cada pabellón → Cajeros, asigna a cada cajera su pabellón. Sin pabellón asignado cobra
-            obras de todos. El día de la feria apaga el modo práctica de cada una en Usuarios.
+            obras de todos.
           </Typography>
         </Stack>
       )}

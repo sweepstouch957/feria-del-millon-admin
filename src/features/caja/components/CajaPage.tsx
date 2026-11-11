@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Alert, Box, Button, Card, CardContent, Typography, useMediaQuery } from "@mui/material";
-import { listPracticeSales } from "../model/practice";
+import { useCallback, useState } from "react";
+import { Box, Card, CardContent, Typography, useMediaQuery } from "@mui/material";
 import { toast } from "sonner";
 import PageHeader from "@/components/ui/PageHeader";
 import { eyebrow } from "@/app/theme";
@@ -16,7 +15,6 @@ import { ArtworkFinderPanel } from "./ArtworkFinderPanel";
 import { SaleDone } from "./SaleDone";
 import { SaleForm } from "./SaleForm";
 import { SelectedArtwork } from "./SelectedArtwork";
-import { PracticeBanner } from "./PracticeBanner";
 import { useCajaAccess } from "../hooks/useCajaAccess";
 import type { CityDoc } from "@services/city.service";
 import type { SaleValues } from "../model/sale";
@@ -62,18 +60,6 @@ function Steps({ current }: { current: number }) {
         );
       })}
     </Box>
-  );
-}
-
-/** Ventas hechas en modo práctica que quedaron solo en este navegador: hay que volver a registrarlas. */
-function UnsavedPracticeAlert() {
-  const [n, setN] = useState(0);
-  useEffect(() => setN(listPracticeSales().length), []);
-  if (!n) return null;
-  return (
-    <Alert severity="error" sx={{ mb: 2 }} action={<Button color="inherit" size="small" href="/caja/cierre">Ver</Button>}>
-      {n} venta(s) hechas en modo práctica NO se guardaron. Ábrelas en «Mi cierre del día» y vuelve a registrarlas.
-    </Alert>
   );
 }
 
@@ -137,8 +123,6 @@ function Caja({ eventId }: { eventId: string }) {
         description={wide ? "Primero escanea el QR de la obra o búscala por su nombre. Después sigue los pasos 1, 2 y 3." : undefined}
         actions={[{ label: "Mi cierre del día", kind: "sec", href: "/caja/cierre" }]}
       />
-      <PracticeBanner />
-      <UnsavedPracticeAlert />
       <Steps current={done ? 4 : selected ? 2 : 1} />
 
       <Box

@@ -19,8 +19,6 @@ import { getTicketDays, TICKET_TYPE_LABEL } from "@services/ticket.service";
 import { formatCOP } from "@/utils/money";
 import { boxOfficeError, useBoxOfficeSale } from "../hooks/useBoxOfficeSale";
 import { TicketSalesSummary } from "./TicketSalesSummary";
-import { PracticeBanner } from "@features/caja/components/PracticeBanner";
-import { useCajaAccess } from "@features/caja/hooks/useCajaAccess";
 import {
   BOX_OFFICE_DEFAULTS, BOX_OFFICE_METHODS, boxOfficeSchema, specOf, TICKET_TYPES, unitPrice, type BoxOfficeValues,
 } from "../model/boxOffice";
@@ -31,7 +29,7 @@ const BIG_TOGGLE = { minHeight: 64, flexDirection: "column", gap: 0.25, textTran
 // Un toque completa el dominio: la mayoría de correos en la fila son de estos.
 const EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "icloud.com"];
 
-type LastSale = { tickets: Ticket[]; email: string; total: number; practice: boolean };
+type LastSale = { tickets: Ticket[]; email: string; total: number };
 
 /** QR para imprimir en la fila: abre la entrada del día en el celular de cada persona. */
 const downloadQuickQr = async () => {
@@ -52,7 +50,6 @@ function BoxOffice({ eventId }: { eventId: string }) {
   const { data: daysRes } = useQuery({ queryKey: ["ticketDays", eventId], queryFn: () => getTicketDays(eventId) });
   const days = useMemo(() => daysRes?.days ?? [], [daysRes]);
   const sale = useBoxOfficeSale(eventId);
-  const { practice } = useCajaAccess();
 
   const { control, register, handleSubmit, setValue, setFocus, reset, getValues, formState: { errors } } = useForm<BoxOfficeValues>({
     resolver: zodResolver(boxOfficeSchema),
@@ -84,12 +81,12 @@ function BoxOffice({ eventId }: { eventId: string }) {
   const submit = handleSubmit((v) =>
     sale.mutate(v, {
       onSuccess: (res) => {
-        setLast({ tickets: res.tickets, email: v.email, total, practice });
-        setShowQr(practice); // en práctica los QR se escanean en "Validar entradas"
+        setLast({ tickets: res.tickets, email: v.email, total });
+        setShowQr(false);
         sale.next();
         reset({ ...BOX_OFFICE_DEFAULTS, type: v.type, date: v.date, method: v.method, quantity: 1 });
         setTimeout(() => setFocus("name"), 0);
-        toast.success(practice ? "Venta de práctica lista" : `Venta registrada. QR enviado a ${v.email}`);
+        toast.success(`Venta registrada. QR enviado a ${v.email}`);
       },
       onError: (e) => toast.error(boxOfficeError(e)),
     }),
@@ -110,23 +107,20 @@ function BoxOffice({ eventId }: { eventId: string }) {
         description="Venta de entradas en sitio. Varias personas = un solo correo con un QR por persona. Enter cobra y deja lista la siguiente venta."
         actions={[{ label: "Descargar QR para imprimir", kind: "sec", onClick: downloadQuickQr }]}
       />
-      <PracticeBanner />
 
       <Card variant="outlined" sx={{ borderRadius: 0, overflow: "visible" /* si no, la barra sticky no pega */ }}>
         <CardContent>
           {last && (
             <Box sx={{ mb: 2.5 }}>
               <Alert
-                severity={last.practice ? "warning" : "success"}
+                severity="success"
                 action={
                   <Button color="inherit" size="small" onClick={() => setShowQr((s) => !s)}>
                     {showQr ? "Ocultar QR" : "Ver QR"}
                   </Button>
                 }
               >
-                {last.practice
-                  ? `Práctica: ${last.tickets.length} boleta(s) de prueba. No se cobró ni se envió correo. Escanéalas en "Validar entradas".`
-                  : `Última venta: ${last.tickets.length} entrada(s) · ${formatCOP(last.total, { code: true })} · QR enviados a ${last.email}`}
+                {`Última venta: ${last.tickets.length} entrada(s) · ${formatCOP(last.total, { code: true })} · QR enviados a ${last.email}`}
               </Alert>
               {/* Si el correo no le llega (mal escrito, sin datos), puede tomarle foto a la pantalla. */}
               {showQr && (

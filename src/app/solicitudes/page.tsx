@@ -1147,9 +1147,9 @@ export default function SolicitudesPage() {
   return (
     <Box>
       <PageHeader
-        crumb="Comunidad"
-        title="Solicitudes"
-        description="Postulaciones a la convocatoria: calificación, pago y resolución."
+        crumb="Convocatoria"
+        title="Postulaciones"
+        description="Artistas que se postularon a la convocatoria: calificación, pago de inscripción y resolución."
       >
         <SendResolutionButton />
       </PageHeader>
