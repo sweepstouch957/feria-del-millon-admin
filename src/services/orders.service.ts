@@ -367,6 +367,27 @@ export interface SalesReport {
     lines: SalesLine[];
 }
 
+export interface DeliveryItem {
+    orderId: string; code: string; soldAt: string; artworkId: string; title: string; qty: number; amount: number;
+    buyer: string; buyerPhone: string; hasAddress: boolean;
+    status: "pending" | "delivered" | "returned"; deliveredAt: string | null;
+}
+export interface DeliveryArtist {
+    artistId: string; name: string; email: string; phone: string;
+    sold: number; delivered: number; pending: number; returned: number;
+    lastDeliveredAt: string | null; items: DeliveryItem[];
+}
+export interface DeliveriesReport {
+    totals: { artists: number; artistsDone: number; sold: number; delivered: number; pending: number; returned: number };
+    rows: DeliveryArtist[];
+}
+
+/** GET /order/reports/deliveries — entregas de obras vendidas por artista (solo administración). */
+export const getDeliveriesReport = async (params: { event?: string }): Promise<DeliveriesReport> => {
+    const { data } = await apiClient.get<DeliveriesReport>("/order/reports/deliveries", { params, withCredentials: true });
+    return data;
+};
+
 /** GET /order/reports/sales — ventas pagadas agregadas (staff). Fechas YYYY-MM-DD, hora Bogotá. */
 export const getSalesReport = async (params: {
     event?: string; from?: string; to?: string; artist?: string; technique?: string; pavilion?: string;
