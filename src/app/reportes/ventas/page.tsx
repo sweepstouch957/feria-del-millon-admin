@@ -196,14 +196,20 @@ function SalesReportPage() {
       {!!data?.lines?.length && (
         <Card sx={{ mt: 3 }}>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 1.5 }}>Detalle de ventas</Typography>
+            <Typography variant="h6" sx={{ mb: 0.5 }}>Detalle de ventas</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              Para ver los compradores de un artista, elígelo en el filtro Artista.
+            </Typography>
             <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 520 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>Día</TableCell>
                     <TableCell>Obra</TableCell>
+                    <TableCell>Artista</TableCell>
                     <TableCell>Comprador</TableCell>
+                    <TableCell>Correo</TableCell>
+                    <TableCell>Teléfono</TableCell>
                     <TableCell>Tipo de pago</TableCell>
                     <TableCell>Cajera</TableCell>
                     <TableCell align="right">Valor</TableCell>
@@ -214,7 +220,10 @@ function SalesReportPage() {
                     <TableRow key={`${l.orderId}-${i}`} hover>
                       <TableCell sx={{ whiteSpace: "nowrap" }}>{l.day}</TableCell>
                       <TableCell>{l.artwork}</TableCell>
+                      <TableCell>{l.artist}</TableCell>
                       <TableCell>{l.buyer}</TableCell>
+                      <TableCell>{l.buyerEmail}</TableCell>
+                      <TableCell sx={{ whiteSpace: "nowrap" }}>{l.buyerPhone}</TableCell>
                       <TableCell>{l.methodLabel || l.method}</TableCell>
                       <TableCell>{l.cashier || "En línea"}</TableCell>
                       <TableCell align="right">{money(l.amount)}</TableCell>
