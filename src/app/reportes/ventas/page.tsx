@@ -2,15 +2,16 @@
 
 import * as React from "react";
 import {
-  Box, Card, CardContent, Typography, Stack, Button, TextField, MenuItem, Tabs, Tab,
+  Box, Card, CardContent, Typography, Stack, TextField, MenuItem, Tabs, Tab,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, CircularProgress, LinearProgress,
+  Avatar, Chip, Link,
 } from "@mui/material";
-import { FileSpreadsheet, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, Mail, Phone, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
 import ReportTabs from "@/components/ui/ReportTabs";
 import { useQuery } from "@tanstack/react-query";
-import { getSalesReport, type SalesBucket } from "@services/orders.service";
+import { getSalesReport, type SalesBucket, type SalesLine } from "@services/orders.service";
 import { useEvents } from "@/hooks/useEvents";
 import { usePavilions } from "@/hooks/usePavilions";
 import { useTechniques } from "@/hooks/useTechniques";
@@ -192,41 +193,48 @@ function SalesReportPage() {
         </CardContent>
       </Card>
 
+      {f.artist && !!data?.lines?.length && (
+        <ArtistBuyers artist={artists.find((a) => a.key === f.artist)?.label || "este artista"} lines={data.lines} />
+      )}
+
       {/* Venta por venta: quién la cobró y cómo pagaron. */}
       {!!data?.lines?.length && (
         <Card sx={{ mt: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 0.5 }}>Detalle de ventas</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Para ver los compradores de un artista, elígelo en el filtro Artista.
-            </Typography>
-            <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 520 }}>
+            {!f.artist && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Elige un artista en el filtro de arriba para ver sus compradores.
+              </Typography>
+            )}
+            <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 560, mt: 1 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>Día</TableCell>
                     <TableCell>Obra</TableCell>
-                    <TableCell>Artista</TableCell>
                     <TableCell>Comprador</TableCell>
-                    <TableCell>Correo</TableCell>
-                    <TableCell>Teléfono</TableCell>
-                    <TableCell>Tipo de pago</TableCell>
-                    <TableCell>Cajera</TableCell>
+                    <TableCell>Pago</TableCell>
                     <TableCell align="right">Valor</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data.lines.slice(0, 300).map((l, i) => (
-                    <TableRow key={`${l.orderId}-${i}`} hover>
-                      <TableCell sx={{ whiteSpace: "nowrap" }}>{l.day}</TableCell>
-                      <TableCell>{l.artwork}</TableCell>
-                      <TableCell>{l.artist}</TableCell>
-                      <TableCell>{l.buyer}</TableCell>
-                      <TableCell>{l.buyerEmail}</TableCell>
-                      <TableCell sx={{ whiteSpace: "nowrap" }}>{l.buyerPhone}</TableCell>
-                      <TableCell>{l.methodLabel || l.method}</TableCell>
-                      <TableCell>{l.cashier || "En línea"}</TableCell>
-                      <TableCell align="right">{money(l.amount)}</TableCell>
+                    <TableRow key={`${l.orderId}-${i}`} hover sx={{ "& td": { py: 1.25, verticalAlign: "top" } }}>
+                      <TableCell sx={{ whiteSpace: "nowrap", color: "text.secondary" }}>{l.day}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>{l.artwork}</Typography>
+                        <Typography variant="caption" color="text.secondary">{l.artist}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>{l.buyer || "—"}</Typography>
+                        <Contact email={l.buyerEmail} phone={l.buyerPhone} />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{l.methodLabel || l.method}</Typography>
+                        <Typography variant="caption" color="text.secondary">{l.cashier || "En línea"}</Typography>
+                      </TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: "nowrap", fontWeight: 600 }}>{money(l.amount)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -241,5 +249,79 @@ function SalesReportPage() {
         </Card>
       )}
     </Box>
+  );
+}
+
+const waLink = (phone: string) => {
+  const d = phone.replace(/\D/g, "");
+  return `https://wa.me/${d.length === 10 ? `57${d}` : d}`;
+};
+
+function Contact({ email, phone }: { email?: string; phone?: string }) {
+  return (
+    <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap" sx={{ mt: 0.25 }}>
+      {email && (
+        <Link href={`mailto:${email}`} underline="hover" variant="caption" color="text.secondary"
+          sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, wordBreak: "break-all" }}>
+          <Mail size={12} />{email}
+        </Link>
+      )}
+      {phone && (
+        <Link href={waLink(phone)} target="_blank" rel="noopener" underline="hover" variant="caption" color="text.secondary"
+          sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, whiteSpace: "nowrap" }}>
+          <Phone size={12} />{phone}
+        </Link>
+      )}
+    </Stack>
+  );
+}
+
+const initials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+
+/** Compradores del artista elegido: una tarjeta por persona (agrupa por correo). */
+function ArtistBuyers({ artist, lines }: { artist: string; lines: SalesLine[] }) {
+  const buyers = React.useMemo(() => {
+    const map = new Map<string, { name: string; email: string; phone: string; works: string[]; total: number }>();
+    for (const l of lines) {
+      const key = (l.buyerEmail || l.buyer || l.orderId).toLowerCase();
+      const b = map.get(key) ?? { name: l.buyer, email: l.buyerEmail, phone: l.buyerPhone, works: [], total: 0 };
+      b.works.push(l.qty > 1 ? `${l.artwork} ×${l.qty}` : l.artwork);
+      b.total += l.amount;
+      map.set(key, b);
+    }
+    return [...map.values()].sort((a, b) => b.total - a.total);
+  }, [lines]);
+
+  return (
+    <Card sx={{ mt: 3 }}>
+      <CardContent>
+        <Stack direction="row" alignItems="baseline" justifyContent="space-between" flexWrap="wrap" useFlexGap spacing={1} sx={{ mb: 2 }}>
+          <Typography variant="h6">Compradores de {artist}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {buyers.length} {buyers.length === 1 ? "persona" : "personas"}
+          </Typography>
+        </Stack>
+        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+          {buyers.map((b) => (
+            <Box key={b.email || b.name} sx={{ border: 1, borderColor: "divider", borderRadius: 2, p: 2, display: "grid", gap: 1.25, alignContent: "start" }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Avatar sx={{ bgcolor: "primary.main", color: "primary.contrastText", width: 40, height: 40, fontSize: 15, fontWeight: 600 }}>
+                  {initials(b.name)}
+                </Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography fontWeight={600} noWrap>{b.name || "Sin nombre"}</Typography>
+                  <Typography variant="body2" color="text.secondary">{money(b.total)}</Typography>
+                </Box>
+              </Stack>
+              <Contact email={b.email} phone={b.phone} />
+              <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                {b.works.map((w, i) => <Chip key={i} label={w} size="small" variant="outlined" />)}
+              </Stack>
+            </Box>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
