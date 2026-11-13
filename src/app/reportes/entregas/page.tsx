@@ -5,7 +5,8 @@ import {
   Box, Card, CardContent, Typography, Stack, TextField, MenuItem, Chip, Collapse, IconButton, LinearProgress,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, CircularProgress, ToggleButton, ToggleButtonGroup, Link,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, FileSpreadsheet, RefreshCw } from "lucide-react";
+import { downloadDeliveriesReport } from "@/utils/deliveriesReport";
 import { useQuery } from "@tanstack/react-query";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiStrip from "@/components/ui/KpiStrip";
@@ -47,6 +48,7 @@ function ArtistRow({ r }: { r: DeliveryArtist }) {
         <TableCell align="right">{r.sold}</TableCell>
         <TableCell align="right">{r.delivered}</TableCell>
         <TableCell align="right" sx={{ fontWeight: r.pending ? 700 : 400, color: r.pending ? "warning.main" : "text.secondary" }}>{r.pending}</TableCell>
+        <TableCell align="right" sx={{ whiteSpace: "nowrap", fontWeight: 600 }}>{formatCOP(r.soldAmount, { code: true })}</TableCell>
         <TableCell sx={{ minWidth: 140 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <LinearProgress variant="determinate" value={pct} color={done ? "success" : "warning"} sx={{ flex: 1, height: 6, borderRadius: 3 }} />
@@ -59,7 +61,7 @@ function ArtistRow({ r }: { r: DeliveryArtist }) {
         <TableCell sx={{ whiteSpace: "nowrap" }}>{day(r.lastDeliveredAt)}</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell colSpan={8} sx={{ py: 0, bgcolor: "action.hover" }}>
+        <TableCell colSpan={9} sx={{ py: 0, bgcolor: "action.hover" }}>
           <Collapse in={open} unmountOnExit>
             <Table size="small" sx={{ my: 1 }}>
               <TableHead>
@@ -124,7 +126,17 @@ export default function Page() {
         crumb="Reportes"
         title="Entregas de artistas"
         description="Qué artistas ya entregaron a sus compradores las obras que vendieron. Cada artista lo marca en su estudio."
-        actions={[{ label: "Actualizar", kind: "sec", icon: <RefreshCw size={14} />, disabled: isFetching, onClick: () => refetch() }]}
+        actions={[
+          {
+            // Exporta lo que está en pantalla: con "Entregaron todo" sale solo ese grupo.
+            label: "Exportar a Excel",
+            kind: "sec",
+            icon: <FileSpreadsheet size={14} />,
+            disabled: !rows.length,
+            onClick: () => downloadDeliveriesReport(rows, filter === "done" ? "entregaron todo" : filter === "pending" ? "les falta entregar" : "todos"),
+          },
+          { label: "Actualizar", kind: "sec", icon: <RefreshCw size={14} />, disabled: isFetching, onClick: () => refetch() },
+        ]}
       />
       <ReportTabs />
 
@@ -144,7 +156,9 @@ export default function Page() {
       <KpiStrip
         loading={isLoading}
         items={[
-          { label: "Artistas que entregaron todo", value: t ? `${t.artistsDone} de ${t.artists}` : "—", accent: true },
+          { label: "Vendido por los que ya entregaron todo", value: formatCOP(t?.doneArtistsAmount, { code: true }), accent: true },
+          { label: "Artistas que entregaron todo", value: t ? `${t.artistsDone} de ${t.artists}` : "—" },
+          { label: "Total vendido (todos)", value: formatCOP(t?.soldAmount, { code: true }) },
           { label: "Obras vendidas", value: t?.sold ?? 0 },
           { label: "Entregadas", value: t?.delivered ?? 0 },
           { label: "Por entregar", value: t?.pending ?? 0 },
@@ -167,6 +181,7 @@ export default function Page() {
                     <TableCell align="right">Vendidas</TableCell>
                     <TableCell align="right">Entregadas</TableCell>
                     <TableCell align="right">Por entregar</TableCell>
+                    <TableCell align="right">Total vendido</TableCell>
                     <TableCell>Avance</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell>Última entrega</TableCell>
@@ -174,7 +189,7 @@ export default function Page() {
                 </TableHead>
                 <TableBody>
                   {rows.length === 0 ? (
-                    <TableRow><TableCell colSpan={8} align="center" sx={{ color: "text.secondary", py: 3 }}>{data?.rows.length ? "Ningún artista con ese filtro." : "Todavía no hay obras vendidas."}</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} align="center" sx={{ color: "text.secondary", py: 3 }}>{data?.rows.length ? "Ningún artista con ese filtro." : "Todavía no hay obras vendidas."}</TableCell></TableRow>
                   ) : rows.map((r) => <ArtistRow key={r.artistId} r={r} />)}
                 </TableBody>
               </Table>

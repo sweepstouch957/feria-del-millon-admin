@@ -375,10 +375,17 @@ export interface DeliveryItem {
 export interface DeliveryArtist {
     artistId: string; name: string; email: string; phone: string;
     sold: number; delivered: number; pending: number; returned: number;
+    /** Valor de venta en COP: todo lo vendido, lo ya entregado y lo que falta. */
+    soldAmount: number; deliveredAmount: number; pendingAmount: number;
     lastDeliveredAt: string | null; items: DeliveryItem[];
 }
 export interface DeliveriesReport {
-    totals: { artists: number; artistsDone: number; sold: number; delivered: number; pending: number; returned: number };
+    totals: {
+        artists: number; artistsDone: number; sold: number; delivered: number; pending: number; returned: number;
+        soldAmount: number; deliveredAmount: number; pendingAmount: number;
+        /** Lo que vendieron los artistas que ya entregaron todo. */
+        doneArtistsAmount: number;
+    };
     rows: DeliveryArtist[];
 }
 
